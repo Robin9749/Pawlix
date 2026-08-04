@@ -1,0 +1,410 @@
+<?php
+session_start();
+
+if (!isset($_SESSION['admin_id'])) {
+    header("Location: login.php");
+    exit();
+}
+
+include("../config/config.php");
+
+$result = mysqli_query($conn, "SELECT COUNT(*) AS total FROM dog");
+$totalDogs = mysqli_fetch_assoc($result)['total'];
+
+$result = mysqli_query($conn, "SELECT COUNT(*) AS total FROM adoption_application");
+$adoptionReqs = mysqli_fetch_assoc($result)['total'];
+
+$result = mysqli_query($conn, "SELECT COUNT(*) AS total FROM user");
+$totalUsers = mysqli_fetch_assoc($result)['total'];
+
+$result = mysqli_query($conn, "SELECT COUNT(*) AS total FROM contact_message");
+$unreadMsgs = mysqli_fetch_assoc($result)['total'];
+
+$requests = mysqli_query($conn,"
+SELECT
+adoption_application.*,
+user.first_name,
+user.last_name,
+user.email,
+dog.name AS dog_name
+FROM adoption_application
+JOIN user ON adoption_application.user_id=user.user_id
+JOIN dog ON adoption_application.dog_id=dog.dog_id
+ORDER BY application_date DESC
+LIMIT 5
+");
+?>
+
+<!DOCTYPE html>
+<html>
+<head>
+<title>Dashboard Overview</title>
+
+<style>
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+*{
+  box-sizing: border-box;
+}
+
+body{
+  font-family: 'Poppins', Arial, sans-serif;
+  margin: 0;
+  background: #e8dcc0;
+  color: #2b2b2b;
+}
+
+.topbar{
+  background: #f2e6c9;
+  padding: 30px 60px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+    border-bottom: 2px solid #ffffff;
+
+}
+
+.topbar .logo{
+  font-size: 20px;
+  font-weight: 700;
+  color: #2b2b2b;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.topbar a.logout{
+  color: #1f6fd6;
+  font-weight: 600;
+  text-decoration: none;
+  font-size: 15px;
+}
+
+.topbar a.logout:hover{
+  text-decoration: underline;
+}
+
+.layout{
+  display: flex;
+  align-items: flex-start;
+}
+
+.sidebar{
+  width: 260px;
+  background: #e8dcc0;
+  padding: 24px 18px;
+  min-height: calc(100vh - 78px);
+}
+
+.sidebar a{
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  margin-bottom: 8px;
+  border-radius: 10px;
+  text-decoration: none;
+  color: #2b2b2b;
+  font-weight: 600;
+  font-size: 15px;
+  transition: background 0.15s ease;
+}
+
+.sidebar a:hover{
+  background: #ddceac;
+}
+
+.sidebar a.active{
+  background: #f2932b;
+  color: white;
+  box-shadow: 0 4px 10px rgba(242,147,43,0.35);
+}
+
+.sidebar a.active:hover{
+  background: #f2932b;
+}
+
+.sidebar .icon{
+  font-size: 18px;
+  width: 20px;
+  text-align: center;
+}
+
+.main{
+  flex: 1;
+  padding: 36px 44px;
+}
+
+.main h1{
+  margin: 0 0 24px;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.stats{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 20px;
+  margin-bottom: 28px;
+}
+
+.stat-card{
+  background: #ede1c6;
+  border-radius: 14px;
+  padding: 22px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.06);
+}
+
+.icon-circle{
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.icon-orange{ background: #f6cba3; }
+.icon-green{ background: #bfe3c4; }
+.icon-blue{ background: #b9d3ee; }
+.icon-peach{ background: #f6c9a3; }
+
+.stat-card .label{
+  color: #5c5c5c;
+  font-size: 14px;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.stat-card .number{
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.requests-box{
+  background: #ede1c6;
+  border-radius: 14px;
+  padding: 28px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.06);
+}
+
+.requests-box .header{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 22px;
+}
+
+.requests-box .header h2{
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.requests-box .header a{
+  color: #1f6fd6;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.requests-box .header a:hover{
+  text-decoration: underline;
+}
+
+table{
+  width: 100%;
+  border-collapse: collapse;
+}
+
+table tr{
+  border-bottom: 1px solid #ddccae;
+}
+
+table tr:last-child{
+  border-bottom: none;
+}
+
+table td{
+  padding: 16px 8px;
+  vertical-align: middle;
+  font-size: 14px;
+}
+
+.person{
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.avatar{
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #d8cba9;
+  flex-shrink: 0;
+}
+
+.person .name{
+  font-weight: 600;
+  font-size: 15px;
+  color: #1a1a1a;
+}
+
+.person .email{
+  color: #888;
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+.status{
+  padding: 7px 18px;
+  border-radius: 30px;
+  font-weight: 600;
+  font-size: 13px;
+  display: inline-block;
+}
+
+.status-pending{
+  background: #f6cba3;
+  color: #a15c00;
+}
+
+.status-approved{
+  background: #bfe3c4;
+  color: #1e6e2e;
+}
+
+.status-review{
+  background: #b9d3ee;
+  color: #1958ab;
+}
+
+.status-rejected{
+    background:#f5bcbc;
+    color:#b3261e;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="topbar">
+  <div class="logo">PawLix</div>
+  <a class="logout" href="logout.php">Logout</a>
+</div>
+
+<div class="layout">
+
+  <div class="sidebar">
+    <a href="dashboard.php" class="active"><span class="icon">🏠</span> Dashboard</a>
+    <a href="dogs.php"><span class="icon">🐾</span> Dogs</a>
+    <a href="adoption_requests.php"><span class="icon">📋</span> Adoption Request</a>
+    <a href="messages.php"><span class="icon">✉️</span> Messages</a>
+    <a href="users.php"><span class="icon">👤</span> Users</a>
+    <a href="settings.php"><span class="icon">⚙️</span> Settings</a>
+    </div>
+
+  <div class="main">
+
+    <h1>Dashboard Overview</h1>
+
+    <div class="stats">
+
+      <div class="stat-card">
+        <div class="icon-circle icon-orange">🐾</div>
+        <div>
+          <div class="label">Total Dogs</div>
+          <div class="number"><?php echo $totalDogs; ?></div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="icon-circle icon-green">📋</div>
+        <div>
+          <div class="label">Adoption Request</div>
+          <div class="number"><?php echo $adoptionReqs; ?></div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="icon-circle icon-blue">👤</div>
+        <div>
+          <div class="label">Total Users</div>
+          <div class="number"><?php echo $totalUsers; ?></div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="icon-circle icon-peach">✉️</div>
+        <div>
+          <div class="label">Unread Messages</div>
+          <div class="number"><?php echo $unreadMsgs; ?></div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="requests-box">
+
+      <div class="header">
+        <h2>Recent Adoption Requests</h2>
+        <a href="adoption_requests.php">View All</a>
+      </div>
+
+      <table>
+        <?php while($r=mysqli_fetch_assoc($requests)){ ?>
+        <tr>
+          <td>
+            <div class="person">
+              <img class="avatar" src="../assets/img/user-placeholder.jpg">
+              <div>
+                <div class="name"><?php echo $r['first_name']." ".$r['last_name']; ?></div>
+                <div class="email"><div class="email"><?php echo $r['email']; ?></div></div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="person">
+              <img class="avatar" src="../assets/img/dog-placeholder.jpg">
+              <div>
+                <div class="name"><?php echo $r['dog_name']; ?></div>
+              </div>
+            </div>
+          </td>
+          <td><?php echo date("M d, Y",strtotime($r['application_date'])); ?></td>
+          <td>
+            <?php
+              $statusClass = "status-pending";
+
+                if ($r['status'] == "Approved") {
+                $statusClass = "status-approved";
+                }
+
+                if ($r['status'] == "Rejected") {
+                $statusClass = "status-rejected";
+                }
+            ?>
+            <span class="status <?php echo $statusClass; ?>"><?php echo $r['status']; ?></span>
+          </td>
+        </tr>
+        <?php } ?>
+      </table>
+
+    </div>
+
+  </div>
+
+</div>
+
+</body>
+</html>

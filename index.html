@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PawLix - Find a Friend, Give a Home</title>
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+  
+  <header class="header">
+    <div class="logo">
+      <img src="assets/images/logo.png" alt="PawLix logo">
+    </div>
+    <nav class="nav">
+      <a href="#" class="active">Home</a>
+      <a href="browse.html">Browse Dogs ▾</a>
+      <a href="#">About</a>
+      <a href="#">Contact</a>
+    </nav>
+    <div class="header-buttons">
+      <button class="btn btn-outline">Sign Up</button>
+      <button class="btn btn-dark">Login</button>
+    </div>
+    <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">☰</button>
+  </header>
+
+<hr style="background-color: white; height: 1px; border: none;">
+
+  
+  <section class="hero">
+    <div class="hero-text">
+      <h1>Find a Friend.<br>Give a Home.<br>Change a Life.</h1>
+      <p>Discover dogs waiting for a loving family. Browse available dogs, learn about their stories, and begin your adoption journey through a simple and secure platform.</p>
+    </div>
+    <div class="hero-image">
+      <img src="assets/images/hero image.png" alt="Puppies" id="heroImg">
+    </div>
+    <div class="dots" id="heroDots">
+      <span class="dot active" data-index="0"></span>
+      <span class="dot" data-index="1"></span>
+      <span class="dot" data-index="2"></span>
+    </div>
+  </section>
+
+ 
+  <section class="steps">
+    <h2>100+ Dog Adopted</h2>
+    <p class="subtitle">Here is how you can get started on your pet adoption journey</p>
+
+    <div class="steps-cards">
+      <div class="step-card">
+        <div class="circle"><img src="assets/images/step card 1.jpg" alt="Browse Dogs"></div>
+        <h3>Browse Dogs</h3>
+        <p>Find your perfect companion by exploring dogs available for adoption. View their breed, age, personality, and other details before making your choice.</p>
+      </div>
+      <div class="step-card">
+        <div class="circle"><img src="assets/images/step card 2.jpg" alt="Adopt a Dog"></div>
+        <h3>Adopt a Dog</h3>
+        <p>Ready to welcome a new family member? Submit an adoption request through our simple and secure online process.</p>
+      </div>
+      <div class="step-card">
+        <div class="circle"><img src="assets/images/step card 3.jpg" alt="Track Your Request"></div>
+        <h3>Track Your Request</h3>
+        <p>Stay informed about your adoption application. Check whether your request is pending, approved, or rejected at any time.</p>
+      </div>
+    </div>
+  </section>
+
+ 
+  <section class="explore">
+    <h2>Explore Dogs</h2>
+    <div class="dog-grid" id="dogGrid">
+      <div class="dog-card" data-name="Liger">
+        <img src="assets/images/dog grid 1.jpg" alt="Liger">
+        <div class="dog-info">
+          <h3>Liger</h3>
+          <p class="breed">Pug</p>
+          <p class="desc">Liger is very smart and active, making her a great companion for energetic families.</p>
+          <div class="vote" data-dog="liger">
+            <button class="vote-btn like-btn" aria-label="Like liger">👍 <span class="count like-count">0</span></button>
+            <button class="vote-btn dislike-btn" aria-label="Dislike liger">👎 <span class="count dislike-count">0</span></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="dog-card" data-name="Max">
+        <img src="assets/images/dog grid 2.jpg" alt="Max">
+        <div class="dog-info">
+          <h3>Max</h3>
+          <p class="breed">Golden Retriever</p>
+          <p class="desc">Friendly and playful. Max is 2 years old and loves children and outdoor activities.</p>
+          <div class="vote" data-dog="max">
+            <button class="vote-btn like-btn" aria-label="Like max">👍 <span class="count like-count">0</span></button>
+            <button class="vote-btn dislike-btn" aria-label="Dislike max">👎 <span class="count dislike-count">0</span></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="dog-card" data-name="Luna">
+        <img src="assets/images/dog grid 3.jpg" alt="Luna">
+        <div class="dog-info">
+          <h3>Luna</h3>
+          <p class="breed">Labrador Retriever</p>
+          <p class="desc">Gentle and loyal. Luna is easy to train and enjoys being around people. She loves to play.</p>
+          <div class="vote" data-dog="luna">
+            <button class="vote-btn like-btn" aria-label="Like luna">👍 <span class="count like-count">0</span></button>
+            <button class="vote-btn dislike-btn" aria-label="Dislike luna">👎 <span class="count dislike-count">0</span></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="dog-card" data-name="Daisy">
+        <img src="assets/images/dog grid 4.jpg" alt="Daisy">
+        <div class="dog-info">
+          <h3>Daisy</h3>
+          <p class="breed">Border Collie</p>
+          <p class="desc">Daisy is very smart and active, making her a great companion for energetic families.</p>
+          <div class="vote" data-dog="daisy">
+            <button class="vote-btn like-btn" aria-label="Like daisy">👍 <span class="count like-count">0</span></button>
+            <button class="vote-btn dislike-btn" aria-label="Dislike daisy">👎 <span class="count dislike-count">0</span></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="dog-card" data-name="Charlie">
+        <img src="assets/images/dog grid 5.avif" alt="Charlie">
+        <div class="dog-info">
+          <h3>Charlie</h3>
+          <p class="breed">Cocker Spaniel</p>
+          <p class="desc">Charlie is a cheerful and curious dog who loves exploring new places. She is friendly with both adults and children.</p>
+          <div class="vote" data-dog="charlie">
+            <button class="vote-btn like-btn" aria-label="Like charlie">👍 <span class="count like-count">0</span></button>
+            <button class="vote-btn dislike-btn" aria-label="Dislike charlie">👎 <span class="count dislike-count">0</span></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="dog-card" data-name="Bella">
+        <img src="assets/images/dog grid 6.jpg" alt="Bella">
+        <div class="dog-info">
+          <h3>Bella</h3>
+          <p class="breed">Beagle</p>
+          <p class="desc">Bella is a cheerful and curious dog who loves exploring new places. She is friendly with both adults and children.</p>
+          <div class="vote" data-dog="bella">
+            <button class="vote-btn like-btn" aria-label="Like bella">👍 <span class="count like-count">0</span></button>
+            <button class="vote-btn dislike-btn" aria-label="Dislike bella">👎 <span class="count dislike-count">0</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+   <div class="view-all-container">
+    <a href="explore.html" class="btn-view-all">View all Pets</a>
+</div>
+    <p class="no-results" id="noResults" style="display:none;">No dogs found matching your search.</p>
+  </section>
+
+ 
+  <footer class="footer">
+    <div class="footer-top">
+      <div class="logo">LOGO</div>
+      <div class="search-box">
+        <input type="text" id="newsletterInput" placeholder="Enter your email to get the latest news...">
+        <button id="newsletterBtn">Search</button>
+      </div>
+    </div>
+
+    <hr>
+
+    <div class="footer-columns">
+      <div class="footer-col">
+        <h4>COLUMN ONE</h4>
+        <p>Twenty One</p>
+        <p>Thirty Two</p>
+        <p>Fourty Three</p>
+        <p>Fifty Four</p>
+      </div>
+      <div class="footer-col">
+        <h4>COLUMN TWO</h4>
+        <p>Sixty Five</p>
+        <p>Seventy Six</p>
+        <p>Eighty Seven</p>
+        <p>Ninety Eight</p>
+      </div>
+      <div class="footer-col">
+        <h4>COLUMN THREE</h4>
+        <p>One Two</p>
+        <p>Three Four</p>
+        <p>Five Six</p>
+        <p>Seven Eight</p>
+      </div>
+      <div class="footer-col">
+        <h4>COLUMN FOUR</h4>
+        <p>Join Us</p>
+        <div class="socials">
+          <span>▶</span><span>f</span><span>𝕏</span><span>◎</span><span>in</span>
+        </div>
+      </div>
+    </div>
+
+    <hr>
+
+    <div class="footer-bottom">
+      <p>Greelogix @ 202X. All rights reserved.</p>
+      <div class="footer-links">
+        <a href="#">Home</a>
+        <a href="#">Services ▾</a>
+        <a href="#">Blog</a>
+        <a href="#">Help Center</a>
+        <a href="#">About</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="assets/js/script.js"></script>
+</body>
+</html>

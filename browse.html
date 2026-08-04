@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Browse Dogs - PawLix</title>
+<link rel="stylesheet" href="assets/css/browse.css">
+</head>
+<body>
+
+  <header class="header">
+    <div class="logo">
+      <img src="assets/images/logo.png" alt="PawLix logo">
+    </div>
+    <nav class="nav">
+      <a href="index.html">Home</a>
+      <a href="browse.html" class="active">Browse Dogs ▾</a>
+      <a href="#">About</a>
+      <a href="#">Contact</a>
+    </nav>
+    <div class="header-buttons">
+      <button class="btn btn-outline">Sign Up</button>
+      <button class="btn btn-dark">Login</button>
+    </div>
+    <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">☰</button>
+  </header>
+
+ 
+  <section class="browse-hero">
+    <div class="browse-hero-text">
+      <h1>Find Your <span>New Best Friend</span></h1>
+      <p>Browse our available dogs and find the perfect companion for your home</p>
+    </div>
+    <div class="browse-hero-image">
+      <img src="assets/images/browse.png" alt="Golden Retriever">
+    </div>
+  </section>
+
+
+  <section class="browse-section">
+    <div class="browse-layout">
+
+ 
+      <aside class="filters">
+        <h3 class="filters-title">Filters</h3>
+
+        <div class="filter-group">
+          <h4>Breed</h4>
+          <label class="checkbox-row"><input type="checkbox"><span>Labrador</span></label>
+          <label class="checkbox-row"><input type="checkbox"><span>Beagle</span></label>
+          <label class="checkbox-row"><input type="checkbox"><span>German Sheperd</span></label>
+          <label class="checkbox-row"><input type="checkbox"><span>Buldog</span></label>
+          <label class="checkbox-row"><input type="checkbox"><span>Poodle</span></label>
+        </div>
+
+        <div class="filter-group">
+          <h4>Age</h4>
+          <label class="checkbox-row"><input type="checkbox"><span>Puppy</span></label>
+          <label class="checkbox-row"><input type="checkbox"><span>Adult</span></label>
+          <label class="checkbox-row"><input type="checkbox"><span>Senior</span></label>
+        </div>
+
+        <div class="filter-group">
+          <h4>Size</h4>
+          <label class="checkbox-row"><input type="checkbox"><span>Small</span></label>
+          <label class="checkbox-row"><input type="checkbox"><span>Medium</span></label>
+          <label class="checkbox-row"><input type="checkbox"><span>Large</span></label>
+        </div>
+
+        <button class="btn-apply">Apply Filters</button>
+        <button class="btn-clear">Clear Filters</button>
+      </aside>
+
+      
+      <div class="results">
+        <div class="results-grid" id="browseGrid">
+
+          <div class="result-card" data-name="Max">
+            <div class="result-img">
+              <img src="assets/images/dog grid 1.jpg" alt="Max the German Sheperd">
+              <button class="wish-btn active" aria-label="Wishlist Max">♥</button>
+            </div>
+            <div class="result-info">
+              <div class="result-top">
+                <div>
+                  <h3>Max</h3>
+                  <p class="result-breed">German Sheperd</p>
+                </div>
+                <span class="result-age">2 Years</span>
+              </div>
+              <button class="btn-view-more">View More</button>
+            </div>
+          </div>
+
+          <div class="result-card" data-name="Lucy">
+            <div class="result-img">
+              <img src="assets/images/dog grid 2.jpg" alt="Lucy the Labrador">
+              <button class="wish-btn" aria-label="Wishlist Lucy">♥</button>
+            </div>
+            <div class="result-info">
+              <div class="result-top">
+                <div>
+                  <h3>Lucy</h3>
+                  <p class="result-breed">Labrador</p>
+                </div>
+                <span class="result-age">2 Years</span>
+              </div>
+              <button class="btn-view-more">View More</button>
+            </div>
+          </div>
+
+          <div class="result-card" data-name="Max2">
+            <div class="result-img">
+              <img src="assets/images/dog grid 6.jpg" alt="Max the Beagle">
+              <button class="wish-btn active" aria-label="Wishlist Max">♥</button>
+            </div>
+            <div class="result-info">
+              <div class="result-top">
+                <div>
+                  <h3>Max</h3>
+                  <p class="result-breed">German Sheperd</p>
+                </div>
+                <span class="result-age">2 Years</span>
+              </div>
+              <button class="btn-view-more">View More</button>
+            </div>
+          </div>
+
+          <div class="result-card" data-name="Max3">
+            <div class="result-img">
+              <img src="assets/images/dog grid 3.avif" alt="Max the Cocker Spaniel">
+              <button class="wish-btn active" aria-label="Wishlist Max">♥</button>
+            </div>
+            <div class="result-info">
+              <div class="result-top">
+                <div>
+                  <h3>Max</h3>
+                  <p class="result-breed">German Sheperd</p>
+                </div>
+                <span class="result-age">2 Years</span>
+              </div>
+              <button class="btn-view-more">View More</button>
+            </div>
+          </div>
+
+          <div class="result-card" data-name="Max4">
+            <div class="result-img">
+              <img src="assets/images/dog grid 4.jpg" alt="Max the Puppy">
+              <button class="wish-btn active" aria-label="Wishlist Max">♥</button>
+            </div>
+            <div class="result-info">
+              <div class="result-top">
+                <div>
+                  <h3>Max</h3>
+                  <p class="result-breed">German Sheperd</p>
+                </div>
+                <span class="result-age">2 Years</span>
+              </div>
+              <button class="btn-view-more">View More</button>
+            </div>
+          </div>
+
+          <div class="result-card" data-name="Max5">
+            <div class="result-img">
+              <img src="assets/images/dog grid 5.avif" alt="Max the Labrador">
+              <button class="wish-btn" aria-label="Wishlist Max">♥</button>
+            </div>
+            <div class="result-info">
+              <div class="result-top">
+                <div>
+                  <h3>Max</h3>
+                  <p class="result-breed">German Sheperd</p>
+                </div>
+                <span class="result-age">2 Years</span>
+              </div>
+              <button class="btn-view-more">View More</button>
+            </div>
+          </div>
+
+        </div>
+
+     
+        <div class="pagination">
+          <button class="page-btn page-nav">‹ Previous</button>
+          <button class="page-btn active">1</button>
+          <button class="page-btn">2</button>
+          <button class="page-btn">3</button>
+          <button class="page-btn">4</button>
+          <button class="page-btn">5</button>
+          <button class="page-btn">6</button>
+          <button class="page-btn page-nav">Next ›</button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  
+  <footer class="footer">
+    <div class="footer-top">
+      <div class="logo">LOGO</div>
+      <div class="search-box">
+        <input type="text" id="newsletterInput" placeholder="Enter your email to get the latest news...">
+        <button id="newsletterBtn">Search</button>
+      </div>
+    </div>
+
+    <hr>
+
+    <div class="footer-columns">
+      <div class="footer-col">
+        <h4>COLUMN ONE</h4>
+        <p>Twenty One</p>
+        <p>Thirty Two</p>
+        <p>Fourty Three</p>
+        <p>Fifty Four</p>
+      </div>
+      <div class="footer-col">
+        <h4>COLUMN TWO</h4>
+        <p>Sixty Five</p>
+        <p>Seventy Six</p>
+        <p>Eighty Seven</p>
+        <p>Ninety Eight</p>
+      </div>
+      <div class="footer-col">
+        <h4>COLUMN THREE</h4>
+        <p>One Two</p>
+        <p>Three Four</p>
+        <p>Five Six</p>
+        <p>Seven Eight</p>
+      </div>
+      <div class="footer-col">
+        <h4>COLUMN FOUR</h4>
+        <p>Join Us</p>
+        <div class="socials">
+          <span>▶</span><span>f</span><span>𝕏</span><span>◎</span><span>in</span>
+        </div>
+      </div>
+    </div>
+
+    <hr>
+
+    <div class="footer-bottom">
+      <p>Greelogix @ 202X. All rights reserved.</p>
+      <div class="footer-links">
+        <a href="#">Home</a>
+        <a href="#">Services ▾</a>
+        <a href="#">Blog</a>
+        <a href="#">Help Center</a>
+        <a href="#">About</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="assets/js/script.js"></script>
+  <script>
+    document.querySelectorAll('.wish-btn').forEach(btn=>{
+      btn.addEventListener('click',()=>btn.classList.toggle('active'));
+    });
+    document.querySelectorAll('.page-btn:not(.page-nav)').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        document.querySelectorAll('.page-btn').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>

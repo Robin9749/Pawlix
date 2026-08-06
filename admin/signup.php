@@ -99,7 +99,7 @@ body{
 
 .wrapper{
     display: flex;
-    height: calc(100vh - 74px);
+    height: calc(99.99vh - 74px);
 }
 
 .left,
@@ -123,7 +123,7 @@ body{
     display: flex;
     justify-content: center;
     align-items: center;
-    padding-top: 5px; 
+    padding-top: -70px; 
 }
 
 .form-box{
@@ -133,9 +133,9 @@ body{
 }
 
 .form-box .logo-icon{
-  font-size: 46px;
+  font-size: 60px;
   line-height: 1;
-  margin-bottom: 6px;
+  margin-bottom: -55px;
 }
 
 .form-box h2{
@@ -224,7 +224,7 @@ hr{
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  margin-bottom: 24px;
+  margin-bottom: 15px;
   font-size: 14px;
   text-align: left;
   color: #2b2b2b;
@@ -267,6 +267,7 @@ button.signup-btn:hover{
   margin-top: 20px;
   font-size: 14px;
   color: #333;
+  padding-top: 5px;
 }
 
 .bottom-text a{
@@ -303,7 +304,7 @@ button.signup-btn:hover{
   <div class="right">
     <div class="form-box">
 
-      <div class="logo-icon">🐶</div>
+      <img class="logo-icon" src="../assets/img/logo.png" alt="PawLix">
       <h2>Create Your Account</h2>
       <p>Join us and find your new best friend!</p>
       <hr>

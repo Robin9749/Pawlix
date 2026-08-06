@@ -132,7 +132,7 @@ body{
     display: flex;
     justify-content: center;
     align-items: flex-start;
-    padding-top: 155px;  
+    padding-top: 140px;  
 }
 
 .form-box{
@@ -142,9 +142,11 @@ body{
 }
 
 .form-box .logo-icon{
-  font-size: 46px;
+  font-size: 60px;
   line-height: 1;
-  margin-bottom: 6px;
+  margin-bottom: -55px;
+  height: 90%;
+  
 }
 
 .form-box h2{
@@ -272,6 +274,7 @@ button.login-btn:hover{
   margin-top: 20px;
   font-size: 14px;
   color: #333;
+  padding-top: 10px;
 
 }
 
@@ -325,7 +328,7 @@ button.login-btn:hover{
   <div class="right">
     <div class="form-box">
 
-      <div class="logo-icon">🐶</div>
+      <img class="logo-icon" src="../assets/img/logo.png" alt="PawLix">
       <h2>Welcome Back!</h2>
       <p>Please Log in to your account</p>
       <hr>

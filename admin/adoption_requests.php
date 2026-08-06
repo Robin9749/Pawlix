@@ -8,6 +8,7 @@ if (!isset($_SESSION['admin_id'])) {
 
 include("../config/config.php");
 
+
 $filter = isset($_GET['status']) ? $_GET['status'] : 'All';
 
 if($filter=="All")
@@ -65,17 +66,18 @@ $total = mysqli_fetch_assoc($totalResult)['total'];
 
 ?>
 
+
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Adoption Requests</title>
+<title>Adoption Requests | PawLix Admin</title>
 
 <style>
-
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
-*{ box-sizing: border-box; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
 body{
   font-family: 'Poppins', Arial, sans-serif;
@@ -90,12 +92,17 @@ body{
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 2px solid #ffffff;
+    border-bottom: 2px solid #ffffff;
+
 }
 
 .topbar .logo{
   font-size: 20px;
   font-weight: 700;
+  color: #2b2b2b;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .topbar a.logout{
@@ -103,6 +110,10 @@ body{
   font-weight: 600;
   text-decoration: none;
   font-size: 15px;
+}
+
+.topbar a.logout:hover{
+  text-decoration: underline;
 }
 
 .layout{
@@ -128,14 +139,21 @@ body{
   color: #2b2b2b;
   font-weight: 600;
   font-size: 15px;
+  transition: background 0.15s ease;
 }
 
-.sidebar a:hover{ background: #ddceac; }
+.sidebar a:hover{
+  background: #ddceac;
+}
 
 .sidebar a.active{
   background: #f2932b;
   color: white;
   box-shadow: 0 4px 10px rgba(242,147,43,0.35);
+}
+
+.sidebar a.active:hover{
+  background: #f2932b;
 }
 
 .sidebar .icon{
@@ -144,80 +162,77 @@ body{
   text-align: center;
 }
 
-.main{
+
+.main {
   flex: 1;
   padding: 36px 44px;
 }
 
-.main h1{
+.main h1 {
   margin: 0 0 22px;
   font-size: 28px;
   font-weight: 700;
 }
 
-/* Tabs */
-.tabs{
-  display: flex;
-  gap: 34px;
-  border-bottom: 1px solid #d8c9a3;
-  margin-bottom: 24px;
-}
-
-.tabs a{
-  text-decoration: none;
-  color: #6b6b6b;
-  font-weight: 600;
-  font-size: 15px;
-  padding-bottom: 14px;
-  border-bottom: 3px solid transparent;
-}
-
-.tabs a.active{
-  color: #f2932b;
-  border-bottom-color: #f2932b;
-}
-
-/* Table card */
-.table-card{
+.table-card {
   background: #ede1c6;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.06);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
 }
 
-table{
+table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
-thead td{
+col.col-sn { width: 70px; }
+col.col-applicant { width: 25%; }
+col.col-dog { width: 20%; }
+col.col-date { width: 18%; }
+col.col-status { width: 15%; }
+col.col-action { width: 110px; }
+
+thead th {
   background: #d8c9a3;
   font-weight: 700;
   font-size: 14px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: #3d3326;
   padding: 16px 14px;
 }
 
-tbody tr{
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+
+tbody tr {
   border-bottom: 1px solid #ddccae;
+  transition: background 0.15s ease-in-out;
 }
 
-tbody tr:last-child{
+tbody tr:last-child {
   border-bottom: none;
 }
 
-tbody td{
+tbody tr:hover {
+  background: #e6d8bb;
+}
+
+tbody td {
   padding: 14px;
   font-size: 14px;
   vertical-align: middle;
 }
 
-.person{
+.person {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.avatar{
+.avatar {
   width: 44px;
   height: 44px;
   border-radius: 50%;
@@ -226,27 +241,12 @@ tbody td{
   flex-shrink: 0;
 }
 
-.dog-photo{
-  width: 44px;
-  height: 44px;
-  border-radius: 8px;
-  object-fit: cover;
-  background: #d8cba9;
-  flex-shrink: 0;
-}
-
-.person .name{
+.name {
   font-weight: 600;
   font-size: 15px;
 }
 
-.person .sub{
-  color: #888;
-  font-size: 13px;
-  margin-top: 2px;
-}
-
-.status{
+.status {
   padding: 6px 16px;
   border-radius: 30px;
   font-weight: 600;
@@ -254,20 +254,23 @@ tbody td{
   display: inline-block;
 }
 
-.status-pending{ background: #f6cba3; color: #a15c00; }
-.status-approved{ background: #bfe3c4; color: #1e6e2e; }
-.status-review{ background: #b9d3ee; color: #1958ab; }
-.status-rejected{ background: #f5bcbc; color: #b3261e; }
+.status-approved { background: #bfe3c4; color: #1e6e2e; }
+.status-rejected { background: #f8d7da; color: #721c24; }
+.status-pending { background: #f6cba3; color: #a15c00; }
 
-.view-link{
+.view-link {
   color: #1f6fd6;
   font-weight: 600;
   text-decoration: none;
   font-size: 14px;
 }
 
-.view-link:hover{ text-decoration: underline; }
+.view-link:hover { text-decoration: underline; }
 
+@media(max-width: 768px) {
+  .main { padding: 20px; }
+  table { table-layout: auto; }
+}
 </style>
 </head>
 
@@ -287,64 +290,53 @@ tbody td{
     <a href="messages.php"><span class="icon">✉️</span> Messages</a>
     <a href="users.php"><span class="icon">👤</span> Users</a>
     <a href="settings.php"><span class="icon">⚙️</span> Settings</a>
-</div>
+  </div>
 
   <div class="main">
 
     <h1>Adoption Requests</h1>
 
-    <div class="tabs">
-      <a href="?status=All" class="<?php echo $filter=='All' ? 'active' : ''; ?>">All (<?php echo $total; ?>)</a>
-      <a href="?status=Pending" class="<?php echo $filter=='Pending' ? 'active' : ''; ?>">Pending (<?php echo $counts['Pending']; ?>)</a>
-      <a href="?status=Approved" class="<?php echo $filter=='Approved' ? 'active' : ''; ?>">Approved (<?php echo $counts['Approved']; ?>)</a>
-      <a href="?status=Rejected" class="<?php echo $filter=='Rejected' ? 'active' : ''; ?>">Rejected (<?php echo $counts['Rejected']; ?>)</a>
-    </div>
-
     <div class="table-card">
       <table>
+        <colgroup>
+          <col class="col-sn">
+          <col class="col-applicant">
+          <col class="col-dog">
+          <col class="col-date">
+          <col class="col-status">
+          <col class="col-action">
+        </colgroup>
         <thead>
           <tr>
-            <td width="60">S.N.</td>
-            <td>Adopter</td>
-            <td>Dog</td>
-            <td>Date</td>
-            <td>Status</td>
-            <td width="80">Action</td>
+            <th class="text-center">S.N.</th>
+            <th class="text-left">APPLICANT</th>
+            <th class="text-left">DOG</th>
+            <th class="text-center">REQUEST DATE</th>
+            <th class="text-center">STATUS</th>
+            <th class="text-center">ACTION</th>
           </tr>
         </thead>
         <tbody>
-          <?php $i = 1; while($r=mysqli_fetch_assoc($requests)) { ?>
+          <?php $i = 1; while($r = mysqli_fetch_assoc($requests)) { ?>
           <tr>
-            <td><?php echo $i++; ?></td>
-            <td>
+            <td class="text-center"><?php echo $i++; ?></td>
+            <td class="text-left">
               <div class="person">
-                <img class="avatar" src="../assets/img/user-placeholder.jpg">
-                <div>
-                  <div class="name"><?php echo $r['first_name']." ".$r['last_name']; ?></div>
-                  <div class="sub"><?php echo $r['email']; ?></div>
-                </div>
+                <img class="avatar" src="../assets/img/user-placeholder.jpg" alt="User">
+                <div class="name"><?php echo htmlspecialchars($r['first_name'] . " " . $r['last_name']); ?></div>
               </div>
             </td>
-            <td>
-              <div class="person">
-                <img class="dog-photo" src="../assets/img/<?php echo $r['image']; ?>" alt="Dog">
-                <div>
-                  <div class="name"><?php echo $r['name']; ?></div>
-                  <div class="sub"><?php echo $r['breed']; ?></div>
-                </div>
-              </div>
-            </td>
-            <td><?php echo date("M d, Y",strtotime($r['application_date'])); ?></td>
-            <td>
+            <td class="text-left"><strong><?php echo htmlspecialchars($r['dog_name']); ?></strong></td>
+            <td class="text-center"><?php echo date("M d, Y", strtotime($r['created_at'])); ?></td>
+            <td class="text-center">
               <?php
                 $cls = "status-pending";
                 if ($r['status'] == "Approved") $cls = "status-approved";
-
                 if ($r['status'] == "Rejected") $cls = "status-rejected";
               ?>
-              <span class="status <?php echo $cls; ?>"><?php echo $r['status']; ?></span>
+              <span class="status <?php echo $cls; ?>"><?php echo htmlspecialchars($r['status'] ?? 'Pending'); ?></span>
             </td>
-            <td><a class="view-link" href="view_request.php?id=<?php echo $r['application_id']; ?>">View</a></td>
+            <td class="text-center"><a class="view-link" href="view_request.php?id=<?php echo $r['request_id']; ?>">View</a></td>
           </tr>
           <?php } ?>
         </tbody>

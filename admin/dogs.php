@@ -569,6 +569,7 @@ tbody td {
   <div class="sidebar">
     <a href="dashboard.php"><span class="icon">🏠</span> Dashboard</a>
     <a href="dogs.php" class="active"><span class="icon">🐾</span> Dogs</a>
+    <a href="reported_dogs.php"><span class="icon">🚨</span> Report Dogs</a>
     <a href="adoption_requests.php"><span class="icon">📋</span> Adoption Request</a>
     <a href="messages.php"><span class="icon">✉️</span> Messages</a>
     <a href="users.php"><span class="icon">👤</span> Users</a>
@@ -694,7 +695,7 @@ tbody td {
             <option value="Beagle">Beagle</option>
             <option value="Pug">Pug</option>
             <option value="Husky">Husky</option>
-            <option value="Other">Other</option>
+            <option value="Other">Others</option>
           </select>
         </div>
 

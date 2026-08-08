@@ -56,6 +56,7 @@ body{
   color: #2b2b2b;
   min-height: 100vh;
   overflow-x: hidden;
+    overflow-y: hidden;
 }
 
 .topbar{
@@ -90,13 +91,11 @@ body{
   text-decoration: underline;
 }
 
-/* LAYOUT */
 .layout{
   display: flex;
   align-items: stretch;
 }
 
-/* SIDEBAR */
 .sidebar{
   width: 240px;
   background: #e8dcc0;
@@ -136,7 +135,6 @@ body{
   text-align: center;
 }
 
-/* MAIN CONTENT */
 .main{
   flex: 1;
   padding: 28px 36px;
@@ -149,7 +147,6 @@ body{
   color: #1a1a1a;
 }
 
-/* STAT CARDS */
 .stats{
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
@@ -203,7 +200,6 @@ body{
   line-height: 1.1;
 }
 
-/* REQUESTS TABLE CONTAINER */
 .requests-box{
   background: #ede1c6;
   border-radius: 14px;
@@ -344,6 +340,7 @@ table td{
   <div class="sidebar">
     <a href="dashboard.php" class="active"><span class="icon">🏠</span> Dashboard</a>
     <a href="dogs.php"><span class="icon">🐾</span> Dogs</a>
+    <a href="reported_dogs.php"><span class="icon">🚨</span> Report Dogs</a>
     <a href="adoption_requests.php"><span class="icon">📋</span> Adoption Request</a>
     <a href="messages.php"><span class="icon">✉️</span> Messages</a>
     <a href="users.php"><span class="icon">👤</span> Users</a>

@@ -49,7 +49,11 @@ body{
     font-family: 'Poppins', Arial, sans-serif;
     margin: 0;
     padding: 0;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: hidden;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
     color: #2b2b2b;
 }
 
@@ -58,14 +62,14 @@ body{
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 18px 48px;
+    padding: 15px 48px;
     margin: 0;
     border-bottom: 2px solid #ffffff;
 }
 
 .navbar .logo{
-  font-weight: 600;
   font-size: 20px;
+  font-weight: 700;
   color: #2b2b2b;
   display: flex;
   align-items: center;
@@ -109,7 +113,9 @@ body{
 
 .wrapper{
     display:flex;
-    min-height:calc(50vh - 74px);
+    flex: 1;
+    min-height: calc(100vh - 65px);
+    width: 100%;
     padding:0px;
     margin:0;
 }
@@ -117,6 +123,7 @@ body{
 .left{
     flex: 1;
     overflow: hidden;
+        display: flex;
 }
 
 .left img{
@@ -137,35 +144,28 @@ body{
 
 .form-box{
   width: 100%;
-  max-width: 480px;
+  max-width: 430px;
   text-align: center;
 }
 
-.form-box .logo-icon{
-  font-size: 60px;
-  line-height: 1;
-  margin-bottom: -55px;
-  height: 90%;
-  
-}
 
 .form-box h2{
   color: #1f6fd6;
-  margin: 0 0 6px;
-  font-size: 30px;
+  margin: 0 0 2px;
+  font-size: 28px;
   font-weight: 700;
 }
 
 .form-box p{
   margin: 0;
   color: #3a3a3a;
-  font-size: 15px;
+  font-size: 13px;
 }
 
 hr{
   border: none;
   border-top: 1px solid #ddccae;
-  margin: 24px 0 28px;
+  margin: 15px 0 28px;
 }
 
 .error{
@@ -191,7 +191,7 @@ hr{
   top: 50%;
   transform: translateY(-50%);
   color: #8a8a8a;
-  font-size: 16px;
+  font-size: 14px;
   line-height: 1;
 }
 
@@ -204,11 +204,11 @@ hr{
 .input-wrap input{
   display: block;
   width: 100%;
-  padding: 16px 44px;
+  padding: 14px 44px;
   border: none;
   border-radius: 10px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  font-size: 15px;
+  font-size: 13px;
   font-family: inherit;
   background: #ffffff;
 }
@@ -226,8 +226,8 @@ hr{
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
-  font-size: 14px;
+  margin-bottom:18px;
+  font-size: 12.5px;
   text-align: left;
   flex-wrap: wrap;
   gap: 10px;
@@ -253,7 +253,7 @@ hr{
 button.login-btn{
   display: block;
   width: 100%;
-  padding: 16px;
+  padding: 13px;
   background: #1f6fd6;
   color: white;
   border: none;
@@ -302,7 +302,7 @@ button.login-btn:hover{
 <body>
 
 <div class="navbar">
-  <div class="logo">🐶 PawLix</div>
+  <div class="logo">PawLix</div>
   <div class="links">
     <a href="#">Home</a>
     <a href="#">Browse Dogs</a>
@@ -328,7 +328,6 @@ button.login-btn:hover{
   <div class="right">
     <div class="form-box">
 
-      <img class="logo-icon" src="../assets/img/logo.png" alt="PawLix">
       <h2>Welcome Back!</h2>
       <p>Please Log in to your account</p>
       <hr>

@@ -39,23 +39,30 @@ if (isset($_POST['signup'])) {
 }
 
 body{
-  font-family: 'Poppins', Arial, sans-serif;
-  margin: 0;
-  color: #2b2b2b;
+    font-family: 'Poppins', Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    overflow-y: hidden;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    color: #2b2b2b;
 }
 
 .navbar{
-  background: #f2e6c9;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 18px 48px;
-  border-bottom: 2px solid #ffffff;
+    background: #f2e6c9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 48px;
+    margin: 0;
+    border-bottom: 2px solid #ffffff;
 }
 
 .navbar .logo{
-  font-weight: 600;
   font-size: 20px;
+  font-weight: 700;
   color: #2b2b2b;
   display: flex;
   align-items: center;
@@ -98,63 +105,60 @@ body{
 }
 
 .wrapper{
-    display: flex;
-    height: calc(99.99vh - 74px);
-}
-
-.left,
-.right{
+    display:flex;
     flex: 1;
+    min-height: calc(100vh - 65px);
+    width: 100%;
+    padding:0px;
+    margin:0;
 }
 
 .left{
+    flex: 1;
     overflow: hidden;
+        display: flex;
 }
 
 .left img{
     width: 100%;
-    height: 100%;
+    height: 80%;
     object-fit: cover;
     display: block;
 }
 
 .right{
+    flex: 1;
     background: #ece0c2;
     display: flex;
     justify-content: center;
-    align-items: center;
-    padding-top: -70px; 
+    align-items: flex-start;
+    padding-top: 90px;  
 }
 
 .form-box{
-  width: 420px;
-  max-width: 100%;
+  width: 100%;
+  max-width: 430px;
   text-align: center;
 }
 
-.form-box .logo-icon{
-  font-size: 60px;
-  line-height: 1;
-  margin-bottom: -55px;
-}
 
 .form-box h2{
   color: #1f6fd6;
-  margin: 0 0 6px;
-  font-size: 30px;
+  margin: 0 0 2px;
+  font-size: 28px;
   font-weight: 700;
 }
 
 .form-box p{
   margin: 0;
   color: #3a3a3a;
-  font-size: 15px;
+  font-size: 13px;
 }
 
 hr{
   border: none;
   border-top: 1px solid #ddccae;
-  margin: 24px 0 28px;
+  margin: 15px 0 28px;
 }
 
 .error{
@@ -168,19 +172,9 @@ hr{
   text-align: left;
 }
 
-.success{
-  color: #1e6e2e;
-  background: #e6f6e8;
-  border: 1px solid #bfe3c4;
-  padding: 10px 14px;
-  border-radius: 8px;
-  margin-bottom: 16px;
-  font-size: 14px;
-  text-align: left;
-}
-
 .input-wrap{
   position: relative;
+  width: 100%;
   margin-bottom: 16px;
 }
 
@@ -190,7 +184,7 @@ hr{
   top: 50%;
   transform: translateY(-50%);
   color: #8a8a8a;
-  font-size: 16px;
+  font-size: 14px;
   line-height: 1;
 }
 
@@ -201,12 +195,13 @@ hr{
 }
 
 .input-wrap input{
+  display: block;
   width: 100%;
-  padding: 16px 44px;
+  padding: 14px 44px;
   border: none;
   border-radius: 10px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  font-size: 15px;
+  font-size: 13px;
   font-family: inherit;
   background: #ffffff;
 }
@@ -225,7 +220,7 @@ hr{
   align-items: flex-start;
   gap: 10px;
   margin-bottom: 15px;
-  font-size: 14px;
+  font-size: 12.5px;
   text-align: left;
   color: #2b2b2b;
 }
@@ -246,12 +241,12 @@ hr{
 
 button.signup-btn{
   width: 100%;
-  padding: 16px;
+  padding: 12px;
   background: #1f6fd6;
   color: white;
   border: none;
   border-radius: 10px;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
@@ -264,10 +259,9 @@ button.signup-btn:hover{
 }
 
 .bottom-text{
-  margin-top: 20px;
-  font-size: 14px;
+  font-size: 12px;
   color: #333;
-  padding-top: 5px;
+  padding-top: 8px;
 }
 
 .bottom-text a{
@@ -282,7 +276,7 @@ button.signup-btn:hover{
 <body>
 
 <div class="navbar">
-  <div class="logo">🐶 PawLix</div>
+  <div class="logo">PawLix</div>
   <div class="links">
     <a href="#">Home</a>
     <a href="#">Browse Dogs</a>
@@ -304,7 +298,6 @@ button.signup-btn:hover{
   <div class="right">
     <div class="form-box">
 
-      <img class="logo-icon" src="../assets/img/logo.png" alt="PawLix">
       <h2>Create Your Account</h2>
       <p>Join us and find your new best friend!</p>
       <hr>

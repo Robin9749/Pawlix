@@ -10,12 +10,12 @@ include("../config/config.php");
 
 if (isset($_GET['delete'])) {
     $id = intval($_GET['delete']);
-    mysqli_query($conn, "DELETE FROM Messages WHERE message_id = $id");
+    mysqli_query($conn, "DELETE FROM contact_message WHERE id = $id OR message_id = $id");
     header("Location: messages.php");
     exit();
 }
 
-$messages=mysqli_query($conn,"
+$messages = mysqli_query($conn, "
 SELECT *
 FROM contact_message
 ORDER BY created_at DESC
@@ -23,80 +23,140 @@ ORDER BY created_at DESC
 ?>
 
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Messages</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Messages | PawLix Admin</title>
 
 <style>
-
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+:root {
+  --bg-body: #e8dcc0;
+  --bg-topbar: #f2e6c9;
+  --bg-card: #ede1c6;
+  --bg-sidebar: #e8dcc0;
+  --bg-sidebar-hover: #ddceac;
+  --primary-orange: #f2932b;
+  --primary-blue: #1f6fd6;
+  --text-dark: #2b2b2b;
+  --text-muted: #5c5c5c;
+  --border-color: #ddccae;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-pill: 30px;
+  --font-family: 'Poppins', Arial, sans-serif;
+}
 
 *{ box-sizing: border-box; }
 
-body{
-  font-family: 'Poppins', Arial, sans-serif;
+html, body{
+  height: 100%;
   margin: 0;
-  background: #e8dcc0;
-  color: #2b2b2b;
+  padding: 0;
+  font-family: var(--font-family);
+  background-color: var(--bg-body);
+  color: var(--text-dark);
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+body{
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
 }
 
 .topbar{
-  background: #f2e6c9;
-  padding: 30px 60px;
+  background: var(--bg-topbar);
+  padding: 20px 45px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   border-bottom: 2px solid #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  z-index: 10;
 }
 
-.topbar .logo{ font-size: 20px; font-weight: 700; }
+.topbar .logo{
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-dark);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 
 .topbar a.logout{
-  color: #1f6fd6;
+  color: var(--primary-blue);
   font-weight: 600;
   text-decoration: none;
-  font-size: 15px;
+  font-size: 14px;
+  transition: opacity 0.2s ease;
 }
 
-.layout{ display: flex; align-items: flex-start; }
+.topbar a.logout:hover{
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+.layout{
+  display: flex;
+  align-items: stretch;
+  flex: 1;
+}
 
 .sidebar{
-  width: 260px;
-  background: #e8dcc0;
-  padding: 24px 18px;
-  min-height: calc(100vh - 78px);
+  width: 240px;
+  background: var(--bg-sidebar);
+  padding: 20px 14px;
+  min-height: calc(100vh - 65px);
+  flex-shrink: 0;
+  border-right: 1px solid rgba(255, 255, 255, 0.4);
 }
 
 .sidebar a{
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 14px 18px;
-  margin-bottom: 8px;
-  border-radius: 10px;
+  gap: 12px;
+  padding: 11px 15px;
+  margin-bottom: 6px;
+  border-radius: var(--radius-md);
   text-decoration: none;
-  color: #2b2b2b;
+  color: var(--text-dark);
   font-weight: 600;
-  font-size: 15px;
+  font-size: 14px;
+  transition: all 0.2s ease;
 }
 
-.sidebar a:hover{ background: #ddceac; }
+.sidebar a:hover{
+  background: var(--bg-sidebar-hover);
+}
 
 .sidebar a.active{
-  background: #f2932b;
-  color: white;
-  box-shadow: 0 4px 10px rgba(242,147,43,0.35);
+  background: var(--primary-orange);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(242, 147, 43, 0.35);
 }
 
-.sidebar .icon{ font-size: 18px; width: 20px; text-align: center; }
+.sidebar .icon{
+  font-size: 16px;
+  width: 20px;
+  text-align: center;
+}
 
-.main{ flex: 1; padding: 36px 44px; }
+.main{
+  flex: 1;
+  padding: 28px 36px;
+}
 
 .main h1{
   margin: 0 0 22px;
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 700;
+  color: #1a1a1a;
 }
 
 .message-list{
@@ -106,15 +166,15 @@ body{
 }
 
 .message-card{
-  background: #ede1c6;
-  border-radius: 12px;
-  padding: 22px 24px;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.06);
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 20px 22px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.05);
   position: relative;
 }
 
 .message-card.unread{
-  border-left: 4px solid #f2932b;
+  border-left: 4px solid var(--primary-orange);
 }
 
 .msg-top{
@@ -133,8 +193,8 @@ body{
 }
 
 .avatar{
-  width: 42px;
-  height: 42px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   background: #d8cba9;
   display: flex;
@@ -143,48 +203,51 @@ body{
   font-weight: 700;
   color: #7a5c2e;
   flex-shrink: 0;
+  font-size: 14px;
 }
 
 .msg-sender .name{
   font-weight: 600;
-  font-size: 15px;
+  font-size: 14px;
+  color: #1a1a1a;
 }
 
 .msg-sender .email{
-  color: #888;
-  font-size: 13px;
+  color: #777;
+  font-size: 12px;
 }
 
 .msg-date{
-  color: #888;
-  font-size: 13px;
+  color: #777;
+  font-size: 12px;
   white-space: nowrap;
 }
 
 .msg-subject{
   font-weight: 600;
-  font-size: 15px;
-  margin: 10px 0 4px;
+  font-size: 14px;
+  margin: 8px 0 4px;
+  color: #1a1a1a;
 }
 
 .msg-body{
   color: #444;
-  font-size: 14px;
-  line-height: 1.6;
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .unread-badge{
-  background: #f2932b;
+  background: var(--primary-orange);
   color: white;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
-  padding: 3px 10px;
+  padding: 3px 9px;
   border-radius: 20px;
   text-transform: uppercase;
 }
 
 .msg-actions{
-  margin-top: 14px;
+  margin-top: 12px;
   display: flex;
   gap: 14px;
 }
@@ -195,20 +258,26 @@ body{
   text-decoration: none;
 }
 
-.reply-link{ color: #1f6fd6; }
+.reply-link{ color: var(--primary-blue); }
 .reply-link:hover{ text-decoration: underline; }
 
 .delete-link{ color: #b3261e; }
 .delete-link:hover{ text-decoration: underline; }
 
 .empty-state{
-  background: #ede1c6;
-  border-radius: 12px;
-  padding: 50px;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 40px;
   text-align: center;
   color: #777;
+  font-size: 14px;
 }
 
+@media (max-width: 850px){
+  .layout{ flex-direction: column; }
+  .sidebar{ width: 100%; min-height: auto; border-right: none; border-bottom: 1px solid var(--border-color); }
+  .main{ padding: 20px; }
+}
 </style>
 </head>
 
@@ -221,14 +290,15 @@ body{
 
 <div class="layout">
 
- <div class="sidebar">
+  <div class="sidebar">
     <a href="dashboard.php"><span class="icon">🏠</span> Dashboard</a>
     <a href="dogs.php"><span class="icon">🐾</span> Dogs</a>
+        <a href="reported_dogs.php"><span class="icon">🚨</span> Report Dogs</a>
     <a href="adoption_requests.php"><span class="icon">📋</span> Adoption Request</a>
     <a href="messages.php" class="active"><span class="icon">✉️</span> Messages</a>
     <a href="users.php"><span class="icon">👤</span> Users</a>
     <a href="settings.php"><span class="icon">⚙️</span> Settings</a>
-</div>
+  </div>
 
   <div class="main">
 
@@ -242,27 +312,27 @@ body{
 
       <div class="message-list">
         <?php while($m=mysqli_fetch_assoc($messages)) { ?>
-        <div class="message-card <?php echo !$m['read'] ? 'unread' : ''; ?>">
+        <div class="message-card <?php echo (isset($m['read']) && !$m['read']) ? 'unread' : ''; ?>">
 
           <div class="msg-top">
             <div class="msg-sender">
-              <div class="avatar"><?php echo strtoupper(substr($m['full_name'],0,1)); ?></div>
+              <div class="avatar"><?php echo strtoupper(substr($m['full_name'] ?? $m['name'] ?? 'U', 0, 1)); ?></div>
               <div>
-                <div class="name"><?php echo $m['full_name']; ?></div>
-                <div class="email"><?php echo $m['email']; ?></div>
+                <div class="name"><?php echo htmlspecialchars($m['full_name'] ?? $m['name'] ?? 'Anonymous'); ?></div>
+                <div class="email"><?php echo htmlspecialchars($m['email']); ?></div>
               </div>
             </div>
             <div style="display:flex; align-items:center; gap:10px;">
-              <div class="msg-date"><?php echo date("M d, Y",strtotime($m['created_at'])); ?></div>
+              <div class="msg-date"><?php echo date("M d, Y", strtotime($m['created_at'])); ?></div>
             </div>
           </div>
 
-          <div class="msg-subject"><?php echo $m['subject']; ?></div>
+          <div class="msg-subject"><?php echo htmlspecialchars($m['subject'] ?? 'No Subject'); ?></div>
           <div class="msg-body"><?php echo htmlspecialchars($m['message']); ?></div>
 
           <div class="msg-actions">
-            <a class="reply-link" href="mailto:<?php echo $m['email']; ?>">Reply by Email</a>
-            <a class="delete-link" href="messages.php?delete=<?php echo $m['id']; ?>" onclick="return confirm('Delete this message?');">Delete</a>
+            <a class="reply-link" href="mailto:<?php echo htmlspecialchars($m['email']); ?>">Reply by Email</a>
+            <a class="delete-link" href="messages.php?delete=<?php echo $m['id'] ?? $m['message_id']; ?>" onclick="return confirm('Delete this message?');">Delete</a>
           </div>
 
         </div>

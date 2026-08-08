@@ -36,12 +36,13 @@ LIMIT 5
 ?>
 
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>Dashboard Overview</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Overview - PawLix</title>
 
 <style>
-
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
 *{
@@ -53,16 +54,19 @@ body{
   margin: 0;
   background: #e8dcc0;
   color: #2b2b2b;
+  min-height: 100vh;
+  overflow-x: hidden;
+    overflow-y: hidden;
 }
 
 .topbar{
   background: #f2e6c9;
-  padding: 30px 60px;
+  padding: 20px 45px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-    border-bottom: 2px solid #ffffff;
-
+  border-bottom: 2px solid #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
 }
 
 .topbar .logo{
@@ -78,37 +82,41 @@ body{
   color: #1f6fd6;
   font-weight: 600;
   text-decoration: none;
-  font-size: 15px;
+  font-size: 14px;
+  transition: opacity 0.2s ease;
 }
 
 .topbar a.logout:hover{
+  opacity: 0.8;
   text-decoration: underline;
 }
 
 .layout{
   display: flex;
-  align-items: flex-start;
+  align-items: stretch;
 }
 
 .sidebar{
-  width: 260px;
+  width: 240px;
   background: #e8dcc0;
-  padding: 24px 18px;
-  min-height: calc(100vh - 78px);
+  padding: 20px 14px;
+  min-height: calc(100vh - 65px);
+  flex-shrink: 0;
+  border-right: 1px solid rgba(255, 255, 255, 0.4);
 }
 
 .sidebar a{
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 14px 18px;
-  margin-bottom: 8px;
+  gap: 12px;
+  padding: 11px 15px;
+  margin-bottom: 6px;
   border-radius: 10px;
   text-decoration: none;
   color: #2b2b2b;
   font-weight: 600;
-  font-size: 15px;
-  transition: background 0.15s ease;
+  font-size: 14px;
+  transition: all 0.2s ease;
 }
 
 .sidebar a:hover{
@@ -118,55 +126,58 @@ body{
 .sidebar a.active{
   background: #f2932b;
   color: white;
-  box-shadow: 0 4px 10px rgba(242,147,43,0.35);
-}
-
-.sidebar a.active:hover{
-  background: #f2932b;
+  box-shadow: 0 4px 12px rgba(242,147,43,0.35);
 }
 
 .sidebar .icon{
-  font-size: 18px;
+  font-size: 16px;
   width: 20px;
   text-align: center;
 }
 
 .main{
   flex: 1;
-  padding: 36px 44px;
+  padding: 28px 36px;
 }
 
 .main h1{
-  margin: 0 0 24px;
-  font-size: 28px;
+  margin: 0 0 22px;
+  font-size: 24px;
   font-weight: 700;
+  color: #1a1a1a;
 }
 
 .stats{
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-  gap: 20px;
-  margin-bottom: 28px;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 18px;
+  margin-bottom: 24px;
 }
 
 .stat-card{
   background: #ede1c6;
   border-radius: 14px;
-  padding: 22px;
+  padding: 18px 20px;
   display: flex;
   align-items: center;
-  gap: 16px;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.06);
+  gap: 14px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-card:hover{
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(0,0,0,0.08);
 }
 
 .icon-circle{
-  width: 58px;
-  height: 58px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
+  font-size: 20px;
   flex-shrink: 0;
 }
 
@@ -177,42 +188,44 @@ body{
 
 .stat-card .label{
   color: #5c5c5c;
-  font-size: 14px;
-  margin-bottom: 4px;
+  font-size: 13px;
+  margin-bottom: 2px;
   font-weight: 500;
 }
 
 .stat-card .number{
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 700;
   color: #1a1a1a;
+  line-height: 1.1;
 }
 
 .requests-box{
   background: #ede1c6;
   border-radius: 14px;
-  padding: 28px;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.06);
+  padding: 24px 26px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.05);
 }
 
 .requests-box .header{
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 22px;
+  margin-bottom: 18px;
 }
 
 .requests-box .header h2{
   margin: 0;
-  font-size: 20px;
-  font-weight: 700;
+  font-size: 17px;
+  font-weight: 650;
+  color: #1a1a1a;
 }
 
 .requests-box .header a{
   color: #1f6fd6;
   text-decoration: none;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .requests-box .header a:hover{
@@ -233,43 +246,50 @@ table tr:last-child{
 }
 
 table td{
-  padding: 16px 8px;
+  padding: 13px 8px;
   vertical-align: middle;
-  font-size: 14px;
+  font-size: 13px;
+}
+
+.date-cell {
+  color: #555555;
+  font-weight: 500;
 }
 
 .person{
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
 }
 
 .avatar{
-  width: 48px;
-  height: 48px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   object-fit: cover;
   background: #d8cba9;
   flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.6);
 }
 
 .person .name{
   font-weight: 600;
-  font-size: 15px;
+  font-size: 14px;
   color: #1a1a1a;
 }
 
 .person .email{
-  color: #888;
-  font-size: 13px;
-  margin-top: 2px;
+  color: #777777;
+  font-size: 12px;
+  margin-top: 1px;
 }
 
+/* STATUS BADGES */
 .status{
-  padding: 7px 18px;
+  padding: 5px 14px;
   border-radius: 30px;
   font-weight: 600;
-  font-size: 13px;
+  font-size: 12px;
   display: inline-block;
 }
 
@@ -289,10 +309,22 @@ table td{
 }
 
 .status-rejected{
-    background:#f5bcbc;
-    color:#b3261e;
+  background: #f5bcbc;
+  color: #b3261e;
 }
 
+@media (max-width: 850px){
+  .layout{
+    flex-direction: column;
+  }
+  .sidebar{
+    width: 100%;
+    min-height: auto;
+  }
+  .main{
+    padding: 20px;
+  }
+}
 </style>
 </head>
 
@@ -308,11 +340,12 @@ table td{
   <div class="sidebar">
     <a href="dashboard.php" class="active"><span class="icon">🏠</span> Dashboard</a>
     <a href="dogs.php"><span class="icon">🐾</span> Dogs</a>
+    <a href="reported_dogs.php"><span class="icon">🚨</span> Report Dogs</a>
     <a href="adoption_requests.php"><span class="icon">📋</span> Adoption Request</a>
     <a href="messages.php"><span class="icon">✉️</span> Messages</a>
     <a href="users.php"><span class="icon">👤</span> Users</a>
     <a href="settings.php"><span class="icon">⚙️</span> Settings</a>
-    </div>
+  </div>
 
   <div class="main">
 
@@ -366,35 +399,35 @@ table td{
         <tr>
           <td>
             <div class="person">
-              <img class="avatar" src="../assets/img/user-placeholder.jpg">
+              <img class="avatar" src="../assets/img/user-placeholder.jpg" alt="User">
               <div>
-                <div class="name"><?php echo $r['first_name']." ".$r['last_name']; ?></div>
-                <div class="email"><div class="email"><?php echo $r['email']; ?></div></div>
+                <div class="name"><?php echo htmlspecialchars($r['first_name']." ".$r['last_name']); ?></div>
+                <div class="email"><?php echo htmlspecialchars($r['email']); ?></div>
               </div>
             </div>
           </td>
           <td>
             <div class="person">
-              <img class="avatar" src="../assets/img/dog-placeholder.jpg">
+              <img class="avatar" src="../assets/img/dog-placeholder.jpg" alt="Dog">
               <div>
-                <div class="name"><?php echo $r['dog_name']; ?></div>
+                <div class="name"><?php echo htmlspecialchars($r['dog_name']); ?></div>
               </div>
             </div>
           </td>
-          <td><?php echo date("M d, Y",strtotime($r['application_date'])); ?></td>
+          <td class="date-cell"><?php echo date("M d, Y", strtotime($r['application_date'])); ?></td>
           <td>
             <?php
               $statusClass = "status-pending";
 
-                if ($r['status'] == "Approved") {
+              if ($r['status'] == "Approved") {
                 $statusClass = "status-approved";
-                }
+              }
 
-                if ($r['status'] == "Rejected") {
+              if ($r['status'] == "Rejected") {
                 $statusClass = "status-rejected";
-                }
+              }
             ?>
-            <span class="status <?php echo $statusClass; ?>"><?php echo $r['status']; ?></span>
+            <span class="status <?php echo $statusClass; ?>"><?php echo htmlspecialchars($r['status']); ?></span>
           </td>
         </tr>
         <?php } ?>

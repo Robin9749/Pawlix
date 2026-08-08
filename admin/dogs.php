@@ -100,157 +100,196 @@ $dogs = mysqli_query($conn, "SELECT * FROM dog ORDER BY dog_id ASC");
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>All Dogs | PawLix Admin</title>
 
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
-
-body{
-  font-family: 'Poppins', Arial, sans-serif;
-  margin: 0;
-  background: #e8dcc0;
-  color: #2b2b2b;
+:root {
+  --bg-body: #e8dcc0;
+  --bg-topbar: #f2e6c9;
+  --bg-card: #ede1c6;
+  --bg-sidebar: #e8dcc0;
+  --bg-sidebar-hover: #ddceac;
+  --primary-orange: #f2932b;
+  --primary-orange-hover: #e08420;
+  --primary-blue: #1f6fd6;
+  --text-dark: #2b2b2b;
+  --text-muted: #5c5c5c;
+  --border-color: #ddccae;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-pill: 30px;
+  --font-family: 'Poppins', Arial, sans-serif;
 }
 
-.topbar{
-  background: #f2e6c9;
-  padding: 30px 60px;
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-family);
+  background-color: var(--bg-body);
+  color: var(--text-dark);
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.topbar {
+  background: var(--bg-topbar);
+  padding: 20px 45px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-    border-bottom: 2px solid #ffffff;
-
+  border-bottom: 2px solid #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  z-index: 10;
 }
 
-.topbar .logo{
+.topbar .logo {
   font-size: 20px;
   font-weight: 700;
-  color: #2b2b2b;
+  color: var(--text-dark);
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.topbar a.logout{
-  color: #1f6fd6;
+.topbar a.logout {
+  color: var(--primary-blue);
   font-weight: 600;
   text-decoration: none;
-  font-size: 15px;
+  font-size: 14px;
+  transition: opacity 0.2s ease;
 }
 
-.topbar a.logout:hover{
+.topbar a.logout:hover {
+  opacity: 0.8;
   text-decoration: underline;
 }
 
-.layout{
+.layout {
   display: flex;
-  align-items: flex-start;
+  align-items: stretch;
+  flex: 1;
 }
 
-.sidebar{
-  width: 260px;
-  background: #e8dcc0;
-  padding: 24px 18px;
-  min-height: calc(100vh - 78px);
+.sidebar {
+  width: 240px;
+  background: var(--bg-sidebar);
+  padding: 20px 14px;
+  min-height: calc(100vh - 65px);
+  flex-shrink: 0;
+  border-right: 1px solid rgba(255, 255, 255, 0.4);
 }
 
-.sidebar a{
+.sidebar a {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 14px 18px;
-  margin-bottom: 8px;
-  border-radius: 10px;
+  gap: 12px;
+  padding: 11px 15px;
+  margin-bottom: 6px;
+  border-radius: var(--radius-md);
   text-decoration: none;
-  color: #2b2b2b;
+  color: var(--text-dark);
   font-weight: 600;
-  font-size: 15px;
-  transition: background 0.15s ease;
+  font-size: 14px;
+  transition: all 0.2s ease;
 }
 
-.sidebar a:hover{
-  background: #ddceac;
+.sidebar a:hover {
+  background: var(--bg-sidebar-hover);
 }
 
-.sidebar a.active{
-  background: #f2932b;
-  color: white;
-  box-shadow: 0 4px 10px rgba(242,147,43,0.35);
+.sidebar a.active {
+  background: var(--primary-orange);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(242, 147, 43, 0.35);
 }
 
-.sidebar a.active:hover{
-  background: #f2932b;
-}
-
-.sidebar .icon{
-  font-size: 18px;
+.sidebar .icon {
+  font-size: 16px;
   width: 20px;
   text-align: center;
 }
 
-
 .main {
   flex: 1;
-  padding: 36px 44px;
+  padding: 28px 36px;
 }
 
 .main-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 22px;
+  margin-bottom: 20px;
 }
 
 .main-header h1 {
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 700;
+  color: #1a1a1a;
 }
 
 .add-btn {
-  background: #f2932b;
+  background: var(--primary-orange);
   color: white;
   border: none;
-  padding: 12px 24px;
-  border-radius: 8px;
+  padding: 10px 20px;
+  border-radius: var(--radius-md);
   font-weight: 600;
   font-size: 14px;
   font-family: inherit;
   cursor: pointer;
   box-shadow: 0 4px 10px rgba(242,147,43,0.35);
-  transition: background 0.2s;
+  transition: background 0.2s ease;
   display: inline-flex;
   align-items: center;
   gap: 8px;
 }
 
-.add-btn:hover { background: #d97f1e; }
+.add-btn:hover {
+  background: var(--primary-orange-hover);
+}
 
 .alert-success {
   background: #d4edda;
   color: #155724;
   padding: 12px 18px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   margin-bottom: 20px;
   font-weight: 600;
+  font-size: 14px;
 }
 
 .alert-error {
   background: #f8d7da;
   color: #721c24;
   padding: 12px 18px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   margin-bottom: 20px;
   font-weight: 600;
+  font-size: 14px;
 }
 
 .table-card {
-  background: #ede1c6;
-  border-radius: 12px;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+  box-shadow: 0 3px 10px rgba(0,0,0,0.05);
 }
 
 table {
@@ -259,31 +298,30 @@ table {
   table-layout: fixed;
 }
 
-col.col-sn { width: 70px; }
-col.col-photo { width: 20%; }
+col.col-sn { width: 60px; }
+col.col-photo { width: 18%; }
 col.col-name { width: 20%; }
 col.col-breed { width: 22%; }
 col.col-age { width: 10%; }
-col.col-gender { width: 12%; }
-col.col-status { width: 14%; }
-col.col-action { width: 110px; }
+col.col-gender { width: 10%; }
+col.col-status { width: 12%; }
+col.col-action { width: 90px; }
 
 thead th {
   background: #d8c9a3;
   font-weight: 700;
-  font-size: 14px;
+  font-size: 12px;
   letter-spacing: 0.5px;
   text-transform: uppercase;
   color: #3d3326;
-  padding: 16px 14px;
-
+  padding: 14px 10px;
 }
 
 .text-center { text-align: center; }
 .text-left { text-align: left; }
 
 tbody tr {
-  border-bottom: 1px solid #ddccae;
+  border-bottom: 1px solid var(--border-color);
   transition: background 0.15s ease-in-out;
 }
 
@@ -296,8 +334,8 @@ tbody tr:hover {
 }
 
 tbody td {
-  padding: 14px;
-  font-size: 14px;
+  padding: 12px 10px;
+  font-size: 13px;
   vertical-align: middle;
 }
 
@@ -310,9 +348,9 @@ tbody td {
 }
 
 .dog-photo {
-  width: 48px;
-  height: 48px;
-  border-radius: 10px;
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
   object-fit: cover;
   background: #d8cba9;
   border: 1px solid rgba(0,0,0,0.06);
@@ -320,7 +358,7 @@ tbody td {
 
 .photo-count {
   font-size: 10px;
-  background: #f2932b;
+  background: var(--primary-orange);
   color: #fff;
   padding: 2px 6px;
   border-radius: 10px;
@@ -328,10 +366,10 @@ tbody td {
 }
 
 .status {
-  padding: 6px 16px;
-  border-radius: 30px;
+  padding: 5px 14px;
+  border-radius: var(--radius-pill);
   font-weight: 600;
-  font-size: 13px;
+  font-size: 12px;
   display: inline-block;
 }
 
@@ -343,14 +381,14 @@ tbody td {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .edit-btn {
   background: #ede8f8;
   color: #5b3fd6;
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: 8px;
   display: inline-flex;
   align-items: center;
@@ -367,8 +405,8 @@ tbody td {
 .delete-btn {
   background: #fde8e8;
   color: #b3261e;
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: 8px;
   display: inline-flex;
   align-items: center;
@@ -401,11 +439,11 @@ tbody td {
 }
 
 .modal-content {
-  background: #EDE1C6;
+  background: var(--bg-card);
   width: 100%;
-  max-width: 800px;
-  border-radius: 15px;
-  padding: 30px;
+  max-width: 750px;
+  border-radius: 14px;
+  padding: 26px;
   box-shadow: 0 15px 30px rgba(0,0,0,0.25);
   position: relative;
   max-height: 90vh;
@@ -422,32 +460,32 @@ tbody td {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
-  border-bottom: 2px solid #D8C8A6;
-  padding-bottom: 12px;
+  margin-bottom: 20px;
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: 10px;
 }
 
 .modal-header h2 {
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 700;
-  color: #2B2B2B;
+  color: var(--text-dark);
 }
 
 .close-modal {
   background: none;
   border: none;
-  font-size: 28px;
+  font-size: 26px;
   font-weight: bold;
   cursor: pointer;
   color: #666;
 }
 
-.close-modal:hover { color: #f2932b; }
+.close-modal:hover { color: var(--primary-orange); }
 
 .modal-body form {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 18px;
+  gap: 16px;
 }
 
 .modal-body .full { grid-column: 1 / 3; }
@@ -464,45 +502,56 @@ tbody td {
 .modal-body textarea {
   width: 100%;
   padding: 10px 14px;
-  border: 1px solid #D8C8A6;
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   outline: none;
-  background: white;
-  font-size: 14px;
+  background: #ffffff;
+  font-size: 13px;
   font-family: inherit;
 }
 
 .modal-body input:focus,
 .modal-body select:focus,
 .modal-body textarea:focus {
-  border-color: #F2932B;
+  border-color: var(--primary-orange);
   box-shadow: 0 0 5px rgba(242,147,43,.3);
 }
 
 .modal-body textarea {
   resize: none;
-  height: 100px;
+  height: 90px;
 }
 
 .submit-btn {
   grid-column: 1 / 3;
-  background: #F2932B;
+  background: var(--primary-orange);
   color: white;
   border: none;
-  padding: 14px;
+  padding: 13px;
   border-radius: 8px;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   transition: background 0.3s;
 }
 
-.submit-btn:hover { background: #E8841F; }
+.submit-btn:hover { background: var(--primary-orange-hover); }
 
-@media(max-width: 768px) {
+@media (max-width: 850px) {
+  .layout {
+    flex-direction: column;
+  }
+  .sidebar {
+    width: 100%;
+    min-height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+  }
+  .main {
+    padding: 20px;
+  }
   .modal-body form { grid-template-columns: 1fr; }
   .modal-body .full, .submit-btn { grid-column: 1; }
-  .main { padding: 20px; }
   table { table-layout: auto; }
 }
 </style>
@@ -520,6 +569,7 @@ tbody td {
   <div class="sidebar">
     <a href="dashboard.php"><span class="icon">🏠</span> Dashboard</a>
     <a href="dogs.php" class="active"><span class="icon">🐾</span> Dogs</a>
+    <a href="reported_dogs.php"><span class="icon">🚨</span> Report Dogs</a>
     <a href="adoption_requests.php"><span class="icon">📋</span> Adoption Request</a>
     <a href="messages.php"><span class="icon">✉️</span> Messages</a>
     <a href="users.php"><span class="icon">👤</span> Users</a>
@@ -529,11 +579,11 @@ tbody td {
   <div class="main">
 
     <?php if ($success != "") { ?>
-      <div class="alert-success"><?php echo $success; ?></div>
+      <div class="alert-success"><?php echo htmlspecialchars($success); ?></div>
     <?php } ?>
 
     <?php if ($error != "") { ?>
-      <div class="alert-error"><?php echo $error; ?></div>
+      <div class="alert-error"><?php echo htmlspecialchars($error); ?></div>
     <?php } ?>
 
     <div class="main-header">
@@ -590,8 +640,8 @@ tbody td {
             <td class="text-center">
               <?php
                 $cls = "status-available";
-                if ($d['adoption_status'] == "Adopted") $cls = "status-adopted";
-                if ($d['adoption_status'] == "Pending") $cls = "status-pending";
+                if (($d['adoption_status'] ?? '') == "Adopted") $cls = "status-adopted";
+                if (($d['adoption_status'] ?? '') == "Pending") $cls = "status-pending";
               ?>
               <span class="status <?php echo $cls; ?>"><?php echo htmlspecialchars($d['adoption_status'] ?? 'Available'); ?></span>
             </td>
@@ -644,8 +694,8 @@ tbody td {
             <option value="Local / Cross Breed (Local Kukur)">Local / Cross Breed (Local Kukur)</option>
             <option value="Beagle">Beagle</option>
             <option value="Pug">Pug</option>
-            <option value="Husky"> Husky</option>
-            <option value="Other">Other</option>
+            <option value="Husky">Husky</option>
+            <option value="Other">Others</option>
           </select>
         </div>
 

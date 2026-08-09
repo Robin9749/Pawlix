@@ -285,9 +285,8 @@ tbody td {
 }
 
 .status-pending { background: #f6cba3; color: #a15c00; }
-.status-dispatched { background: #ffe29a; color: #8a5700; }
+.status-rescueinprogress { background: #ffe29a; color: #8a5700; }
 .status-rescued { background: #b9d3ee; color: #1958ab; }
-.status-adoption { background: #bfe3c4; color: #1e6e2e; }
 .status-closed { background: #f5bcbc; color: #b3261e; }
 
 .action-links {
@@ -535,9 +534,8 @@ tbody td {
               <?php
                 $st = $r['status'];
                 $cls = "status-pending";
-                if ($st == 'Rescue Dispatched') $cls = "status-dispatched";
+                if ($st == 'Rescue In Progress') $cls = "status-rescueinprogress";
                 if ($st == 'Rescued' || $st == 'Medical Care') $cls = "status-rescued";
-                if ($st == 'Ready for Adoption') $cls = "status-adoption";
                 if ($st == 'Closed') $cls = "status-closed";
               ?>
               <span class="status <?php echo $cls; ?>"><?php echo htmlspecialchars($st); ?></span>
@@ -588,10 +586,8 @@ tbody td {
           <label>Select Rescue Status</label>
           <select name="status" id="modal_status_select" required>
             <option value="Pending">🚨 Pending</option>
-            <option value="Rescue Dispatched">🚑 Rescue Dispatched</option>
+            <option value="Rescue In Progress">🚑 Rescue In Progress</option>
             <option value="Rescued">🏥 Rescued</option>
-            <option value="Medical Care">💉 Medical Care</option>
-            <option value="Ready for Adoption">🐾 Ready for Adoption</option>
             <option value="Closed">✅ Closed</option>
           </select>
         </div>

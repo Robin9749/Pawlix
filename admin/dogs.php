@@ -695,7 +695,7 @@ tbody td {
             <option value="Beagle">Beagle</option>
             <option value="Pug">Pug</option>
             <option value="Husky">Husky</option>
-            <option value="Other">Others</option>
+            <option value="Other">Other</option>
           </select>
         </div>
 

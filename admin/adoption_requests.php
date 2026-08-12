@@ -264,15 +264,6 @@ tbody td {
   gap: 12px;
 }
 
-.avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  object-fit: cover;
-  background: #d8cba9;
-  flex-shrink: 0;
-  border: 1px solid rgba(255, 255, 255, 0.6);
-}
 
 .name {
   font-weight: 600;
@@ -366,7 +357,6 @@ tbody td {
             <td class="text-center"><?php echo $i++; ?></td>
             <td class="text-left">
               <div class="person">
-                
                 <div class="name"><?php echo htmlspecialchars($r['first_name'] . " " . $r['last_name']); ?></div>
               </div>
             </td>

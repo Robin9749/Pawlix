@@ -1,0 +1,402 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+
+:root{
+    --cream:#e9d9b8;        /* header background */
+    --tan-light:#ecdfc3;    /* hero section background */
+    --pale-yellow:#f3ecd5;  /* main section background */
+    --tan-card:#dcb590;     /* card background */
+    --maroon:#7a1f1f;       /* nav active link */
+    --dark-brown:#4a3223;   /* nav links / outline button */
+    --orange:#ff7f11;       /* primary orange button */
+    --orange-dark:#e06600;  /* button hover */
+    --navy:#0e1524;         /* footer background */
+    --blue:#2f6bf0;         /* search button */
+    --blue-dark:#1f54d1;
+    --golden-hero:#ebba46;  /* about hero background */
+}
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+html{
+    scroll-behavior:smooth;
+}
+
+body{
+    font-family:'Poppins',sans-serif;
+    background:var(--pale-yellow);
+    color:#222;
+    overflow-x:hidden;
+}
+
+img{
+    width:100%;
+    display:block;
+}
+
+a{
+    text-decoration:none;
+    color:inherit;
+}
+
+button{
+    font-family:'Poppins',sans-serif;
+    cursor:pointer;
+    border:none;
+}
+
+/* ================= HEADER (UNTOUCHED ORIGINAL HEADER & NAV) ================= */
+.header{
+    width:100%;
+    height:90px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:0 80px;
+    background:var(--cream);
+    position:relative; 
+    z-index:1000;
+    box-shadow:0 5px 20px rgba(0,0,0,.05);
+}
+
+.logo img{
+    width:150px;
+    position:relative;
+    top:15px;     
+    left:-20px;   
+}
+
+.nav{
+    display:flex;
+    align-items:center;
+    gap:45px;
+}
+
+.nav a{
+    font-size:16px;
+    font-weight:500;
+    color:var(--dark-brown);
+    transition:.3s;
+    position:relative;
+}
+
+
+.nav .active{
+    color:var(--maroon);
+      font-weight: 640;
+}
+
+.nav a::after{
+    content:"";
+    position:absolute;
+    left:0;
+    bottom:-8px;
+    width:0%;
+    height:3px;
+    background:var(--maroon);
+    transition:.35s;
+    border-radius:20px;
+}
+
+
+.nav .active::after{
+    width:100%;
+}
+
+.header-buttons{
+    display:flex;
+    gap:15px;
+}
+
+.btn{
+    padding:12px 28px;
+    border-radius:50px;
+    font-size:15px;
+    font-weight:600;
+    transition:.35s;
+}
+
+.btn-outline{
+    background:transparent;
+    border:2px solid var(--dark-brown);
+    color:var(--dark-brown);
+}
+
+.btn-outline:hover{
+    background:var(--dark-brown);
+    color:#fff;
+}
+
+.btn-dark{
+    background:#1c1c1c;
+    color:#fff;
+}
+
+.btn-dark:hover{
+    background:var(--orange);
+}
+
+.menu-toggle{
+    display:none;
+    font-size:32px;
+    background:none;
+    color:var(--dark-brown);
+}
+
+/* ================= VIEW DOG DETAILS SECTION ================= */
+.view-dog-section{
+    width:100%;
+    height:calc(100vh - 91px);      /* Dynamically fills remaining screen height */
+    background:var(--pale-yellow);
+    padding:3vh 4vw;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+}
+
+.view-dog-container{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:25px;
+    max-width:1400px;
+    width:100%;
+    height:100%;
+    max-height:600px;
+    align-items:center;
+}
+
+/* Left Image Gallery Wrapper (Moved main image a bit to the left) */
+.dog-gallery-wrapper{
+    display:flex;
+    gap:14px;
+    align-items:center;
+    height:100%;
+    max-height:540px;
+    width:100%;
+}
+
+.main-image-container{
+    position:relative;
+    left:-25px;                   /* Shifts ONLY the main image position to the left */
+    flex:1;
+    border-radius:24px;
+    overflow:hidden;
+    box-shadow:0 10px 30px rgba(0,0,0,0.07);
+    height:100%;
+    max-height:540px;
+    background:#e0d2b8;
+}
+
+#mainDogImage{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+    transition:opacity 0.25s ease;
+}
+
+/* Side Gallery Arrow Buttons */
+.gallery-arrow{
+    position:absolute;
+    top:50%;
+    transform:translateY(-50%);
+    width:42px;
+    height:42px;
+    border-radius:50%;
+    background:rgba(255,255,255,0.92);
+    color:#222;
+    border:none;
+    font-size:20px;
+    font-weight:bold;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    box-shadow:0 4px 12px rgba(0,0,0,0.18);
+    z-index:10;
+    transition:all 0.25s ease;
+}
+
+.arrow-prev{ left:16px; }
+.arrow-next{ right:16px; }
+
+.gallery-arrow:hover{
+    background:var(--orange);
+    color:#fff;
+    transform:translateY(-50%) scale(1.08);
+}
+
+/* Right Side 5 Thumbnails Preview Column */
+.thumbnails-preview-column{
+    display:flex;
+   
+    flex-direction:column;
+    gap:23px;
+    width:80px;
+    max-width:100px;
+    height:100%;
+    max-height:480px;
+    justify-content:space-between;
+}
+
+.thumb-item{
+    width:76px;
+    height:calc((100% - 40px) / 5);
+    max-height:95px;
+    border-radius:10px;
+    overflow:hidden;
+    cursor:pointer;
+    border:2.5px solid transparent;
+    transition:all 0.25s ease;
+    box-shadow:0 3px 8px rgba(0,0,0,0.05);
+    background:#ded0b6;
+}
+
+.thumb-item:hover{
+    transform:scale(1.04);
+}
+
+.thumb-item.active{
+    border-color:var(--orange);
+    transform:scale(1.04);
+    box-shadow:0 4px 14px rgba(255,127,17,0.35);
+}
+
+.thumb-item img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    pointer-events:none;
+}
+
+/* Right Side Dog Details & Info Column */
+.dog-details-info{
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    height:100%;
+    max-height:540px;
+    padding-left:10px;
+}
+
+.dog-details-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.dog-name{
+    font-size:36px;
+    font-weight:800;
+    color:#1c1c1c;
+}
+
+.btn-back{
+    display:inline-block;
+    background:var(--orange);
+    color:#fff;
+    padding:8px 22px;
+    border-radius:8px;
+    font-weight:700;
+    font-size:14px;
+    box-shadow:0 4px 10px rgba(255,127,17,0.25);
+    transition:.3s;
+}
+
+.btn-back:hover{
+    background:var(--orange-dark);
+    transform:translateY(-2px);
+}
+
+.dog-meta-line{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    font-size:15px;
+    font-weight:600;
+    color:#333;
+}
+
+.meta-separator{
+    color:rgba(0,0,0,0.25);
+}
+
+.dog-description{
+    font-size:14px;
+    color:#4a4a4a;
+    line-height:1.6;
+}
+
+/* Specifications Grid (2 Columns x 4 Rows) */
+.specs-grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:12px;
+}
+
+.spec-card{
+    background:#f8eac9;
+    border:1px solid rgba(0,0,0,0.04);
+    border-radius:12px;
+    padding:11px 16px;
+    display:flex;
+    align-items:center;
+    gap:14px;
+    box-shadow:0 3px 8px rgba(0,0,0,0.02);
+    transition:transform 0.2s ease;
+}
+
+.spec-card:hover{
+    transform:translateY(-2px);
+    background:#faeed2;
+}
+
+.spec-icon{
+    width:38px;
+    height:38px;
+    min-width:38px;
+    border-radius:50%;
+    background:#ebd9b2;
+    color:#444;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+
+.spec-label{
+    display:block;
+    font-size:14px;
+    font-weight:700;
+    color:#1c1c1c;
+    margin-bottom:1px;
+}
+
+.spec-value{
+    display:block;
+    font-size:13px;
+    color:#666;
+    font-weight:500;
+}
+
+.btn-apply-adoption{
+    display:block;
+    width:100%;
+    padding:14px;
+    background:var(--orange);
+    color:#fff;
+    font-size:16.5px;
+    font-weight:700;
+    border-radius:10px;
+    box-shadow:0 5px 15px rgba(255,127,17,0.3);
+    transition:.3s;
+    text-align:center;
+}
+
+.btn-apply-adoption:hover{
+    background:var(--orange-dark);
+    transform:translateY(-2px);
+}

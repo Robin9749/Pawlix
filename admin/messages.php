@@ -8,11 +8,25 @@ if (!isset($_SESSION['admin_id'])) {
 
 include("../config/config.php");
 
+$success = "";
+$error = "";
+
 if (isset($_GET['delete'])) {
     $id = intval($_GET['delete']);
-    mysqli_query($conn, "DELETE FROM contact_message WHERE id = $id OR message_id = $id");
-    header("Location: messages.php");
-    exit();
+  
+    $col_check = mysqli_query($conn, "SHOW COLUMNS FROM contact_message LIKE 'message_id'");
+    $pk = (mysqli_num_rows($col_check) > 0) ? 'message_id' : 'id';
+    
+    if (mysqli_query($conn, "DELETE FROM contact_message WHERE $pk = $id")) {
+        header("Location: messages.php?msg=deleted");
+        exit();
+    } else {
+        $error = "Error deleting message: " . mysqli_error($conn);
+    }
+}
+
+if (isset($_GET['msg']) && $_GET['msg'] == 'deleted') {
+    $success = "Message deleted successfully!";
 }
 
 $messages = mysqli_query($conn, "
@@ -159,6 +173,26 @@ body{
   color: #1a1a1a;
 }
 
+.alert-success {
+  background: #d4edda;
+  color: #155724;
+  padding: 12px 18px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 20px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.alert-error {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 12px 18px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 20px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
 .message-list{
   display: flex;
   flex-direction: column;
@@ -236,16 +270,6 @@ body{
   line-height: 1.5;
 }
 
-.unread-badge{
-  background: var(--primary-orange);
-  color: white;
-  font-size: 10px;
-  font-weight: 700;
-  padding: 3px 9px;
-  border-radius: 20px;
-  text-transform: uppercase;
-}
-
 .msg-actions{
   margin-top: 12px;
   display: flex;
@@ -256,6 +280,7 @@ body{
   font-size: 13px;
   font-weight: 600;
   text-decoration: none;
+  cursor: pointer;
 }
 
 .reply-link{ color: var(--primary-blue); }
@@ -271,6 +296,75 @@ body{
   text-align: center;
   color: #777;
   font-size: 14px;
+}
+
+/* POP-UP MODAL STYLES */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.modal-content {
+  background: var(--bg-card);
+  width: 100%;
+  max-width: 420px;
+  border-radius: 14px;
+  padding: 26px;
+  box-shadow: 0 15px 30px rgba(0,0,0,0.25);
+  text-align: center;
+  animation: popup 0.3s ease-out;
+}
+
+@keyframes popup {
+  from { transform: scale(0.85); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.modal-btn-group {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.btn-cancel {
+  background: #d8cba9;
+  color: #2b2b2b;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.btn-confirm-delete {
+  background: #b3261e;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+  display: inline-block;
+  font-family: inherit;
+  transition: background 0.2s;
+}
+
+.btn-confirm-delete:hover {
+  background: #8f1d17;
 }
 
 @media (max-width: 850px){
@@ -293,7 +387,7 @@ body{
   <div class="sidebar">
     <a href="dashboard.php"><span class="icon">🏠</span> Dashboard</a>
     <a href="dogs.php"><span class="icon">🐾</span> Dogs</a>
-        <a href="reported_dogs.php"><span class="icon">🚨</span> Report Dogs</a>
+    <a href="reported_dogs.php"><span class="icon">🚨</span> Report Dogs</a>
     <a href="adoption_requests.php"><span class="icon">📋</span> Adoption Request</a>
     <a href="messages.php" class="active"><span class="icon">✉️</span> Messages</a>
     <a href="users.php"><span class="icon">👤</span> Users</a>
@@ -304,6 +398,14 @@ body{
 
     <h1>Messages</h1>
 
+    <?php if ($success != "") { ?>
+      <div class="alert-success"><?php echo htmlspecialchars($success); ?></div>
+    <?php } ?>
+
+    <?php if ($error != "") { ?>
+      <div class="alert-error"><?php echo htmlspecialchars($error); ?></div>
+    <?php } ?>
+
     <?php if (mysqli_num_rows($messages) == 0) { ?>
 
       <div class="empty-state">No messages yet.</div>
@@ -311,7 +413,10 @@ body{
     <?php } else { ?>
 
       <div class="message-list">
-        <?php while($m=mysqli_fetch_assoc($messages)) { ?>
+        <?php 
+        while($m=mysqli_fetch_assoc($messages)) { 
+          $msg_id = $m['id'] ?? $m['message_id'] ?? 0;
+        ?>
         <div class="message-card <?php echo (isset($m['read']) && !$m['read']) ? 'unread' : ''; ?>">
 
           <div class="msg-top">
@@ -332,7 +437,8 @@ body{
 
           <div class="msg-actions">
             <a class="reply-link" href="mailto:<?php echo htmlspecialchars($m['email']); ?>">Reply by Email</a>
-            <a class="delete-link" href="messages.php?delete=<?php echo $m['id'] ?? $m['message_id']; ?>" onclick="return confirm('Delete this message?');">Delete</a>
+
+            <a class="delete-link" href="javascript:void(0)" onclick="confirmDelete(<?php echo $msg_id; ?>)">Delete</a>
           </div>
 
         </div>
@@ -344,6 +450,35 @@ body{
   </div>
 
 </div>
+
+<div class="modal-overlay" id="deleteConfirmModal">
+  <div class="modal-content">
+    <h2 style="font-size: 18px; font-weight: 700; margin-bottom: 8px; color: #1a1a1a;">Delete Message?</h2>
+    <p style="font-size: 13px; color: var(--text-muted); line-height: 1.4;">Are you sure you want to delete this message?</p>
+    <div class="modal-btn-group">
+      <button type="button" class="btn-cancel" onclick="closeDeleteModal()">Cancel</button>
+      <a id="confirmDeleteBtn" href="#" class="btn-confirm-delete">Yes, Delete</a>
+    </div>
+  </div>
+</div>
+
+<script>
+function confirmDelete(id) {
+  document.getElementById('confirmDeleteBtn').href = 'messages.php?delete=' + id;
+  document.getElementById('deleteConfirmModal').style.display = 'flex';
+}
+
+function closeDeleteModal() {
+  document.getElementById('deleteConfirmModal').style.display = 'none';
+}
+
+window.onclick = function(event) {
+  var modal = document.getElementById('deleteConfirmModal');
+  if (event.target == modal) {
+    closeDeleteModal();
+  }
+}
+</script>
 
 </body>
 </html>

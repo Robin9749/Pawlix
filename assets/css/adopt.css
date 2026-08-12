@@ -1,0 +1,254 @@
+/* ================= APPLY FOR ADOPTION PAGE ================= */
+.adopt-hero{
+    width:100%;
+    background:var(--tan-light);
+    padding:45px 80px 40px;
+    text-align:center;
+}
+
+.adopt-hero-content{
+    max-width:700px;
+    margin:0 auto;
+}
+
+.sub-kicker{
+    font-size:13px;
+    font-weight:700;
+    letter-spacing:1.5px;
+    color:#555;
+    display:inline-block;
+    margin-bottom:8px;
+}
+
+.adopt-hero h1{
+    font-size:42px;
+    font-weight:800;
+    color:#1c1c1c;
+    margin-bottom:12px;
+}
+
+.adopt-hero h1 span{
+    color:var(--orange);
+}
+
+.adopt-hero p{
+    font-size:16px;
+    color:#444;
+    line-height:1.6;
+}
+
+.adopt-section{
+    width:100%;
+    background:var(--pale-yellow);
+    padding:50px 80px 80px;
+}
+
+.adopt-container{
+    max-width:900px;
+    margin:0 auto;
+}
+
+/* Selected Dog Preview Badge */
+.selected-dog-card{
+    background:#f8eac9;
+    border:1px solid rgba(0,0,0,0.08);
+    border-radius:16px;
+    padding:18px 24px;
+    display:flex;
+    align-items:center;
+    gap:20px;
+    margin-bottom:35px;
+    box-shadow:0 4px 15px rgba(0,0,0,0.03);
+}
+
+.dog-mini-thumb{
+    width:70px;
+    height:70px;
+    border-radius:12px;
+    overflow:hidden;
+    flex-shrink:0;
+}
+
+.dog-mini-thumb img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+}
+
+.dog-mini-info{
+    flex:1;
+}
+
+.dog-mini-info h3{
+    font-size:18px;
+    font-weight:700;
+    color:#1c1c1c;
+    margin-bottom:4px;
+}
+
+.dog-mini-info h3 span{
+    color:var(--orange);
+}
+
+.dog-mini-info p{
+    font-size:14px;
+    color:#555;
+    font-weight:500;
+}
+
+.btn-change-dog{
+    background:transparent;
+    border:1.5px solid var(--dark-brown);
+    color:var(--dark-brown);
+    padding:8px 18px;
+    border-radius:8px;
+    font-size:13.5px;
+    font-weight:600;
+    transition:0.3s;
+}
+
+.btn-change-dog:hover{
+    background:var(--dark-brown);
+    color:#fff;
+}
+
+/* Adoption Form Card */
+.adopt-form{
+    background:#fff;
+    border-radius:20px;
+    padding:45px 50px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.04);
+}
+
+.form-section-title{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    margin-top:10px;
+    margin-bottom:24px;
+    padding-bottom:12px;
+    border-bottom:2px solid var(--pale-yellow);
+}
+
+.step-num{
+    width:32px;
+    height:32px;
+    border-radius:50%;
+    background:var(--orange);
+    color:#fff;
+    font-weight:700;
+    font-size:15px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+
+.form-section-title h2{
+    font-size:22px;
+    font-weight:700;
+    color:#1c1c1c;
+}
+
+.form-grid-2{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:20px;
+}
+
+.form-group{
+    margin-bottom:22px;
+}
+
+.form-group label{
+    display:block;
+    font-size:14px;
+    font-weight:600;
+    color:#333;
+    margin-bottom:8px;
+}
+
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="tel"],
+.form-group select,
+.form-group textarea{
+    width:100%;
+    padding:14px 18px;
+    border:1.5px solid #e2d6c1;
+    border-radius:10px;
+    font-size:14.5px;
+    font-family:'Poppins',sans-serif;
+    background:#faf7f0;
+    color:#222;
+    outline:none;
+    transition:0.3s;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus{
+    border-color:var(--orange);
+    background:#fff;
+    box-shadow:0 0 0 3px rgba(255,127,17,0.15);
+}
+
+.form-checkbox-group{
+    display:flex;
+    align-items:flex-start;
+    gap:12px;
+    margin:30px 0;
+}
+
+.form-checkbox-group input[type="checkbox"]{
+    width:18px;
+    height:18px;
+    accent-color:var(--orange);
+    margin-top:2px;
+    cursor:pointer;
+}
+
+.form-checkbox-group label{
+    font-size:13.5px;
+    color:#555;
+    line-height:1.5;
+    cursor:pointer;
+}
+
+.form-actions{
+    display:flex;
+    align-items:center;
+    gap:16px;
+}
+
+.btn-submit-adopt{
+    flex:1;
+    padding:16px;
+    background:var(--orange);
+    color:#fff;
+    font-size:16.5px;
+    font-weight:700;
+    border-radius:10px;
+    box-shadow:0 5px 16px rgba(255,127,17,0.3);
+    transition:0.3s;
+    cursor:pointer;
+}
+
+.btn-submit-adopt:hover{
+    background:var(--orange-dark);
+    transform:translateY(-2px);
+}
+
+.btn-cancel-adopt{
+    padding:16px 28px;
+    background:#eee6d8;
+    color:#444;
+    font-weight:700;
+    font-size:15px;
+    border-radius:10px;
+    transition:0.3s;
+    text-decoration:none;
+}
+
+.btn-cancel-adopt:hover{
+    background:#e0d5c3;
+}

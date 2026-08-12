@@ -366,7 +366,7 @@ tbody td {
             <td class="text-center"><?php echo $i++; ?></td>
             <td class="text-left">
               <div class="person">
-                <img class="avatar" src="../assets/img/user-placeholder.jpg" alt="User">
+                
                 <div class="name"><?php echo htmlspecialchars($r['first_name'] . " " . $r['last_name']); ?></div>
               </div>
             </td>

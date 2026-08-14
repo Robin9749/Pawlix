@@ -17,6 +17,14 @@ if (!isset($_SESSION['user_id'])) {
 
 $user_id = (int)$_SESSION['user_id'];
 
+// Unread Notifications Count
+$unreadCount = 0;
+$r1 = @mysqli_query($conn, "SELECT COUNT(*) AS total FROM report_dogs WHERE user_id = $user_id AND status != 'Pending'");
+$r2 = @mysqli_query($conn, "SELECT COUNT(*) AS total FROM adoption_application WHERE user_id = $user_id AND status != 'Pending'");
+$c1 = ($r1) ? mysqli_fetch_assoc($r1)['total'] : 0;
+$c2 = ($r2) ? mysqli_fetch_assoc($r2)['total'] : 0;
+$unreadCount = $c1 + $c2;
+
 $user_stmt = mysqli_prepare($conn, "SELECT * FROM user WHERE user_id = ?");
 mysqli_stmt_bind_param($user_stmt, "i", $user_id);
 mysqli_stmt_execute($user_stmt);
@@ -152,6 +160,93 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .btn-dark:hover{ background:var(--orange); }
         .menu-toggle{ display:none; font-size:32px; background:none; color:var(--dark-brown); }
 
+        /* Header Menu Icon Dropdown Styles */
+        .user-menu-wrapper {
+          position: relative;
+          display: inline-block;
+        }
+
+        .menu-icon-btn {
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 8px 14px;
+          border-radius: 20px;
+          background: #f0e4c7;
+          color: black;
+          border: none;
+          font-size: 16px;
+          transition: background 0.2s;
+        }
+
+        .menu-icon-btn:hover {
+          background: #dccfad;
+        }
+
+        .badge-count {
+          background: #e63946;
+          color: white;
+          font-size: 10px;
+          font-weight: 700;
+          padding: 2px 6px;
+          border-radius: 10px;
+          margin-left: 2px;
+        }
+
+        .user-dropdown-menu {
+          display: none;
+          position: absolute;
+          right: 0;
+          top: 48px;
+          background-color: #ede1c6;
+          min-width: 200px;
+          box-shadow: 0px 8px 20px rgba(0,0,0,0.18);
+          border-radius: 12px;
+          overflow: hidden;
+          z-index: 1000;
+          border: 1px solid #ddccae;
+        }
+
+        .user-dropdown-menu.show {
+          display: block;
+        }
+
+        .user-dropdown-menu a {
+          color: #2b2b2b;
+          padding: 12px 16px;
+          text-decoration: none;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          font-size: 14px;
+          font-weight: 600;
+          transition: background 0.2s;
+        }
+
+        .user-dropdown-menu a:hover {
+          background-color: #ddceac;
+        }
+
+        .dropdown-divider {
+          height: 1px;
+          background-color: #ddccae;
+          margin: 4px 0;
+        }
+
+        .logout-link {
+          color: #b3261e !important;
+        }
+
+        .badge-sub {
+          margin-left: auto;
+          background: #e63946;
+          color: white;
+          font-size: 11px;
+          padding: 2px 6px;
+          border-radius: 10px;
+        }
+
         .adopt-hero{ width:100%; background:var(--tan-light); padding:45px 80px 40px; text-align:center; }
         .adopt-hero-content{ max-width:700px; margin:0 auto; }
         .sub-kicker{ font-size:13px; font-weight:700; letter-spacing:1.5px; color:var(--maroon); display:inline-block; margin-bottom:8px; text-transform:uppercase; }
@@ -250,9 +345,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <a href="contact.php">Contact</a>
             <a href="report.php">Report a Dog</a>
         </nav>
+
+        <!-- Header Action Buttons -->
         <div class="header-buttons">
-            <a href="logout.php" class="btn btn-outline">Logout</a>
+          <?php if (isset($_SESSION['user_id'])): ?>
+            
+            <!-- LOGGED IN: MENU ICON DROPDOWN -->
+            <div class="user-menu-wrapper">
+              <button class="menu-icon-btn" id="userMenuBtn" onclick="toggleUserDropdown()" aria-label="User Menu">
+                <span>👤</span> ▾ <?php if ($unreadCount > 0): ?><span class="badge-count"><?php echo $unreadCount; ?></span><?php endif; ?>
+              </button>
+
+              <div class="user-dropdown-menu" id="userDropdownMenu">
+                <a href="account.php"><span class="icon">👤</span> Account</a>
+                <a href="messages.php"><span class="icon">✉️</span> Messages</a>
+                <a href="notifications.php"><span class="icon">🔔</span> Notification <?php if ($unreadCount > 0): ?><span class="badge-sub"><?php echo $unreadCount; ?></span><?php endif; ?></a>
+                <a href="history.php"><span class="icon">📜</span> History</a>
+                <a href="settings.php"><span class="icon">⚙️</span> Setting</a>
+                <div class="dropdown-divider"></div>
+                <a href="logout.php" class="logout-link"><span class="icon">🚪</span> Logout</a>
+              </div>
+            </div>
+
+          <?php else: ?>
+
+            <!-- LOGGED OUT: LOGIN & SIGNUP -->
+            <a href="signup.php" class="btn btn-outline" style="text-decoration:none;">Sign Up</a>
+            <a href="login.php" class="btn btn-dark" style="text-decoration:none;">Login</a>
+
+          <?php endif; ?>
         </div>
+
         <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">☰</button>
     </header>
 
@@ -482,6 +605,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 </footer>
 
+    <script>
+    function toggleUserDropdown() {
+      var menu = document.getElementById("userDropdownMenu");
+      if (menu) {
+        menu.classList.toggle("show");
+      }
+    }
+
+    window.addEventListener('click', function(e) {
+      var btn = document.getElementById('userMenuBtn');
+      var menu = document.getElementById('userDropdownMenu');
+      if (menu && btn && !btn.contains(e.target) && !menu.contains(e.target)) {
+        menu.classList.remove('show');
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const btn = document.getElementById('scrollTopBtn');
+        if (btn) {
+            btn.addEventListener('click', function() {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+        }
+    });
+    </script>
     <script src="assets/js/script.js"></script>
 </body>
 </html>

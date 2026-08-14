@@ -85,7 +85,7 @@ button{
 
 .nav .active{
     color:var(--maroon);
-    font-weight: 640;
+    font-weight: 610;
 }
 
 .nav a::after{

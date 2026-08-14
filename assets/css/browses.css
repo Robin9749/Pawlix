@@ -82,9 +82,10 @@ button{
     position:relative;
 }
 
-.nav a:hover,
+
 .nav .active{
     color:var(--maroon);
+    font-weight: 610;
 }
 
 .nav a::after{

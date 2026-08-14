@@ -1,5 +1,20 @@
 <?php
+session_start();
 include("config/config.php");
+
+// Unread Notifications Count
+$unreadCount = 0;
+if (isset($_SESSION['user_id'])) {
+    $uid = intval($_SESSION['user_id']);
+    
+    $r1 = @mysqli_query($conn, "SELECT COUNT(*) AS total FROM report_dogs WHERE user_id = $uid AND status != 'Pending'");
+    $r2 = @mysqli_query($conn, "SELECT COUNT(*) AS total FROM adoption_application WHERE user_id = $uid AND status != 'Pending'");
+    
+    $c1 = ($r1) ? mysqli_fetch_assoc($r1)['total'] : 0;
+    $c2 = ($r2) ? mysqli_fetch_assoc($r2)['total'] : 0;
+    
+    $unreadCount = $c1 + $c2;
+}
 
 $error = "";
 $success = false;
@@ -67,11 +82,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($error === "") {
             $photo_db = mysqli_real_escape_string($conn, $photo_name_save);
+            $user_id_val = isset($_SESSION['user_id']) ? intval($_SESSION['user_id']) : "NULL";
 
-           $sql = "INSERT INTO report_dogs
-    (name, phone_number, email, report_type, dog_color, estimated_age, gender, dog_condition, description, location_area, city_municipality, landmark, dog_photo, status)
+            $sql = "INSERT INTO report_dogs
+    (user_id, name, phone_number, email, report_type, dog_color, estimated_age, gender, dog_condition, description, location_area, city_municipality, landmark, dog_photo, status)
     VALUES
-    ('$reporterName', '$reporterPhone', '$reporterEmail', '$reportType', '$dogColor', '$estimatedAge', '$dogGender', '$dogCondition', '$description', '$locationArea', '$city', '$landmark', '$photo_db', 'Pending')";
+    ($user_id_val, '$reporterName', '$reporterPhone', '$reporterEmail', '$reportType', '$dogColor', '$estimatedAge', '$dogGender', '$dogCondition', '$description', '$locationArea', '$city', '$landmark', '$photo_db', 'Pending')";
 
             if (mysqli_query($conn, $sql)) {
                 $newId = mysqli_insert_id($conn);
@@ -115,9 +131,124 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         .header{ width:100%; height:90px; display:flex; justify-content:space-between; align-items:center; padding:0 80px; background:var(--cream); position:relative; z-index:1000; box-shadow:0 5px 20px rgba(0,0,0,.05); }
         .logo img{ width:150px; position:relative; top:15px; left:-20px; }
-        .nav{ display:flex; align-items:center; gap:45px; }
-        .nav a{ font-size:16px; font-weight:500; color:var(--dark-brown); transition:.3s; position:relative; }
-        .nav a:hover, .nav .active{ color:var(--maroon); }
+       .nav{
+    display:flex;
+    align-items:center;
+    gap:45px;
+}
+
+.nav a{
+    font-size:16px;
+    font-weight:500;
+    color:var(--dark-brown);
+    transition:.3s;
+    position:relative;
+}
+
+
+.nav .active{
+    color:var(--maroon);
+    font-weight: 610;
+}
+
+.nav a::after{
+    content:"";
+    position:absolute;
+    left:0;
+    bottom:-8px;
+    width:0%;
+    height:3px;
+    background:var(--maroon);
+    transition:.35s;
+    border-radius:20px;
+}
+
+        /* Header Menu Icon Dropdown Styles */
+        .user-menu-wrapper {
+          position: relative;
+          display: inline-block;
+        }
+
+        .menu-icon-btn {
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 8px 14px;
+          border-radius: 20px;
+          background: #f0e4c7;
+          color: black;
+          border: none;
+          font-size: 16px;
+          transition: background 0.2s;
+        }
+
+        .menu-icon-btn:hover {
+          background: #dccfad;
+        }
+
+        .badge-count {
+          background: #e63946;
+          color: white;
+          font-size: 10px;
+          font-weight: 700;
+          padding: 2px 6px;
+          border-radius: 10px;
+          margin-left: 2px;
+        }
+
+        .user-dropdown-menu {
+          display: none;
+          position: absolute;
+          right: 0;
+          top: 48px;
+          background-color: #ede1c6;
+          min-width: 200px;
+          box-shadow: 0px 8px 20px rgba(0,0,0,0.18);
+          border-radius: 12px;
+          overflow: hidden;
+          z-index: 1000;
+          border: 1px solid #ddccae;
+        }
+
+        .user-dropdown-menu.show {
+          display: block;
+        }
+
+        .user-dropdown-menu a {
+          color: #2b2b2b;
+          padding: 12px 16px;
+          text-decoration: none;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          font-size: 14px;
+          font-weight: 600;
+          transition: background 0.2s;
+        }
+
+        .user-dropdown-menu a:hover {
+          background-color: #ddceac;
+        }
+
+        .dropdown-divider {
+          height: 1px;
+          background-color: #ddccae;
+          margin: 4px 0;
+        }
+
+        .logout-link {
+          color: #b3261e !important;
+        }
+
+        .badge-sub {
+          margin-left: auto;
+          background: #e63946;
+          color: white;
+          font-size: 11px;
+          padding: 2px 6px;
+          border-radius: 10px;
+        }
 
         .report-hero{ width:100%; background:var(--tan-light); padding:45px 80px 40px; text-align:center; }
         .report-hero-content{ max-width:720px; margin:0 auto; }
@@ -170,10 +301,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <a href="contact.php">Contact</a>
             <a href="report.php" class="active">Report a Dog</a>
         </nav>
+
+        <!-- Header Action Buttons -->
         <div class="header-buttons">
-            <button class="btn btn-outline">Sign Up</button>
-            <button class="btn btn-dark">Login</button>
+          <?php if (isset($_SESSION['user_id'])): ?>
+            
+            <!-- LOGGED IN: MENU ICON DROPDOWN -->
+            <div class="user-menu-wrapper">
+              <button class="menu-icon-btn" id="userMenuBtn" onclick="toggleUserDropdown()" aria-label="User Menu">
+                <span>👤</span> ▾ <?php if ($unreadCount > 0): ?><span class="badge-count"><?php echo $unreadCount; ?></span><?php endif; ?>
+              </button>
+
+              <div class="user-dropdown-menu" id="userDropdownMenu">
+                <a href="account.php"><span class="icon">👤</span> Account</a>
+                <a href="messages.php"><span class="icon">✉️</span> Messages</a>
+                <a href="notifications.php"><span class="icon">🔔</span> Notification <?php if ($unreadCount > 0): ?><span class="badge-sub"><?php echo $unreadCount; ?></span><?php endif; ?></a>
+                <a href="history.php"><span class="icon">📜</span> History</a>
+                <a href="settings.php"><span class="icon">⚙️</span> Setting</a>
+                <div class="dropdown-divider"></div>
+                <a href="logout.php" class="logout-link"><span class="icon">🚪</span> Logout</a>
+              </div>
+            </div>
+
+          <?php else: ?>
+
+            <!-- LOGGED OUT: LOGIN & SIGNUP -->
+            <a href="signup.php" class="btn btn-outline" style="text-decoration:none;">Sign Up</a>
+            <a href="login.php" class="btn btn-dark" style="text-decoration:none;">Login</a>
+
+          <?php endif; ?>
         </div>
+
         <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">☰</button>
     </header>
 
@@ -336,7 +494,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     <div class="form-actions">
                         <button type="submit" class="btn-submit-report">Submit Report</button>
-                        <a href="index.html" class="btn-cancel-report">Cancel</a>
+                        <a href="index.php" class="btn-cancel-report">Cancel</a>
                     </div>
 
                 </form>
@@ -347,74 +505,98 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </main>
 
     <footer class="footer">
-    <div class="footer-container">
-        
-        <!-- 4 Columns Grid -->
-        <div class="footer-columns">
+        <div class="footer-container">
             
-            <!-- Column 1: PawLix -->
-            <div class="footer-col col-brand">
-                <h4 class="col-title">PAWLIX</h4>
-                <p class="brand-text">
-                    Connecting dogs waiting for rescue with loving, permanent families across Nepal through a simple and secure platform.
-                </p>
-            </div>
-
-            <!-- Column 2: Services -->
-            <div class="footer-col">
-                <h4 class="col-title">SERVICES</h4>
-                <p><a href="browse.php">Browse Dogs</a></p>
-                <p><a href="adopt.php">Apply for Adoption</a></p>
-                <p><a href="report.php">Report Stray / Injured</a></p>
-                <p><a href="contact.php">Support</a></p>
-            </div>
-
-            <!-- Column 3: Useful Links -->
-            <div class="footer-col">
-                <h4 class="col-title">USEFUL LINKS</h4>
-                <p><a href="index.php">Home</a></p>
-                <p><a href="about.php">About Us</a></p>
-                <p><a href="contact.php">Contact Us</a></p>
-        
-            </div>
-
-            <!-- Column 4: Contact -->
-            <div class="footer-col col-contact">
-                <h4 class="col-title">CONTACT</h4>
-                <p><span class="icon">📍</span> Kathmandu, Nepal</p>
-                <p><span class="icon">✉</span> support@pawlix.org</p>
-                <p><span class="icon">📞</span> +977 9800000000</p>
-                <p><span class="icon">🐾</span> Emergency 24/7 Support</p>
-            </div>
-
-        </div>
-
-        <!-- Thin Horizontal Line -->
-        <hr class="footer-hr">
-
-        <!-- Footer Bottom Bar -->
-        <div class="footer-bottom">
-            <p class="copyright">© <?php echo date('Y'); ?> PawLix. All rights reserved.</p>
-
-            <div class="footer-bottom-right">
-                <!-- Social Circle Buttons -->
-                <div class="socials">
-                    <a href="#" aria-label="Facebook"><span>f</span></a>
-                    <a href="#" aria-label="X"><span>𝕏</span></a>
-                    <a href="#" aria-label="Instagram"><span>◎</span></a>
-                    <a href="#" aria-label="YouTube"><span>▶</span></a>
+            <!-- 4 Columns Grid -->
+            <div class="footer-columns">
+                
+                <!-- Column 1: PawLix -->
+                <div class="footer-col col-brand">
+                    <h4 class="col-title">PAWLIX</h4>
+                    <p class="brand-text">
+                        Connecting dogs waiting for rescue with loving, permanent families across Nepal through a simple and secure platform.
+                    </p>
                 </div>
 
-                <!-- Call To Action Button (Back to Top) -->
-                <button class="scroll-top-btn" id="scrollTopBtn" type="button" aria-label="Back to top">
-                    <span>↑</span> Back to Top
-                </button>
+                <!-- Column 2: Services -->
+                <div class="footer-col">
+                    <h4 class="col-title">SERVICES</h4>
+                    <p><a href="browse.php">Browse Dogs</a></p>
+                    <p><a href="adopt.php">Apply for Adoption</a></p>
+                    <p><a href="report.php">Report Stray / Injured</a></p>
+                    <p><a href="contact.php">Support</a></p>
+                </div>
+
+                <!-- Column 3: Useful Links -->
+                <div class="footer-col">
+                    <h4 class="col-title">USEFUL LINKS</h4>
+                    <p><a href="index.php">Home</a></p>
+                    <p><a href="about.php">About Us</a></p>
+                    <p><a href="contact.php">Contact Us</a></p>
+                </div>
+
+                <!-- Column 4: Contact -->
+                <div class="footer-col col-contact">
+                    <h4 class="col-title">CONTACT</h4>
+                    <p><span class="icon">📍</span> Kathmandu, Nepal</p>
+                    <p><span class="icon">✉</span> support@pawlix.org</p>
+                    <p><span class="icon">📞</span> +977 9800000000</p>
+                    <p><span class="icon">🐾</span> Emergency 24/7 Support</p>
+                </div>
+
             </div>
+
+            <!-- Thin Horizontal Line -->
+            <hr class="footer-hr">
+
+            <!-- Footer Bottom Bar -->
+            <div class="footer-bottom">
+                <p class="copyright">© <?php echo date('Y'); ?> PawLix. All rights reserved.</p>
+
+                <div class="footer-bottom-right">
+                    <!-- Social Circle Buttons -->
+                    <div class="socials">
+                        <a href="#" aria-label="Facebook"><span>f</span></a>
+                        <a href="#" aria-label="X"><span>𝕏</span></a>
+                        <a href="#" aria-label="Instagram"><span>◎</span></a>
+                        <a href="#" aria-label="YouTube"><span>▶</span></a>
+                    </div>
+
+                    <!-- Call To Action Button (Back to Top) -->
+                    <button class="scroll-top-btn" id="scrollTopBtn" type="button" aria-label="Back to top">
+                        <span>↑</span> Back to Top
+                    </button>
+                </div>
+            </div>
+
         </div>
+    </footer>
 
-    </div>
-</footer>
+    <script>
+    function toggleUserDropdown() {
+      var menu = document.getElementById("userDropdownMenu");
+      if (menu) {
+        menu.classList.toggle("show");
+      }
+    }
 
+    window.addEventListener('click', function(e) {
+      var btn = document.getElementById('userMenuBtn');
+      var menu = document.getElementById('userDropdownMenu');
+      if (menu && btn && !btn.contains(e.target) && !menu.contains(e.target)) {
+        menu.classList.remove('show');
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const btn = document.getElementById('scrollTopBtn');
+        if (btn) {
+            btn.addEventListener('click', function() {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+        }
+    });
+    </script>
     <script src="assets/js/script.js"></script>
 </body>
 </html>

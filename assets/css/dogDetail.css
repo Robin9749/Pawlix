@@ -102,9 +102,7 @@ button{
 }
 
 
-.nav .active::after{
-    width:100%;
-}
+
 
 .header-buttons{
     display:flex;

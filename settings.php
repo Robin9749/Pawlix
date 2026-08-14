@@ -1,6 +1,8 @@
 <?php
 session_start();
 
+/* ================= LOGIN CHECK ================= */
+
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
     exit();
@@ -9,163 +11,955 @@ if (!isset($_SESSION['user_id'])) {
 require_once "config/config.php";
 
 $user_id = intval($_SESSION['user_id']);
-$user_res = mysqli_query($conn, "SELECT * FROM user WHERE user_id=$user_id");
-$user = mysqli_fetch_assoc($user_res);
+
+/* ================= GET USER ================= */
+
+$user_res = mysqli_query(
+    $conn,
+    "SELECT * FROM user WHERE user_id = $user_id"
+);
+
+$user = ($user_res) ? mysqli_fetch_assoc($user_res) : [];
 
 $success = "";
 $error = "";
 
-if (isset($_POST['update_profile'])) {
-    $first_name = mysqli_real_escape_string($conn, trim($_POST['first_name']));
-    $last_name = mysqli_real_escape_string($conn, trim($_POST['last_name']));
-    $email = mysqli_real_escape_string($conn, trim($_POST['email']));
-    $phone = mysqli_real_escape_string($conn, trim($_POST['phone']));
+/* ================= UPDATE PROFILE ================= */
 
-    $sql = "UPDATE user SET first_name='$first_name', last_name='$last_name', email='$email', phone='$phone' WHERE user_id=$user_id";
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
 
-    if (mysqli_query($conn, $sql)) {
-        $_SESSION['user_name'] = $first_name . " " . $last_name;
-        $success = "Profile updated successfully!";
-        $user['first_name'] = $first_name;
-        $user['last_name'] = $last_name;
-        $user['email'] = $email;
-        $user['phone'] = $phone;
+    $first_name = trim($_POST['first_name'] ?? '');
+    $last_name  = trim($_POST['last_name'] ?? '');
+    $email      = trim($_POST['email'] ?? '');
+    $phone      = trim($_POST['phone'] ?? '');
+
+    if ($first_name === '' || $last_name === '' || $email === '' || $phone === '') {
+
+        $error = "Please fill in all fields.";
+
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+
+        $error = "Please enter a valid email address.";
+
     } else {
-        $error = "Error updating profile: " . mysqli_error($conn);
+
+        $first_name_db = mysqli_real_escape_string($conn, $first_name);
+        $last_name_db  = mysqli_real_escape_string($conn, $last_name);
+        $email_db      = mysqli_real_escape_string($conn, $email);
+        $phone_db      = mysqli_real_escape_string($conn, $phone);
+
+        $sql = "
+            UPDATE user
+            SET
+                first_name = '$first_name_db',
+                last_name  = '$last_name_db',
+                email      = '$email_db',
+                phone      = '$phone_db'
+            WHERE user_id = $user_id
+        ";
+
+        if (mysqli_query($conn, $sql)) {
+
+            $_SESSION['user_name'] = $first_name . " " . $last_name;
+
+            $success = "Profile updated successfully!";
+
+            $user['first_name'] = $first_name;
+            $user['last_name']  = $last_name;
+            $user['email']      = $email;
+            $user['phone']      = $phone;
+
+        } else {
+
+            $error = "Error updating profile.";
+        }
     }
 }
 
+/* ================= NOTIFICATION COUNT ================= */
+
 $unreadCount = 0;
-$r1 = @mysqli_query($conn, "SELECT COUNT(*) AS total FROM report_dogs WHERE user_id = $user_id AND status != 'Pending'");
-$r2 = @mysqli_query($conn, "SELECT COUNT(*) AS total FROM adoption_application WHERE user_id = $user_id AND status != 'Pending'");
-$c1 = ($r1) ? mysqli_fetch_assoc($r1)['total'] : 0;
-$c2 = ($r2) ? mysqli_fetch_assoc($r2)['total'] : 0;
+
+$r1 = mysqli_query(
+    $conn,
+    "SELECT COUNT(*) AS total
+     FROM report_dogs
+     WHERE user_id = $user_id
+     AND status != 'Pending'"
+);
+
+$r2 = mysqli_query(
+    $conn,
+    "SELECT COUNT(*) AS total
+     FROM adoption_application
+     WHERE user_id = $user_id
+     AND status != 'Pending'"
+);
+
+$c1 = 0;
+$c2 = 0;
+
+if ($r1) {
+    $row1 = mysqli_fetch_assoc($r1);
+    $c1 = intval($row1['total']);
+}
+
+if ($r2) {
+    $row2 = mysqli_fetch_assoc($r2);
+    $c2 = intval($row2['total']);
+}
+
 $unreadCount = $c1 + $c2;
+
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Settings - PawLix</title>
-<link rel="stylesheet" href="assets/css/style.css">
-<style>
-.user-menu-wrapper { position: relative; display: inline-block; }
-.menu-icon-btn { cursor: pointer; display: flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 20px; background: #2b2b2b; color: white; border: none; font-size: 15px; font-weight: 600; }
-.badge-count { background: #e63946; color: white; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 10px; }
-.user-dropdown-menu { display: none; position: absolute; right: 0; top: 48px; background-color: #ede1c6; min-width: 190px; box-shadow: 0px 8px 20px rgba(0,0,0,0.18); border-radius: 12px; overflow: hidden; z-index: 1000; border: 1px solid #ddccae; }
-.user-dropdown-menu.show { display: block; }
-.user-dropdown-menu a { color: #2b2b2b; padding: 12px 16px; text-decoration: none; display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; }
-.user-dropdown-menu a:hover { background-color: #ddceac; }
-.logout-link { color: #b3261e !important; }
 
-.page-container { max-width: 700px; margin: 40px auto 60px; padding: 0 20px; }
-.panel-card { background: #ede1c6; border-radius: 16px; padding: 30px; border: 1px solid #ddccae; box-shadow: 0 4px 15px rgba(0,0,0,0.04); }
-.panel-card h2 { margin: 0 0 20px; font-size: 22px; font-weight: 700; color: #1a1a1a; }
-.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-.form-group { display: flex; flex-direction: column; gap: 6px; }
-.form-group.full { grid-column: 1 / 3; }
-.form-group label { font-size: 13px; font-weight: 600; color: #2b2b2b; }
-.form-group input { padding: 12px 14px; border: 1px solid #ddccae; border-radius: 10px; background: #ffffff; font-family: inherit; font-size: 14px; }
-.form-group input:focus { outline: none; border-color: #f2932b; box-shadow: 0 0 5px rgba(242, 147, 43, 0.3); }
-.btn-primary { background: #f2932b; color: white; border: none; padding: 12px 24px; border-radius: 10px; font-weight: 700; font-size: 14px; font-family: inherit; cursor: pointer; transition: background 0.2s; width: 100%; }
-.btn-primary:hover { background: #e08420; }
-.alert-msg { padding: 12px 18px; border-radius: 10px; font-size: 14px; font-weight: 600; margin-bottom: 20px; }
-.alert-success { background: #d1fae5; color: #065f46; }
-.alert-error { background: #fee2e2; color: #991b1b; }
-@media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } .form-group.full { grid-column: 1; } }
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Settings - PawLix</title>
+
+<link rel="stylesheet" href="assets/css/style.css">
+
+<style>
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+    --cream: #e9d9b8;
+    --tan-light: #ecdfc3;
+    --pale-yellow: #f3ecd5;
+    --tan-card: #f8eac9;
+    --maroon: #7a1f1f;
+    --dark-brown: #4a3223;
+    --orange: #ff7f11;
+    --orange-dark: #e06600;
+    --border-color: #dfcfb0;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: var(--pale-yellow);
+    color: #222;
+    margin: 0;
+    padding: 0;
+}
+
+/* ================= USER MENU ================= */
+
+.user-menu-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.menu-icon-btn {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 20px;
+    background: #f0e4c7;
+    color: black;
+    border: none;
+    font-size: 16px;
+    transition: background 0.2s;
+}
+
+.menu-icon-btn:hover {
+    background: #dccfad;
+}
+
+.badge-count {
+    background: #e63946;
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 10px;
+}
+
+.user-dropdown-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 48px;
+    background-color: #ede1c6;
+    min-width: 190px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.18);
+    border-radius: 12px;
+    overflow: hidden;
+    z-index: 99999;
+    border: 1px solid #ddccae;
+}
+
+.user-dropdown-menu.show {
+    display: block;
+}
+
+.user-dropdown-menu a {
+    color: #2b2b2b;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.user-dropdown-menu a:hover {
+    background-color: #ddceac;
+}
+
+.logout-link {
+    color: #b3261e !important;
+}
+
+/* ================= LOGOUT MODAL ================= */
+
+.logout-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.50);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 999999;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.logout-modal-overlay.show {
+  display: flex;
+}
+
+.logout-modal {
+  width: 100%;
+  max-width: 400px;
+  background: #ede1c6;
+  border-radius: 16px;
+  padding: 32px 28px;
+  text-align: center;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.30);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  animation: logoutPopup 0.25s ease-out;
+}
+
+@keyframes logoutPopup {
+  from {
+    transform: scale(0.85);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.logout-modal h2 {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 8px;
+}
+
+.logout-modal p {
+  font-size: 14px;
+  color: #555555;
+  margin-bottom: 26px;
+  line-height: 1.5;
+}
+
+.logout-modal-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.logout-cancel,
+.logout-confirm {
+  flex: 1;
+  padding: 13px;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  text-align: center;
+}
+
+.logout-cancel {
+  background: #ffffff;
+  color: #2b2b2b;
+  border: 1px solid #ddccae;
+}
+
+.logout-cancel:hover {
+  background: #f5ecda;
+}
+
+.logout-confirm {
+  background: #b3261e;
+  color: #ffffff;
+  border: none;
+  box-shadow: 0 4px 12px rgba(179, 38, 30, 0.3);
+}
+
+.logout-confirm:hover {
+  background: #961e17;
+}
+
+/* ================= PAGE ================= */
+
+.page-container {
+    max-width: 740px;
+    margin: 45px auto 65px;
+    padding: 0 20px;
+    min-height: calc(100vh - 250px);
+}
+
+.panel-card {
+    background: var(--tan-card);
+    border-radius: 20px;
+    padding: 35px 40px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+}
+
+.panel-card h2 {
+    margin: 0 0 24px;
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--dark-brown);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 16px;
+}
+
+/* ================= FORM ================= */
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-group.full {
+    grid-column: 1 / 3;
+}
+
+.form-group label {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--dark-brown);
+}
+
+.form-group input {
+    padding: 13px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background: var(--pale-yellow);
+    font-family: 'Poppins', sans-serif;
+    font-size: 14.5px;
+    color: #222;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--orange);
+    background: #ffffff;
+    box-shadow: 0 0 0 4px rgba(255,127,17,0.15);
+}
+
+/* ================= BUTTON ================= */
+
+.btn-primary {
+    background: var(--orange);
+    color: white;
+    border: none;
+    padding: 14px 28px;
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: 15px;
+    font-family: 'Poppins', sans-serif;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 100%;
+    box-shadow: 0 4px 14px rgba(255,127,17,0.3);
+}
+
+.btn-primary:hover {
+    background: var(--orange-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(255,127,17,0.45);
+}
+
+/* ================= ALERT ================= */
+
+.alert-msg {
+    padding: 14px 20px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 24px;
+}
+
+.alert-success {
+    background: #d1fae5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+}
+
+.alert-error {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fca5a5;
+}
+
+/* ================= RESPONSIVE ================= */
+
+@media (max-width: 600px) {
+
+    .panel-card {
+        padding: 25px 20px;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .form-group.full {
+        grid-column: 1;
+    }
+}
+
 </style>
+
 </head>
+
 <body>
 
-  <header class="header">
-    <div class="logo">
-      <img src="assets/images/logo.png" alt="PawLix logo">
-    </div>
-    <nav class="nav">
-      <a href="index.php">Home</a>
-      <a href="browse.php">Browse Dogs ▾</a>
-      <a href="about.php">About</a>
-      <a href="contact.php">Contact</a>
-      <a href="report.php">Report a Dog</a>
-    </nav>
-    <div class="header-buttons">
-      <div class="user-menu-wrapper">
-        <button class="menu-icon-btn" id="userMenuBtn" onclick="toggleUserDropdown()" aria-label="User Menu">
-          <span>👤</span> ▾ <?php if ($unreadCount > 0): ?><span class="badge-count"><?php echo $unreadCount; ?></span><?php endif; ?>
-        </button>
-        <div class="user-dropdown-menu" id="userDropdownMenu">
-          <a href="account.php"><span class="icon">👤</span> Account</a>
-          <a href="messages.php"><span class="icon">✉️</span> Messages</a>
-          <a href="notifications.php"><span class="icon">🔔</span> Notification</a>
-          <a href="history.php"><span class="icon">📜</span> History</a>
-          <a href="settings.php"><span class="icon">⚙️</span> Setting</a>
-          <div style="height: 1px; background-color: #ddccae; margin: 4px 0;"></div>
-          <a href="logout.php" class="logout-link"><span class="icon">🚪</span> Logout</a>
-        </div>
-      </div>
-    </div>
-    <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">☰</button>
-  </header>
+<!-- ================= HEADER ================= -->
 
-<hr style="background-color: white; height: 1px; border: none;">
+<header class="header">
+
+    <div class="logo">
+        <a href="index.php">
+            <img src="assets/images/logo.png" alt="PawLix logo">
+        </a>
+    </div>
+
+    <nav class="nav">
+        <a href="index.php">Home</a>
+        <a href="browse.php">Browse Dogs ▾</a>
+        <a href="about.php">About</a>
+        <a href="contact.php">Contact</a>
+        <a href="report.php">Report a Dog</a>
+    </nav>
+
+    <div class="header-buttons">
+
+        <div class="user-menu-wrapper">
+
+            <button
+                class="menu-icon-btn"
+                id="userMenuBtn"
+                type="button"
+                aria-label="User Menu"
+            >
+
+                <span>👤</span>
+
+                ▾
+
+                <?php if ($unreadCount > 0): ?>
+
+                    <span class="badge-count">
+                        <?php echo $unreadCount; ?>
+                    </span>
+
+                <?php endif; ?>
+
+            </button>
+
+            <div
+                class="user-dropdown-menu"
+                id="userDropdownMenu"
+            >
+
+                <a href="account.php">
+                    <span>👤</span>
+                    Account
+                </a>
+
+                <a href="messages.php">
+                    <span>✉️</span>
+                    Messages
+                </a>
+
+                <a href="notifications.php">
+                    <span>🔔</span>
+                    Notification
+                </a>
+
+                <a href="history.php">
+                    <span>📜</span>
+                    History
+                </a>
+
+                <a href="settings.php">
+                    <span>⚙️</span>
+                    Setting
+                </a>
+
+                <div
+                    style="
+                        height:1px;
+                        background-color:#ddccae;
+                        margin:4px 0;
+                    "
+                ></div>
+
+                <!-- LOGOUT TRIGGER -->
+                <a
+                    href="#"
+                    class="logout-link logout-trigger"
+                    id="logoutLink"
+                >
+                    <span>🚪</span>
+                    Logout
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <button
+        class="menu-toggle"
+        id="menuToggle"
+        type="button"
+        aria-label="Toggle menu"
+    >
+        ☰
+    </button>
+
+</header>
+
+<hr style="background-color:white;height:1px;border:none;">
+
+<!-- ================= MAIN ================= -->
 
 <div class="page-container">
-  <div class="panel-card">
-    <h2>⚙️ Account Settings</h2>
 
-    <?php if ($success != "") { echo "<div class='alert-msg alert-success'>$success</div>"; } ?>
-    <?php if ($error != "") { echo "<div class='alert-msg alert-error'>$error</div>"; } ?>
+    <div class="panel-card">
 
-    <form method="POST" action="settings.php" class="form-grid">
-      <div class="form-group">
-        <label>First Name</label>
-        <input type="text" name="first_name" value="<?php echo htmlspecialchars($user['first_name'] ?? ''); ?>" required>
-      </div>
-      <div class="form-group">
-        <label>Last Name</label>
-        <input type="text" name="last_name" value="<?php echo htmlspecialchars($user['last_name'] ?? ''); ?>" required>
-      </div>
-      <div class="form-group full">
-        <label>Email Address</label>
-        <input type="email" name="email" value="<?php echo htmlspecialchars($user['email'] ?? ''); ?>" required>
-      </div>
-      <div class="form-group full">
-        <label>Phone Contact Number</label>
-        <input type="text" name="phone" value="<?php echo htmlspecialchars($user['phone'] ?? ''); ?>" required>
-      </div>
-      <div class="form-group full" style="margin-top:10px;">
-        <button type="submit" name="update_profile" class="btn-primary">Save Settings</button>
-      </div>
-    </form>
-  </div>
+        <h2>⚙️ Account Settings</h2>
+
+        <?php if ($success !== ""): ?>
+
+            <div class="alert-msg alert-success">
+                ✓ <?php echo htmlspecialchars($success); ?>
+            </div>
+
+        <?php endif; ?>
+
+        <?php if ($error !== ""): ?>
+
+            <div class="alert-msg alert-error">
+                ⚠️ <?php echo htmlspecialchars($error); ?>
+            </div>
+
+        <?php endif; ?>
+
+        <form
+            method="POST"
+            action="settings.php"
+            class="form-grid"
+        >
+
+            <div class="form-group">
+
+                <label for="first_name">
+                    First Name
+                </label>
+
+                <input
+                    type="text"
+                    id="first_name"
+                    name="first_name"
+                    value="<?php echo htmlspecialchars($user['first_name'] ?? ''); ?>"
+                    required
+                >
+
+            </div>
+
+            <div class="form-group">
+
+                <label for="last_name">
+                    Last Name
+                </label>
+
+                <input
+                    type="text"
+                    id="last_name"
+                    name="last_name"
+                    value="<?php echo htmlspecialchars($user['last_name'] ?? ''); ?>"
+                    required
+                >
+
+            </div>
+
+            <div class="form-group full">
+
+                <label for="email">
+                    Email Address
+                </label>
+
+                <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    value="<?php echo htmlspecialchars($user['email'] ?? ''); ?>"
+                    required
+                >
+
+            </div>
+
+            <div class="form-group full">
+
+                <label for="phone">
+                    Phone Contact Number
+                </label>
+
+                <input
+                    type="text"
+                    id="phone"
+                    name="phone"
+                    value="<?php echo htmlspecialchars($user['phone'] ?? ''); ?>"
+                    required
+                >
+
+            </div>
+
+            <div
+                class="form-group full"
+                style="margin-top:10px;"
+            >
+
+                <button
+                    type="submit"
+                    name="update_profile"
+                    class="btn-primary"
+                >
+                    Save Settings
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
 </div>
 
-<footer class="footer">
-    <div class="footer-container">
-        <div class="footer-columns">
-            <div class="footer-col col-brand"><h4 class="col-title">PAWLIX</h4><p class="brand-text">Connecting dogs waiting for rescue with loving, permanent families across Nepal through a simple and secure platform.</p></div>
-            <div class="footer-col"><h4 class="col-title">SERVICES</h4><p><a href="browse.php">Browse Dogs</a></p><p><a href="adopt.php">Apply for Adoption</a></p><p><a href="report.php">Report Stray / Injured</a></p><p><a href="contact.php">Support</a></p></div>
-            <div class="footer-col"><h4 class="col-title">USEFUL LINKS</h4><p><a href="index.php">Home</a></p><p><a href="about.php">About Us</a></p><p><a href="contact.php">Contact Us</a></p></div>
-            <div class="footer-col col-contact"><h4 class="col-title">CONTACT</h4><p><span class="icon">📍</span> Kathmandu, Nepal</p><p><span class="icon">✉</span> support@pawlix.org</p><p><span class="icon">📞</span> +977 9800000000</p><p><span class="icon">🐾</span> Emergency 24/7 Support</p></div>
-        </div>
-        <hr class="footer-hr">
-        <div class="footer-bottom"><p class="copyright">© <?php echo date('Y'); ?> PawLix. All rights reserved.</p></div>
+<!-- ================= LOGOUT CONFIRMATION MODAL ================= -->
+
+<div
+  class="logout-modal-overlay"
+  id="logoutModal">
+
+  <div
+    class="logout-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="logoutTitle">
+
+    <h2 id="logoutTitle">
+      Log Out?
+    </h2>
+
+    <p>
+      Are you sure you want to log out?
+    </p>
+
+    <div class="logout-modal-actions">
+
+      <button
+        type="button"
+        class="logout-cancel"
+        id="cancelLogout">
+
+        Cancel
+
+      </button>
+
+      <a
+        href="logout.php?confirm=true"
+        class="logout-confirm">
+
+        Log Out
+
+      </a>
+
     </div>
+
+  </div>
+
+</div>
+
+<!-- ================= FOOTER ================= -->
+
+<?php
+
+if (file_exists('includes/footer.php')) {
+
+    include 'includes/footer.php';
+
+} else {
+
+?>
+
+<footer class="footer">
+
+    <div class="footer-container">
+
+        <div class="footer-columns">
+
+            <div class="footer-col col-brand">
+
+                <h4 class="col-title">
+                    PAWLIX
+                </h4>
+
+                <p class="brand-text">
+                    Connecting dogs waiting for rescue with loving,
+                    permanent families across Nepal through a simple
+                    and secure platform.
+                </p>
+
+            </div>
+
+            <div class="footer-col">
+
+                <h4 class="col-title">
+                    SERVICES
+                </h4>
+
+                <p>
+                    <a href="browse.php">
+                        Browse Dogs
+                    </a>
+                </p>
+
+                <p>
+                    <a href="adopt.php">
+                        Apply for Adoption
+                    </a>
+                </p>
+
+                <p>
+                    <a href="report.php">
+                        Report Stray / Injured
+                    </a>
+                </p>
+
+                <p>
+                    <a href="contact.php">
+                        Support
+                    </a>
+                </p>
+
+            </div>
+
+            <div class="footer-col">
+
+                <h4 class="col-title">
+                    USEFUL LINKS
+                </h4>
+
+                <p>
+                    <a href="index.php">
+                        Home
+                    </a>
+                </p>
+
+                <p>
+                    <a href="about.php">
+                        About Us
+                    </a>
+                </p>
+
+                <p>
+                    <a href="contact.php">
+                        Contact Us
+                    </a>
+                </p>
+
+            </div>
+
+            <div class="footer-col col-contact">
+
+                <h4 class="col-title">
+                    CONTACT
+                </h4>
+
+                <p>
+                    <span class="icon">📍</span>
+                    Kathmandu, Nepal
+                </p>
+
+                <p>
+                    <span class="icon">✉</span>
+                    support@pawlix.org
+                </p>
+
+                <p>
+                    <span class="icon">📞</span>
+                    +977 9800000000
+                </p>
+
+                <p>
+                    <span class="icon">🐾</span>
+                    Emergency 24/7 Support
+                </p>
+
+            </div>
+
+        </div>
+
+        <hr class="footer-hr">
+
+        <div class="footer-bottom">
+
+            <p class="copyright">
+                © <?php echo date('Y'); ?>
+                PawLix. All rights reserved.
+            </p>
+
+        </div>
+
+    </div>
+
 </footer>
 
+<?php } ?>
+
+<!-- ================= JAVASCRIPT ================= -->
+
 <script>
-function toggleUserDropdown() {
-  var menu = document.getElementById("userDropdownMenu");
-  if (menu) { menu.classList.toggle("show"); }
+
+/*
+    USER DROPDOWN
+*/
+
+const userMenuBtn = document.getElementById("userMenuBtn");
+const userDropdownMenu = document.getElementById("userDropdownMenu");
+
+if (userMenuBtn && userDropdownMenu) {
+
+    userMenuBtn.addEventListener("click", function(event) {
+
+        event.preventDefault();
+
+        event.stopPropagation();
+
+        userDropdownMenu.classList.toggle("show");
+
+    });
+
 }
-window.addEventListener('click', function(e) {
-  var btn = document.getElementById('userMenuBtn');
-  var menu = document.getElementById('userDropdownMenu');
-  if (menu && btn && !btn.contains(e.target) && !menu.contains(e.target)) {
-    menu.classList.remove('show');
-  }
+
+
+/*
+    CLOSE DROPDOWN WHEN CLICKING OUTSIDE
+*/
+
+document.addEventListener("click", function(event) {
+
+    if (
+        userDropdownMenu &&
+        userMenuBtn &&
+        !userMenuBtn.contains(event.target) &&
+        !userDropdownMenu.contains(event.target)
+    ) {
+
+        userDropdownMenu.classList.remove("show");
+
+    }
+
 });
+
+
+/*
+    LOGOUT MODAL
+*/
+
+document.addEventListener("DOMContentLoaded", function() {
+
+    const logoutModal = document.getElementById("logoutModal");
+    const cancelLogout = document.getElementById("cancelLogout");
+    const logoutTrigger = document.querySelector(".logout-trigger");
+
+    if (logoutTrigger) {
+        logoutTrigger.addEventListener("click", function(e) {
+            e.preventDefault();
+            logoutModal.classList.add("show");
+            if (userDropdownMenu) {
+                userDropdownMenu.classList.remove("show");
+            }
+        });
+    }
+
+    if (cancelLogout) {
+        cancelLogout.addEventListener("click", function() {
+            logoutModal.classList.remove("show");
+        });
+    }
+
+    if (logoutModal) {
+        logoutModal.addEventListener("click", function(e) {
+            if (e.target === logoutModal) {
+                logoutModal.classList.remove("show");
+            }
+        });
+    }
+
+    document.addEventListener("keydown", function(e) {
+        if (e.key === "Escape" && logoutModal && logoutModal.classList.contains("show")) {
+            logoutModal.classList.remove("show");
+        }
+    });
+
+});
+
 </script>
+
+<script src="assets/js/script.js"></script>
+
 </body>
+
 </html>

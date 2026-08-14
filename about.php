@@ -1,5 +1,20 @@
 <?php
+session_start();
 require_once 'config/config.php';
+
+// Unread Notifications Count
+$unreadCount = 0;
+if (isset($_SESSION['user_id'])) {
+    $uid = intval($_SESSION['user_id']);
+    
+    $r1 = @mysqli_query($conn, "SELECT COUNT(*) AS total FROM report_dogs WHERE user_id = $uid AND status != 'Pending'");
+    $r2 = @mysqli_query($conn, "SELECT COUNT(*) AS total FROM adoption_application WHERE user_id = $uid AND status != 'Pending'");
+    
+    $c1 = ($r1) ? mysqli_fetch_assoc($r1)['total'] : 0;
+    $c2 = ($r2) ? mysqli_fetch_assoc($r2)['total'] : 0;
+    
+    $unreadCount = $c1 + $c2;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -8,6 +23,95 @@ require_once 'config/config.php';
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PawLix - About Us</title>
 <link rel="stylesheet" href="assets/css/about.css">
+
+<style>
+/* Header Menu Icon Dropdown Styles */
+.user-menu-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.menu-icon-btn {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 20px;
+  background: #f0e4c7;
+  color: black;
+  border: none;
+  font-size: 16px;
+  transition: background 0.2s;
+}
+
+.menu-icon-btn:hover {
+  background: #dccfad;
+}
+
+.badge-count {
+  background: #e63946;
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 10px;
+  margin-left: 2px;
+}
+
+.user-dropdown-menu {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: 48px;
+  background-color: #ede1c6;
+  min-width: 200px;
+  box-shadow: 0px 8px 20px rgba(0,0,0,0.18);
+  border-radius: 12px;
+  overflow: hidden;
+  z-index: 1000;
+  border: 1px solid #ddccae;
+}
+
+.user-dropdown-menu.show {
+  display: block;
+}
+
+.user-dropdown-menu a {
+  color: #2b2b2b;
+  padding: 12px 16px;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.user-dropdown-menu a:hover {
+  background-color: #ddceac;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background-color: #ddccae;
+  margin: 4px 0;
+}
+
+.logout-link {
+  color: #b3261e !important;
+}
+
+.badge-sub {
+  margin-left: auto;
+  background: #e63946;
+  color: white;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 10px;
+}
+</style>
 </head>
 <body>
 
@@ -22,10 +126,37 @@ require_once 'config/config.php';
       <a href="contact.php">Contact</a>
       <a href="report.php">Report a Dog</a>
     </nav>
+
+    <!-- Header Action Buttons -->
     <div class="header-buttons">
-      <button class="btn btn-outline">Sign Up</button>
-      <button class="btn btn-dark">Login</button>
+      <?php if (isset($_SESSION['user_id'])): ?>
+        
+        <!-- LOGGED IN: MENU ICON DROPDOWN -->
+        <div class="user-menu-wrapper">
+          <button class="menu-icon-btn" id="userMenuBtn" onclick="toggleUserDropdown()" aria-label="User Menu">
+            <span>👤</span> ▾ <?php if ($unreadCount > 0): ?><span class="badge-count"><?php echo $unreadCount; ?></span><?php endif; ?>
+          </button>
+
+          <div class="user-dropdown-menu" id="userDropdownMenu">
+            <a href="account.php"><span class="icon">👤</span> Account</a>
+            <a href="messages.php"><span class="icon">✉️</span> Messages</a>
+            <a href="notifications.php"><span class="icon">🔔</span> Notification <?php if ($unreadCount > 0): ?><span class="badge-sub"><?php echo $unreadCount; ?></span><?php endif; ?></a>
+            <a href="history.php"><span class="icon">📜</span> History</a>
+            <a href="settings.php"><span class="icon">⚙️</span> Setting</a>
+            <div class="dropdown-divider"></div>
+            <a href="logout.php" class="logout-link"><span class="icon">🚪</span> Logout</a>
+          </div>
+        </div>
+
+      <?php else: ?>
+
+        <!-- LOGGED OUT: LOGIN & SIGNUP -->
+        <a href="signup.php" class="btn btn-outline" style="text-decoration:none;">Sign Up</a>
+        <a href="login.php" class="btn btn-dark" style="text-decoration:none;">Login</a>
+
+      <?php endif; ?>
     </div>
+
     <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">☰</button>
   </header>
 
@@ -257,6 +388,31 @@ require_once 'config/config.php';
     </div>
 </footer>
 
+  <script>
+  function toggleUserDropdown() {
+    var menu = document.getElementById("userDropdownMenu");
+    if (menu) {
+      menu.classList.toggle("show");
+    }
+  }
+
+  window.addEventListener('click', function(e) {
+    var btn = document.getElementById('userMenuBtn');
+    var menu = document.getElementById('userDropdownMenu');
+    if (menu && btn && !btn.contains(e.target) && !menu.contains(e.target)) {
+      menu.classList.remove('show');
+    }
+  });
+
+  document.addEventListener('DOMContentLoaded', function() {
+      const btn = document.getElementById('scrollTopBtn');
+      if (btn) {
+          btn.addEventListener('click', function() {
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+          });
+      }
+  });
+  </script>
   <script src="assets/js/script.js"></script>
 </body>
 </html>

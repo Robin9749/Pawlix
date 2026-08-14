@@ -1,7 +1,17 @@
 <?php
 session_start();
-session_unset();
-session_destroy();
-header("Location: index.php");
-exit();
+
+/*
+ * Only destroy the session when the user has confirmed logout.
+ */
+if (
+    isset($_GET['confirm']) &&
+    ($_GET['confirm'] === 'true' || $_GET['confirm'] === 'yes')
+) {
+    session_unset();
+    session_destroy();
+
+    header("Location: login.php");
+    exit();
+}
 ?>

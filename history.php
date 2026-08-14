@@ -26,121 +26,802 @@ $unreadCount = $c1 + $c2;
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Activity History - PawLix</title>
 <link rel="stylesheet" href="assets/css/style.css">
-<style>
-.user-menu-wrapper { position: relative; display: inline-block; }
-.menu-icon-btn { cursor: pointer; display: flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 20px; background: #2b2b2b; color: white; border: none; font-size: 15px; font-weight: 600; }
-.menu-icon-btn:hover { background: #444; }
-.badge-count { background: #e63946; color: white; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 10px; }
-.user-dropdown-menu { display: none; position: absolute; right: 0; top: 48px; background-color: #ede1c6; min-width: 190px; box-shadow: 0px 8px 20px rgba(0,0,0,0.18); border-radius: 12px; overflow: hidden; z-index: 1000; border: 1px solid #ddccae; }
-.user-dropdown-menu.show { display: block; }
-.user-dropdown-menu a { color: #2b2b2b; padding: 12px 16px; text-decoration: none; display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; }
-.user-dropdown-menu a:hover { background-color: #ddceac; }
-.logout-link { color: #b3261e !important; }
 
-.page-container { max-width: 900px; margin: 40px auto 60px; padding: 0 20px; }
-.panel-card { background: #ede1c6; border-radius: 16px; padding: 30px; border: 1px solid #ddccae; box-shadow: 0 4px 15px rgba(0,0,0,0.04); }
-.panel-card h2 { margin: 0 0 20px; font-size: 22px; font-weight: 700; color: #1a1a1a; }
-.section-subtitle { font-size: 16px; font-weight: 700; margin: 24px 0 12px; color: #1a1a1a; }
-.hist-item { background: #f2e6c9; border-radius: 12px; padding: 18px 20px; border: 1px solid #ddccae; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
-.hist-item h4 { margin: 0 0 4px; font-size: 15px; font-weight: 700; }
-.hist-item p { margin: 0; font-size: 13px; color: #666; }
-.status-badge { padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; }
-.badge-Approved, .badge-Rescued { background: #d1fae5; color: #065f46; }
-.badge-Pending, .badge-Dispatched { background: #fef3c7; color: #92400e; }
-.badge-Rejected, .badge-Closed { background: #fee2e2; color: #991b1b; }
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  --cream: #e9d9b8;
+  --tan-light: #ecdfc3;
+  --pale-yellow: #f3ecd5;
+  --tan-card: #f8eac9;
+  --maroon: #7a1f1f;
+  --dark-brown: #4a3223;
+  --orange: #ff7f11;
+  --orange-dark: #e06600;
+  --navy: #0e1524;
+  --border-color: #dfcfb0;
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
+  background-color: var(--pale-yellow);
+  color: #222;
+  margin: 0;
+  padding: 0;
+}
+
+.user-menu-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.menu-icon-btn {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 20px;
+  background: #f0e4c7;
+  color: black;
+  border: none;
+  font-size: 16px;
+  transition: background 0.2s;
+}
+
+.menu-icon-btn:hover {
+  background: #dccfad;
+}
+
+.badge-count {
+  background: #e63946;
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 10px;
+}
+
+.user-dropdown-menu {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: 48px;
+  background-color: #ede1c6;
+  min-width: 190px;
+  box-shadow: 0px 8px 20px rgba(0,0,0,0.18);
+  border-radius: 12px;
+  overflow: hidden;
+  z-index: 1000;
+  border: 1px solid #ddccae;
+}
+
+.user-dropdown-menu.show {
+  display: block;
+}
+
+.user-dropdown-menu a {
+  color: #2b2b2b;
+  padding: 12px 16px;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.user-dropdown-menu a:hover {
+  background-color: #ddceac;
+}
+
+.logout-link {
+  color: #b3261e !important;
+}
+
+/* Page & Panel Container */
+.page-container {
+  max-width: 860px;
+  margin: 45px auto 65px;
+  padding: 0 20px;
+  min-height: calc(100vh - 250px);
+}
+
+.panel-card {
+  background: var(--tan-card);
+  border-radius: 20px;
+  padding: 35px 40px;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+}
+
+.panel-card h2 {
+  margin: 0 0 20px;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--dark-brown);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: 16px;
+}
+
+.section-subtitle {
+  font-size: 16.5px;
+  font-weight: 700;
+  margin: 28px 0 14px;
+  color: var(--dark-brown);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* History Item Card */
+.hist-item {
+  background: var(--pale-yellow);
+  border-radius: 14px;
+  padding: 20px 22px;
+  border: 1px solid var(--border-color);
+  margin-bottom: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hist-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.04);
+}
+
+.hist-item h4 {
+  margin: 0 0 5px;
+  font-size: 15.5px;
+  font-weight: 700;
+  color: var(--dark-brown);
+}
+
+.hist-item p {
+  margin: 0;
+  font-size: 13.5px;
+  color: #665444;
+  line-height: 1.5;
+}
+
+/* Status Badges */
+.status-badge {
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.badge-Approved,
+.badge-Rescued {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.badge-Pending,
+.badge-Dispatched {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.badge-Rejected,
+.badge-Closed {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+
+.empty-history-msg {
+  color: #665444;
+  font-size: 13.5px;
+  padding: 16px 20px;
+  background: var(--pale-yellow);
+  border-radius: 12px;
+  border: 1px dashed var(--border-color);
+  margin-bottom: 15px;
+}
+
+
+/* =========================================================
+   LOGOUT CONFIRMATION MODAL
+   ========================================================= */
+
+.logout-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+
+  /* Dark overlay + blur of the CURRENT history page */
+  background: rgba(0, 0, 0, 0.50);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+
+  z-index: 99999;
+
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.logout-modal-overlay.show {
+  display: flex;
+}
+
+.logout-modal {
+  width: 100%;
+  max-width: 400px;
+
+  background: #ede1c6;
+  border-radius: 16px;
+  padding: 32px 28px;
+
+  text-align: center;
+
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.30);
+
+  border: 1px solid rgba(255, 255, 255, 0.6);
+
+  animation: logoutPopup 0.25s ease-out;
+}
+
+@keyframes logoutPopup {
+  from {
+    transform: scale(0.85);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.logout-modal h2 {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 8px;
+}
+
+.logout-modal p {
+  font-size: 14px;
+  color: #555;
+  margin: 0 0 26px;
+  line-height: 1.5;
+}
+
+.logout-modal-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.logout-cancel,
+.logout-confirm {
+  flex: 1;
+  padding: 13px;
+
+  border-radius: 10px;
+
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+  text-decoration: none;
+
+  display: inline-block;
+  text-align: center;
+}
+
+.logout-cancel {
+  background: #ffffff;
+  color: #2b2b2b;
+  border: 1px solid #ddccae;
+}
+
+.logout-cancel:hover {
+  background: #f5ecda;
+}
+
+.logout-confirm {
+  background: #b3261e;
+  color: #ffffff;
+  border: none;
+
+  box-shadow: 0 4px 12px rgba(179, 38, 30, 0.3);
+}
+
+.logout-confirm:hover {
+  background: #961e17;
+}
+
+
+/* Mobile */
+@media (max-width: 600px) {
+
+  .panel-card {
+    padding: 25px 20px;
+  }
+
+  .hist-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .status-badge {
+    align-self: flex-start;
+  }
+
+  .logout-modal {
+    max-width: 360px;
+  }
+}
 </style>
 </head>
+
 <body>
 
-  <header class="header">
-    <div class="logo">
+<!-- HEADER -->
+<header class="header">
+
+  <div class="logo">
+    <a href="index.php">
       <img src="assets/images/logo.png" alt="PawLix logo">
-    </div>
-    <nav class="nav">
-      <a href="index.php">Home</a>
-      <a href="browse.php">Browse Dogs ▾</a>
-      <a href="about.php">About</a>
-      <a href="contact.php">Contact</a>
-      <a href="report.php">Report a Dog</a>
-    </nav>
-    <div class="header-buttons">
-      <div class="user-menu-wrapper">
-        <button class="menu-icon-btn" id="userMenuBtn" onclick="toggleUserDropdown()" aria-label="User Menu">
-          <span>👤</span> ▾ <?php if ($unreadCount > 0): ?><span class="badge-count"><?php echo $unreadCount; ?></span><?php endif; ?>
-        </button>
-        <div class="user-dropdown-menu" id="userDropdownMenu">
-          <a href="account.php"><span class="icon">👤</span> Account</a>
-          <a href="messages.php"><span class="icon">✉️</span> Messages</a>
-          <a href="notifications.php"><span class="icon">🔔</span> Notification</a>
-          <a href="history.php"><span class="icon">📜</span> History</a>
-          <a href="settings.php"><span class="icon">⚙️</span> Setting</a>
-          <div style="height: 1px; background-color: #ddccae; margin: 4px 0;"></div>
-          <a href="logout.php" class="logout-link"><span class="icon">🚪</span> Logout</a>
-        </div>
+    </a>
+  </div>
+
+  <nav class="nav">
+    <a href="index.php">Home</a>
+    <a href="browse.php">Browse Dogs ▾</a>
+    <a href="about.php">About</a>
+    <a href="contact.php">Contact</a>
+    <a href="report.php">Report a Dog</a>
+  </nav>
+
+  <div class="header-buttons">
+
+    <div class="user-menu-wrapper">
+
+      <button
+        class="menu-icon-btn"
+        id="userMenuBtn"
+        onclick="toggleUserDropdown()"
+        aria-label="User Menu"
+      >
+        <span>👤</span> ▾
+
+        <?php if ($unreadCount > 0): ?>
+          <span class="badge-count">
+            <?php echo $unreadCount; ?>
+          </span>
+        <?php endif; ?>
+
+      </button>
+
+      <div class="user-dropdown-menu" id="userDropdownMenu">
+
+        <a href="account.php">
+          <span class="icon">👤</span> Account
+        </a>
+
+        <a href="messages.php">
+          <span class="icon">✉️</span> Messages
+        </a>
+
+        <a href="notifications.php">
+          <span class="icon">🔔</span> Notification
+        </a>
+
+        <a href="history.php">
+          <span class="icon">📜</span> History
+        </a>
+
+        <a href="settings.php">
+          <span class="icon">⚙️</span> Setting
+        </a>
+
+        <div style="height: 1px; background-color: #ddccae; margin: 4px 0;"></div>
+
+        <!-- LOGOUT TRIGGER -->
+        <a href="#" class="logout-link logout-trigger">
+          <span class="icon">🚪</span> Logout
+        </a>
+
       </div>
+
     </div>
-    <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">☰</button>
-  </header>
+
+  </div>
+
+  <button
+    class="menu-toggle"
+    id="menuToggle"
+    aria-label="Toggle menu"
+  >
+    ☰
+  </button>
+
+</header>
 
 <hr style="background-color: white; height: 1px; border: none;">
 
+
+<!-- MAIN HISTORY PANEL -->
+
 <div class="page-container">
+
   <div class="panel-card">
+
     <h2>📜 Activity History</h2>
 
-    <div class="section-subtitle">📋 Adoption Applications</div>
-    <?php if (mysqli_num_rows($adoptions) > 0) { ?>
-      <?php while($a = mysqli_fetch_assoc($adoptions)) { ?>
-        <div class="hist-item">
-          <div>
-            <h4>Adoption Request: <?php echo htmlspecialchars($a['dog_name']); ?> (<?php echo htmlspecialchars($a['breed']); ?>)</h4>
-            <p>Application Date: <?php echo date("M d, Y", strtotime($a['application_date'])); ?></p>
-          </div>
-          <span class="status-badge badge-<?php echo $a['status']; ?>"><?php echo $a['status']; ?></span>
-        </div>
-      <?php } ?>
-    <?php } else { echo "<p style='color:#666; font-size:13px;'>No adoption applications submitted yet.</p>"; } ?>
 
-    <div class="section-subtitle" style="margin-top:35px;">🚨 Reported Dogs History</div>
-    <?php if (mysqli_num_rows($reports) > 0) { ?>
-      <?php while($r = mysqli_fetch_assoc($reports)) { ?>
+    <div class="section-subtitle">
+      📋 Adoption Applications
+    </div>
+
+
+    <?php if ($adoptions && mysqli_num_rows($adoptions) > 0) { ?>
+
+      <?php while($a = mysqli_fetch_assoc($adoptions)) { ?>
+
         <div class="hist-item">
+
           <div>
-            <h4><?php echo htmlspecialchars($r['report_type']); ?> Dog Alert — <?php echo htmlspecialchars($r['location_area']); ?></h4>
-            <p>Landmark: <?php echo htmlspecialchars($r['landmark']); ?> • Reported on: <?php echo date("M d, Y", strtotime($r['created_at'])); ?></p>
+
+            <h4>
+              Adoption Request:
+              <?php echo htmlspecialchars($a['dog_name']); ?>
+
+              (<?php echo htmlspecialchars($a['breed']); ?>)
+            </h4>
+
+            <p>
+              Application Date:
+              <?php echo date("M d, Y", strtotime($a['application_date'])); ?>
+            </p>
+
           </div>
-          <span class="status-badge badge-<?php echo $r['status']; ?>"><?php echo $r['status']; ?></span>
+
+          <span class="status-badge badge-<?php echo htmlspecialchars($a['status']); ?>">
+            <?php echo htmlspecialchars($a['status']); ?>
+          </span>
+
         </div>
+
       <?php } ?>
-    <?php } else { echo "<p style='color:#666; font-size:13px;'>No street dogs reported yet.</p>"; } ?>
+
+    <?php } else {
+
+      echo "<div class='empty-history-msg'>
+              No adoption applications submitted yet.
+            </div>";
+
+    } ?>
+
+
+    <div class="section-subtitle" style="margin-top:35px;">
+      🚨 Reported Dogs History
+    </div>
+
+
+    <?php if ($reports && mysqli_num_rows($reports) > 0) { ?>
+
+      <?php while($r = mysqli_fetch_assoc($reports)) { ?>
+
+        <div class="hist-item">
+
+          <div>
+
+            <h4>
+              <?php echo htmlspecialchars($r['report_type']); ?>
+              Dog Alert —
+              <?php echo htmlspecialchars($r['location_area']); ?>
+            </h4>
+
+            <p>
+              Landmark:
+              <?php echo htmlspecialchars($r['landmark']); ?>
+
+              • Reported on:
+              <?php echo date("M d, Y", strtotime($r['created_at'])); ?>
+            </p>
+
+          </div>
+
+          <span class="status-badge badge-<?php echo htmlspecialchars($r['status']); ?>">
+            <?php echo htmlspecialchars($r['status']); ?>
+          </span>
+
+        </div>
+
+      <?php } ?>
+
+    <?php } else {
+
+      echo "<div class='empty-history-msg'>
+              No street dogs reported yet.
+            </div>";
+
+    } ?>
+
   </div>
+
 </div>
 
-<footer class="footer">
-    <div class="footer-container">
-        <div class="footer-columns">
-            <div class="footer-col col-brand"><h4 class="col-title">PAWLIX</h4><p class="brand-text">Connecting dogs waiting for rescue with loving, permanent families across Nepal through a simple and secure platform.</p></div>
-            <div class="footer-col"><h4 class="col-title">SERVICES</h4><p><a href="browse.php">Browse Dogs</a></p><p><a href="adopt.php">Apply for Adoption</a></p><p><a href="report.php">Report Stray / Injured</a></p><p><a href="contact.php">Support</a></p></div>
-            <div class="footer-col"><h4 class="col-title">USEFUL LINKS</h4><p><a href="index.php">Home</a></p><p><a href="about.php">About Us</a></p><p><a href="contact.php">Contact Us</a></p></div>
-            <div class="footer-col col-contact"><h4 class="col-title">CONTACT</h4><p><span class="icon">📍</span> Kathmandu, Nepal</p><p><span class="icon">✉</span> support@pawlix.org</p><p><span class="icon">📞</span> +977 9800000000</p><p><span class="icon">🐾</span> Emergency 24/7 Support</p></div>
-        </div>
-        <hr class="footer-hr">
-        <div class="footer-bottom"><p class="copyright">© <?php echo date('Y'); ?> PawLix. All rights reserved.</p></div>
+
+<!-- LOGOUT CONFIRMATION MODAL -->
+
+<div class="logout-modal-overlay" id="logoutModal">
+
+  <div class="logout-modal">
+
+    <h2>Log Out?</h2>
+
+    <p>
+      Are you sure you want to log out?
+    </p>
+
+    <div class="logout-modal-actions">
+
+      <button
+        type="button"
+        class="logout-cancel"
+        id="cancelLogout"
+      >
+        Cancel
+      </button>
+
+      <a
+        href="logout.php?confirm=true"
+        class="logout-confirm"
+      >
+        Log Out
+      </a>
+
     </div>
+
+  </div>
+
+</div>
+
+
+<!-- FOOTER -->
+
+<?php
+
+if (file_exists('includes/footer.php')) {
+
+    include 'includes/footer.php';
+
+} else {
+
+?>
+
+<footer class="footer">
+
+  <div class="footer-container">
+
+    <div class="footer-columns">
+
+      <div class="footer-col col-brand">
+
+        <h4 class="col-title">PAWLIX</h4>
+
+        <p class="brand-text">
+          Connecting dogs waiting for rescue with loving,
+          permanent families across Nepal through a simple
+          and secure platform.
+        </p>
+
+      </div>
+
+
+      <div class="footer-col">
+
+        <h4 class="col-title">SERVICES</h4>
+
+        <p><a href="browse.php">Browse Dogs</a></p>
+
+        <p><a href="adopt.php">Apply for Adoption</a></p>
+
+        <p><a href="report.php">Report Stray / Injured</a></p>
+
+        <p><a href="contact.php">Support</a></p>
+
+      </div>
+
+
+      <div class="footer-col">
+
+        <h4 class="col-title">USEFUL LINKS</h4>
+
+        <p><a href="index.php">Home</a></p>
+
+        <p><a href="about.php">About Us</a></p>
+
+        <p><a href="contact.php">Contact Us</a></p>
+
+      </div>
+
+
+      <div class="footer-col col-contact">
+
+        <h4 class="col-title">CONTACT</h4>
+
+        <p>
+          <span class="icon">📍</span>
+          Kathmandu, Nepal
+        </p>
+
+        <p>
+          <span class="icon">✉</span>
+          support@pawlix.org
+        </p>
+
+        <p>
+          <span class="icon">📞</span>
+          +977 9800000000
+        </p>
+
+        <p>
+          <span class="icon">🐾</span>
+          Emergency 24/7 Support
+        </p>
+
+      </div>
+
+    </div>
+
+    <hr class="footer-hr">
+
+    <div class="footer-bottom">
+
+      <p class="copyright">
+        © <?php echo date('Y'); ?> PawLix.
+        All rights reserved.
+      </p>
+
+    </div>
+
+  </div>
+
 </footer>
 
+<?php } ?>
+
+
 <script>
+
+/* ============================
+   USER DROPDOWN
+   ============================ */
+
 function toggleUserDropdown() {
+
   var menu = document.getElementById("userDropdownMenu");
-  if (menu) { menu.classList.toggle("show"); }
-}
-window.addEventListener('click', function(e) {
-  var btn = document.getElementById('userMenuBtn');
-  var menu = document.getElementById('userDropdownMenu');
-  if (menu && btn && !btn.contains(e.target) && !menu.contains(e.target)) {
-    menu.classList.remove('show');
+
+  if (menu) {
+    menu.classList.toggle("show");
   }
+
+}
+
+
+window.addEventListener('click', function(e) {
+
+  var btn = document.getElementById('userMenuBtn');
+
+  var menu = document.getElementById('userDropdownMenu');
+
+  if (
+    menu &&
+    btn &&
+    !btn.contains(e.target) &&
+    !menu.contains(e.target)
+  ) {
+
+    menu.classList.remove('show');
+
+  }
+
 });
+
+
+/* ============================
+   LOGOUT CONFIRMATION MODAL
+   ============================ */
+
+document.addEventListener("DOMContentLoaded", function () {
+
+  const logoutModal =
+    document.getElementById("logoutModal");
+
+  const cancelLogout =
+    document.getElementById("cancelLogout");
+
+  const logoutTriggers =
+    document.querySelectorAll(".logout-trigger");
+
+
+  /* Open logout popup */
+
+  logoutTriggers.forEach(function (button) {
+
+    button.addEventListener("click", function (e) {
+
+      e.preventDefault();
+
+      /* Close user dropdown */
+
+      const dropdown =
+        document.getElementById("userDropdownMenu");
+
+      if (dropdown) {
+        dropdown.classList.remove("show");
+      }
+
+      /* Show modal */
+
+      logoutModal.classList.add("show");
+
+    });
+
+  });
+
+
+  /* Cancel logout */
+
+  cancelLogout.addEventListener("click", function () {
+
+    logoutModal.classList.remove("show");
+
+  });
+
+
+  /* Click outside modal */
+
+  logoutModal.addEventListener("click", function (e) {
+
+    if (e.target === logoutModal) {
+
+      logoutModal.classList.remove("show");
+
+    }
+
+  });
+
+
+  /* ESC key */
+
+  document.addEventListener("keydown", function (e) {
+
+    if (e.key === "Escape") {
+
+      logoutModal.classList.remove("show");
+
+    }
+
+  });
+
+});
+
 </script>
+
+
+<script src="assets/js/script.js"></script>
+
 </body>
 </html>

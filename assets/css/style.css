@@ -208,38 +208,7 @@ button{
 
 
 
-.dots{
-    width:100%;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    gap:10px;
-    grid-column:span 2;
 
-    padding-bottom: 20px;
-}
-
-.dot{
-    width:28px;
-    height:6px;
-    border-radius:10px;
-    background:var(--dot-inactive);
-    opacity:0.6;
-    transition:.3s;
-    cursor:pointer;
-}
-
-.dot.active{
-    width:28px;
-    height:6px;
-    border-radius:10px;
-    background:var(--dot-active);
-    opacity:1;
-}
-
-.dot:hover{
-    opacity:0.85;
-}
 
 
 

@@ -185,11 +185,7 @@ function pawlix_short_text($text, $limit = 140) {
     <div class="hero-image">
       <img src="assets/images/hero image.png" alt="Puppies" id="heroImg">
     </div>
-    <div class="dots" id="heroDots">
-      <span class="dot active" data-index="0"></span>
-      <span class="dot" data-index="1"></span>
-      <span class="dot" data-index="2"></span>
-    </div>
+
   </section>
 
   <section class="steps">

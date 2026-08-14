@@ -238,10 +238,12 @@ button{
 
 .contact-hero-image img{
     width:100%;
-    max-width:410px;               /* Compact image size for shorter section height */
+    max-width:500px;               /* Compact image size for shorter section height */
     object-fit:cover;
     display:block;
-    margin-bottom:0;               /* Flush to bottom edge */
+    margin-bottom:0;
+    
+    margin-top: -110px;               /* Flush to bottom edge */
 }
 /* ================= CONTACT MAIN SECTION ================= */
 .contact-main{

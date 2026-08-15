@@ -9,977 +9,799 @@ if (!isset($_SESSION['user_id'])) {
 require_once "config/config.php";
 
 $user_id = intval($_SESSION['user_id']);
-$user_query = mysqli_query($conn, "SELECT * FROM user WHERE user_id=$user_id");
-$user = ($user_query) ? mysqli_fetch_assoc($user_query) : [];
 
-$unreadCount = 0;
+/* ================= AUTO-CREATE MESSAGES TABLE IF NOT EXISTS ================= */
+@mysqli_query($conn, "CREATE TABLE IF NOT EXISTS messages (
+    message_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    admin_id INT NOT NULL DEFAULT 1,
+    sender_type ENUM('user', 'admin') NOT NULL,
+    subject VARCHAR(255) DEFAULT '',
+    message TEXT NOT NULL,
+    is_read TINYINT(1) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)");
+
+/* ================= GET USER DETAILS ================= */
+$user_query = mysqli_query($conn, "SELECT * FROM user WHERE user_id = $user_id");
+$user = ($user_query) ? mysqli_fetch_assoc($user_query) : [];
+$first_name = htmlspecialchars($user['first_name'] ?? 'User');
+$full_name = htmlspecialchars(trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')));
+
+/* ================= GET DEFAULT ADMIN ================= */
+$admin_query = mysqli_query($conn, "SELECT admin_id, name, email FROM admin ORDER BY admin_id ASC LIMIT 1");
+$admin = ($admin_query) ? mysqli_fetch_assoc($admin_query) : null;
+$admin_id = $admin ? intval($admin['admin_id']) : 1;
+
+/* ================= SEND USER MESSAGE ================= */
+$message_error = "";
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $message_text = trim($_POST['message'] ?? '');
+    $subject = trim($_POST['subject'] ?? 'PawLix Support');
+
+    if ($message_text !== '') {
+        $message_text_db = mysqli_real_escape_string($conn, $message_text);
+        $subject_db = mysqli_real_escape_string($conn, $subject);
+
+        $insert_sql = "
+            INSERT INTO messages (user_id, admin_id, sender_type, subject, message, is_read)
+            VALUES ($user_id, $admin_id, 'user', '$subject_db', '$message_text_db', 0)
+        ";
+
+        if (mysqli_query($conn, $insert_sql)) {
+            header("Location: messages.php?sent=1");
+            exit();
+        } else {
+            $message_error = "Unable to send message. Please try again.";
+        }
+    } elseif (isset($_POST['send_message']) || isset($_POST['submitted'])) {
+        $message_error = "Please enter a message.";
+    }
+}
+
+/* ================= MARK ADMIN MESSAGES AS READ ================= */
+@mysqli_query($conn, "UPDATE messages SET is_read = 1 WHERE user_id = $user_id AND sender_type = 'admin'");
+
+/* ================= GET CONVERSATION ================= */
+$messages = mysqli_query($conn, "
+    SELECT message_id, user_id, admin_id, sender_type, subject, message, is_read, created_at
+    FROM messages
+    WHERE user_id = $user_id
+    ORDER BY created_at ASC, message_id ASC
+");
+
+/* ================= COUNT UNREAD NOTIFICATIONS ================= */
 $r1 = @mysqli_query($conn, "SELECT COUNT(*) AS total FROM report_dogs WHERE user_id = $user_id AND status != 'Pending'");
 $r2 = @mysqli_query($conn, "SELECT COUNT(*) AS total FROM adoption_application WHERE user_id = $user_id AND status != 'Pending'");
+$r3 = @mysqli_query($conn, "SELECT COUNT(*) AS total FROM messages WHERE user_id = $user_id AND sender_type = 'admin' AND is_read = 0");
 $c1 = ($r1) ? mysqli_fetch_assoc($r1)['total'] : 0;
 $c2 = ($r2) ? mysqli_fetch_assoc($r2)['total'] : 0;
-$unreadCount = $c1 + $c2;
-
-$first_name = htmlspecialchars($user['first_name'] ?? 'User');
+$c3 = ($r3) ? mysqli_fetch_assoc($r3)['total'] : 0;
+$unreadCount = $c1 + $c2 + $c3;
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Messages | PawLix</title>
+<title>Messages & Support | PawLix</title>
 <link rel="stylesheet" href="assets/css/style.css">
 
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
 
 :root {
-  --cream: #e9d9b8;
-  --tan-light: #ecdfc3;
-  --pale-yellow: #f3ecd5;
-  --tan-card: #f8eac9;
-  --maroon: #7a1f1f;
-  --dark-brown: #4a3223;
-  --orange: #ff7f11;
-  --orange-dark: #e06600;
-  --navy: #0e1524;
-  --border-color: #dfcfb0;
+    --cream: #e9d9b8;
+    --tan-light: #ecdfc3;
+    --pale-yellow: #f3ecd5;
+    --tan-card: #f8eac9;
+    --maroon: #7a1f1f;
+    --dark-brown: #4a3223;
+    --orange: #ff7f11;
+    --orange-dark: #e06600;
+    --border-color: #dfcfb0;
+    --online-green: #2ecc71;
 }
 
 body {
-  font-family: 'Poppins', sans-serif;
-  background-color: var(--pale-yellow);
-  color: #222;
-  margin: 0;
-  padding: 0;
+    font-family: 'Poppins', sans-serif;
+    background-color: var(--pale-yellow);
+    color: #222;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
 /* User Menu Header Dropdown */
 .user-menu-wrapper {
-  position: relative;
-  display: inline-block;
+    position: relative;
+    display: inline-block;
 }
 
 .menu-icon-btn {
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  border-radius: 20px;
-  background: #f0e4c7;
-  color: black;
-  border: none;
-  font-size: 16px;
-  transition: background 0.2s;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 20px;
+    background: #f0e4c7;
+    color: black;
+    border: none;
+    font-size: 16px;
+    transition: background 0.2s;
 }
 
-.menu-icon-btn:hover {
-  background: #dccfad;
-}
+.menu-icon-btn:hover { background: #dccfad; }
 
 .badge-count {
-  background: #e63946;
-  color: white;
-  font-size: 11px;
-  font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 12px;
-  margin-left: 2px;
+    background: #e63946;
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 12px;
+    margin-left: 2px;
 }
 
 .user-dropdown-menu {
-  display: none;
-  position: absolute;
-  right: 0;
-  top: 50px;
-  background-color: var(--cream);
-  min-width: 210px;
-  box-shadow: 0px 10px 25px rgba(0,0,0,0.15);
-  border-radius: 14px;
-  overflow: hidden;
-  z-index: 1000;
-  border: 1px solid var(--border-color);
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 50px;
+    background-color: var(--cream);
+    min-width: 210px;
+    box-shadow: 0 10px 25px rgba(0,0,0,.15);
+    border-radius: 14px;
+    overflow: hidden;
+    z-index: 1000;
+    border: 1px solid var(--border-color);
 }
 
-.user-dropdown-menu.show {
-  display: block;
-}
+.user-dropdown-menu.show { display: block; }
 
 .user-dropdown-menu a {
-  color: var(--dark-brown);
-  padding: 12px 18px;
-  text-decoration: none;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 14px;
-  font-weight: 600;
-  transition: background 0.2s ease, color 0.2s ease;
+    color: var(--dark-brown);
+    padding: 12px 18px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    transition: background 0.2s, color 0.2s;
 }
 
 .user-dropdown-menu a:hover {
-  background-color: #dfcfb0;
-  color: var(--maroon);
-}
-
-.user-dropdown-menu a .icon {
-  font-size: 16px;
-  width: 20px;
-  text-align: center;
+    background: #dfcfb0;
+    color: var(--maroon);
 }
 
 .user-dropdown-menu .divider {
-  height: 1px;
-  background-color: var(--border-color);
-  margin: 4px 0;
+    height: 1px;
+    background: var(--border-color);
+    margin: 4px 0;
 }
 
-.user-dropdown-menu a.logout-link {
-  color: var(--maroon);
-}
+.logout-link { color: var(--maroon) !important; }
 
-.user-dropdown-menu a.logout-link:hover {
-  background-color: #f8d7da;
-}
-
-
-/* =====================================================
-   LOGOUT CONFIRMATION MODAL
-   ===================================================== */
-
+/* LOGOUT MODAL OVERLAY */
 .logout-modal-overlay {
   display: none;
-
   position: fixed;
   inset: 0;
-
   width: 100%;
   height: 100%;
-
   background: rgba(0, 0, 0, 0.50);
-
-  /* Blur the actual current page */
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
-
   z-index: 99999;
-
   justify-content: center;
   align-items: center;
-
   padding: 20px;
 }
 
-.logout-modal-overlay.show {
-  display: flex;
-}
+.logout-modal-overlay.show { display: flex; }
 
 .logout-modal {
   width: 100%;
   max-width: 400px;
-
   background: #ede1c6;
-
   border-radius: 16px;
-
   padding: 32px 28px;
-
   text-align: center;
-
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.30);
-
   border: 1px solid rgba(255, 255, 255, 0.6);
-
   animation: logoutPopup 0.25s ease-out;
 }
 
 @keyframes logoutPopup {
-
-  from {
-    transform: scale(0.85);
-    opacity: 0;
-  }
-
-  to {
-    transform: scale(1);
-    opacity: 1;
-  }
-
+  from { transform: scale(0.85); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
 }
 
-.logout-modal h2 {
-  font-size: 22px;
-  font-weight: 700;
-  color: #1a1a1a;
-  margin-bottom: 8px;
+.logout-modal h2 { font-size: 22px; font-weight: 700; color: #1a1a1a; margin-bottom: 8px; }
+.logout-modal p { font-size: 14px; color: #555555; margin-bottom: 26px; line-height: 1.5; }
+.logout-modal-actions { display: flex; gap: 12px; }
+
+.logout-cancel, .logout-confirm {
+  flex: 1; padding: 13px; border-radius: 10px; font-family: inherit; font-size: 14px;
+  font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; text-align: center;
 }
 
-.logout-modal p {
-  font-size: 14px;
-  color: #555555;
-  margin-bottom: 26px;
-  line-height: 1.5;
-}
+.logout-cancel { background: #ffffff; color: #2b2b2b; border: 1px solid #ddccae; }
+.logout-cancel:hover { background: #f5ecda; }
+.logout-confirm { background: #b3261e; color: #ffffff; border: none; box-shadow: 0 4px 12px rgba(179, 38, 30, 0.3); }
+.logout-confirm:hover { background: #961e17; }
 
-.logout-modal-actions {
-  display: flex;
-  gap: 12px;
-}
-
-.logout-cancel,
-.logout-confirm {
-  flex: 1;
-
-  padding: 13px;
-
-  border-radius: 10px;
-
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 600;
-
-  cursor: pointer;
-
-  text-decoration: none;
-
-  display: inline-block;
-
-  text-align: center;
-}
-
-.logout-cancel {
-  background: #ffffff;
-  color: #2b2b2b;
-
-  border: 1px solid #ddccae;
-}
-
-.logout-cancel:hover {
-  background: #f5ecda;
-}
-
-.logout-confirm {
-  background: #b3261e;
-  color: #ffffff;
-
-  border: none;
-
-  box-shadow: 0 4px 12px rgba(179, 38, 30, 0.3);
-}
-
-.logout-confirm:hover {
-  background: #961e17;
-}
-
-
-/* Messages Wrapper Container */
+/* MESSAGES PAGE WRAPPER */
 .messages-wrapper {
-  min-height: calc(100vh - 250px);
-  padding: 50px 20px;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-}
-
-.messages-card {
-  max-width: 820px;
-  width: 100%;
-  background: var(--tan-card);
-  border-radius: 20px;
-  padding: 40px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.06);
-  border: 1px solid var(--border-color);
-}
-
-.messages-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 28px;
-  padding-bottom: 20px;
-  border-bottom: 2px solid var(--border-color);
-}
-
-.messages-header h2 {
-  margin: 0;
-  font-size: 24px;
-  font-weight: 800;
-  color: var(--dark-brown);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.unread-badge-pill {
-  background: var(--orange);
-  color: #fff;
-  font-size: 12.5px;
-  font-weight: 700;
-  padding: 4px 14px;
-  border-radius: 20px;
-}
-
-/* Single Message Card */
-.msg-item {
-  background: var(--pale-yellow);
-  padding: 22px;
-  border-radius: 16px;
-  border: 1px solid var(--border-color);
-  margin-bottom: 18px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.msg-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0,0,0,0.04);
-}
-
-.msg-top-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
-
-.msg-sender {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-weight: 700;
-  font-size: 15px;
-  color: var(--dark-brown);
-}
-
-.msg-sender-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: var(--dark-brown);
-  color: var(--cream);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-}
-
-.msg-time {
-  font-size: 12.5px;
-  color: #8c735d;
-  font-weight: 500;
-}
-
-.msg-title {
-  margin: 0 0 8px 0;
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--dark-brown);
-}
-
-.msg-body {
-  margin: 0;
-  font-size: 14px;
-  color: #4a3c31;
-  line-height: 1.6;
-}
-
-/* Actions */
-.action-bar {
-  margin-top: 30px;
-  display: flex;
-  justify-content: flex-start;
-  gap: 14px;
-}
-
-.btn-action {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 26px;
-  border-radius: 50px;
-  font-size: 14.5px;
-  font-weight: 700;
-  text-decoration: none;
-  transition: all 0.3s ease;
-  border: none;
-  cursor: pointer;
-  background: var(--dark-brown);
-  color: #fff;
-  box-shadow: 0 4px 12px rgba(74, 50, 35, 0.2);
-}
-
-.btn-action:hover {
-  background: var(--orange);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(255, 127, 17, 0.35);
-}
-
-@media (max-width: 600px) {
-
-  .messages-card {
-    padding: 25px 20px;
-  }
-
-  .messages-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-
-  .action-bar {
-    flex-direction: column;
-  }
-
-  .btn-action {
-    width: 100%;
+    flex: 1;
+    padding: 30px 20px 40px;
+    display: flex;
     justify-content: center;
-  }
+    align-items: center;
+}
 
+.chat-card {
+    width: 100%;
+    max-width: 940px;
+    height: 680px;
+    max-height: calc(100vh - 160px);
+    background: var(--tan-card);
+    border: 1px solid var(--border-color);
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 12px 35px rgba(74,50,35,0.08);
+    display: flex;
+    flex-direction: column;
+}
+
+/* CHAT HEADER */
+.chat-header {
+    background: var(--cream);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.avatar-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.admin-avatar {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: var(--dark-brown);
+    color: var(--cream);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    font-weight: 700;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+}
+
+.online-dot {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    width: 12px;
+    height: 12px;
+    background: var(--online-green);
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+}
+
+.chat-user-info h3 {
+    margin: 0;
+    font-size: 16.5px;
+    color: var(--dark-brown);
+    font-weight: 700;
+}
+
+.chat-user-info p {
+    margin: 2px 0 0;
+    font-size: 12px;
+    color: #27ae60;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.chat-user-info p::before {
+    content: '';
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    background: var(--online-green);
+    border-radius: 50%;
+}
+
+.header-tag {
+    background: #f0e4c7;
+    color: var(--dark-brown);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid #dfcfb0;
+}
+
+/* CHAT BODY */
+.chat-body {
+    flex: 1;
+    padding: 24px 28px;
+    overflow-y: auto;
+    background: #f7efdd;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.chat-body::-webkit-scrollbar { width: 6px; }
+.chat-body::-webkit-scrollbar-thumb { background: #d2c2a2; border-radius: 10px; }
+
+/* EMPTY CHAT STATE */
+.empty-chat {
+    margin: auto;
+    text-align: center;
+    max-width: 380px;
+    color: #7a6350;
+    padding: 30px 20px;
+}
+.empty-chat-icon { font-size: 50px; margin-bottom: 12px; }
+.empty-chat h3 { margin: 0 0 6px; color: var(--dark-brown); font-size: 19px; font-weight: 700; }
+.empty-chat p { font-size: 13.5px; line-height: 1.6; color: #6b5544; }
+
+/* MESSAGE ROW & BUBBLES */
+.message-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    width: 100%;
+}
+
+.message-row.user { justify-content: flex-end; }
+.message-row.admin { justify-content: flex-start; }
+
+.user-avatar-small {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--dark-brown);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.message-bubble-container {
+    max-width: 70%;
+    display: flex;
+    flex-direction: column;
+}
+
+.sender-meta {
+    font-size: 11px;
+    font-weight: 600;
+    color: #8c735d;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.message-row.user .sender-meta { justify-content: flex-end; }
+
+.message-bubble {
+    padding: 12px 18px 9px;
+    border-radius: 18px;
+    font-size: 14px;
+    line-height: 1.55;
+    position: relative;
+    box-shadow: 0 3px 10px rgba(0,0,0,.04);
+}
+
+.message-row.admin .message-bubble {
+    background: #ffffff;
+    color: #3b2719;
+    border: 1px solid #e4d5b9;
+    border-bottom-left-radius: 4px;
+}
+
+.message-row.user .message-bubble {
+    background: var(--orange);
+    color: white;
+    border-bottom-right-radius: 4px;
+}
+
+.message-text {
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.message-subject {
+    font-weight: 700;
+    margin-bottom: 6px;
+    font-size: 13.5px;
+    border-bottom: 1px dashed rgba(0,0,0,0.12);
+    padding-bottom: 4px;
+}
+
+.message-row.user .message-subject { border-bottom-color: rgba(255,255,255,0.35); }
+
+.message-time {
+    display: block;
+    text-align: right;
+    font-size: 10px;
+    opacity: .75;
+    margin-top: 4px;
+}
+
+/* COMPOSER BAR */
+.chat-composer {
+    padding: 14px 20px;
+    background: var(--cream);
+    border-top: 1px solid var(--border-color);
+}
+
+.composer-form {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.composer-input {
+    flex: 1;
+    resize: none;
+    height: 46px;
+    max-height: 110px;
+    border: 1px solid #d8c6a5;
+    border-radius: 24px;
+    padding: 12px 18px;
+    font-family: inherit;
+    font-size: 14px;
+    background: #fffaf0;
+    outline: none;
+    color: #222;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+}
+
+.composer-input:focus {
+    border-color: var(--orange);
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(255,127,17,0.12);
+}
+
+.send-btn {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    border: none;
+    background: var(--orange);
+    color: white;
+    font-size: 17px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(255,127,17,0.3);
+}
+
+.send-btn:hover {
+    background: var(--orange-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(255,127,17,0.45);
+}
+
+.chat-alert {
+    margin: 0 0 10px;
+    padding: 9px 14px;
+    border-radius: 10px;
+    background: #f8d7da;
+    color: #721c24;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+@media (max-width: 650px) {
+    .messages-wrapper { padding: 15px 10px; }
+    .chat-card { height: calc(100vh - 150px); border-radius: 16px; }
+    .chat-body { padding: 16px 12px; }
+    .message-bubble-container { max-width: 84%; }
+    .chat-header { padding: 12px 16px; }
+    .header-tag { display: none; }
 }
 </style>
 </head>
 
 <body>
 
-  <!-- HEADER -->
-  <header class="header">
-
+<!-- HEADER -->
+<header class="header">
     <div class="logo">
-      <a href="index.php">
-        <img src="assets/images/logo.png" alt="PawLix logo">
-      </a>
+        <a href="index.php">
+            <img src="assets/images/logo.png" alt="PawLix logo">
+        </a>
     </div>
 
     <nav class="nav">
-
-      <a href="index.php">Home</a>
-
-      <a href="browse.php">Browse Dogs ▾</a>
-
-      <a href="about.php">About</a>
-
-      <a href="contact.php">Contact</a>
-
-      <a href="report.php">Report a Dog</a>
-
+        <a href="index.php">Home</a>
+        <a href="browse.php">Browse Dogs ▾</a>
+        <a href="about.php">About</a>
+        <a href="contact.php">Contact</a>
+        <a href="report.php">Report a Dog</a>
     </nav>
 
     <div class="header-buttons">
+        <div class="user-menu-wrapper">
+            <button class="menu-icon-btn" id="userMenuBtn" onclick="toggleUserDropdown()" type="button" aria-label="User Menu">
+                <span>👤</span> ▾
+                <?php if ($unreadCount > 0): ?>
+                    <span class="badge-count"><?php echo $unreadCount; ?></span>
+                <?php endif; ?>
+            </button>
 
-      <div class="user-menu-wrapper">
+            <div class="user-dropdown-menu" id="userDropdownMenu">
+                <a href="account.php"><span class="icon">👤</span> Account Profile</a>
+                <a href="messages.php"><span class="icon">✉️</span> Messages <?php if ($unreadCount > 0): ?><span class="badge-count"><?php echo $unreadCount; ?></span><?php endif; ?></a>
+                <a href="notifications.php"><span class="icon">🔔</span> Notifications</a>
+                <a href="history.php"><span class="icon">📜</span> Adoption History</a>
+                <a href="settings.php"><span class="icon">⚙️</span> Settings</a>
+                <div class="divider"></div>
+                <a href="#" class="logout-link logout-trigger"><span class="icon">🚪</span> Logout</a>
+            </div>
+        </div>
+    </div>
 
-        <button
-          class="menu-icon-btn"
-          id="userMenuBtn"
-          onclick="toggleUserDropdown()"
-          aria-label="User Menu">
+    <button class="menu-toggle" id="menuToggle" type="button" aria-label="Toggle menu">☰</button>
+</header>
 
-          <span>👤</span> ▾
+<hr style="background-color:white;height:1px;border:none;">
 
-          <?php if ($unreadCount > 0): ?>
+<!-- MAIN CHAT SECTION -->
+<main class="messages-wrapper">
+    <div class="chat-card">
 
-            <span class="badge-count">
-              <?php echo $unreadCount; ?>
-            </span>
+        <!-- CHAT HEADER -->
+        <div class="chat-header">
+            <div class="header-left">
+                <div class="avatar-wrapper">
+                    <div class="admin-avatar">🐾</div>
+                    <span class="online-dot"></span>
+                </div>
 
-          <?php endif; ?>
+                <div class="chat-user-info">
+                    <h3>PawLix Shelter Team</h3>
+                    <p>Official Shelter Support</p>
+                </div>
+            </div>
 
-        </button>
+            <div class="header-tag">
+                Live Support
+            </div>
+        </div>
 
+        <!-- CHAT BODY -->
+        <div class="chat-body" id="chatBody">
+            <?php if (!$messages || mysqli_num_rows($messages) === 0): ?>
+                <div class="empty-chat">
+                    <div class="empty-chat-icon">🐾</div>
+                    <h3>Start a conversation</h3>
+                    <p>Have a question about dog adoption, rescue status, or PawLix shelter services? Send us a message below and our team will reply directly to your thread!</p>
+                </div>
+            <?php else: ?>
 
-        <div
-          class="user-dropdown-menu"
-          id="userDropdownMenu">
+                <?php while ($msg = mysqli_fetch_assoc($messages)): ?>
+                    <?php 
+                        $isUser = ($msg['sender_type'] === 'user');
+                        $user_initial = strtoupper(substr($user['first_name'] ?? 'U', 0, 1));
+                        $formatted_time = date('M d, g:i A', strtotime($msg['created_at']));
+                    ?>
+                    <div class="message-row <?php echo $isUser ? 'user' : 'admin'; ?>">
+                        
+                        <?php if (!$isUser): ?>
+                            <div class="user-avatar-small" style="background:var(--dark-brown);">🐾</div>
+                        <?php endif; ?>
 
-          <a href="account.php">
-            <span class="icon">👤</span>
-            Account Profile
-          </a>
+                        <div class="message-bubble-container">
+                            <div class="sender-meta">
+                                <span><?php echo $isUser ? htmlspecialchars($full_name ? $full_name : 'You') : 'PawLix Shelter Admin'; ?></span>
+                            </div>
 
-          <a href="messages.php">
-            <span class="icon">✉️</span>
-            Messages
+                            <div class="message-bubble">
+                                <?php if (!empty($msg['subject']) && $msg['subject'] !== 'PawLix Support'): ?>
+                                    <div class="message-subject"><?php echo htmlspecialchars($msg['subject']); ?></div>
+                                <?php endif; ?>
 
-            <?php if ($unreadCount > 0): ?>
+                                <p class="message-text"><?php echo htmlspecialchars($msg['message']); ?></p>
+                                <span class="message-time"><?php echo $formatted_time; ?></span>
+                            </div>
+                        </div>
 
-              <span class="badge-count">
-                <?php echo $unreadCount; ?>
-              </span>
+                        <?php if ($isUser): ?>
+                            <div class="user-avatar-small" style="background:var(--orange);"><?php echo $user_initial; ?></div>
+                        <?php endif; ?>
+
+                    </div>
+                <?php endwhile; ?>
 
             <?php endif; ?>
-
-          </a>
-
-          <a href="notifications.php">
-            <span class="icon">🔔</span>
-            Notifications
-          </a>
-
-          <a href="history.php">
-            <span class="icon">📜</span>
-            Adoption History
-          </a>
-
-          <a href="settings.php">
-            <span class="icon">⚙️</span>
-            Settings
-          </a>
-
-          <div class="divider"></div>
-
-          <!-- CHANGED: Logout no longer redirects immediately -->
-          <a
-            href="#"
-            class="logout-link logout-trigger">
-
-            <span class="icon">🚪</span>
-            Logout
-
-          </a>
-
         </div>
 
-      </div>
+        <!-- COMPOSER BAR -->
+        <div class="chat-composer">
+            <?php if ($message_error): ?>
+                <div class="chat-alert"><?php echo htmlspecialchars($message_error); ?></div>
+            <?php endif; ?>
 
-    </div>
+            <form method="POST" action="messages.php" class="composer-form" id="chatForm">
+                <input type="hidden" name="send_message" value="1">
+                <input type="hidden" name="subject" value="PawLix Support">
+                <textarea
+                    name="message"
+                    class="composer-input"
+                    placeholder="Type a message to PawLix Shelter Admin..."
+                    required
+                    rows="1"
+                    id="messageInput"
+                ></textarea>
 
-    <button
-      class="menu-toggle"
-      id="menuToggle"
-      aria-label="Toggle menu">
-
-      ☰
-
-    </button>
-
-  </header>
-
-
-  <hr style="background-color: white; height: 1px; border: none;">
-
-
-  <!-- MAIN CONTENT -->
-  <main class="messages-wrapper">
-
-    <div class="messages-card">
-
-      <!-- Header -->
-      <div class="messages-header">
-
-        <h2>
-          ✉️ Messages & Updates
-        </h2>
-
-        <?php if ($unreadCount > 0): ?>
-
-          <span class="unread-badge-pill">
-            <?php echo $unreadCount; ?> New Updates
-          </span>
-
-        <?php else: ?>
-
-          <span
-            class="unread-badge-pill"
-            style="background:#4a3223;">
-
-            All Messages Read
-
-          </span>
-
-        <?php endif; ?>
-
-      </div>
-
-
-      <!-- Messages List -->
-      <div class="msg-item">
-
-        <div class="msg-top-bar">
-
-          <div class="msg-sender">
-
-            <span class="msg-sender-icon">
-              🐾
-            </span>
-
-            PawLix Shelter Team
-
-          </div>
-
-          <span class="msg-time">
-            Just now
-          </span>
-
+                <button type="submit" name="send_message_btn" id="sendBtn" class="send-btn" title="Send message">
+                    ➤
+                </button>
+            </form>
         </div>
 
-
-        <h4 class="msg-title">
-          Welcome to PawLix Shelter Community!
-        </h4>
-
-        <p class="msg-body">
-          Thank you for caring for animals across Nepal.
-          Direct responses, rescue updates, and adoption
-          application notes from PawLix shelter administrators
-          will appear here.
-        </p>
-
-      </div>
-
-
-      <!-- Action Button -->
-      <div class="action-bar">
-
-        <a
-          href="index.php"
-          class="btn-action">
-
-          <span>🏠</span>
-          Back to Home
-
-        </a>
-
-        <a
-          href="browse.php"
-          class="btn-action"
-          style="background:var(--orange);">
-
-          <span>🐶</span>
-          Browse Available Dogs
-
-        </a>
-
-      </div>
-
     </div>
+</main>
 
-  </main>
-
-
-  <!-- =====================================================
-       LOGOUT CONFIRMATION MODAL
-       ===================================================== -->
-
-  <div
-    class="logout-modal-overlay"
-    id="logoutModal">
-
-    <div
-      class="logout-modal"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="logoutTitle">
-
-      <h2 id="logoutTitle">
-        Log Out?
-      </h2>
-
-      <p>
-        Are you sure you want to log out?
-      </p>
-
-      <div class="logout-modal-actions">
-
-        <button
-          type="button"
-          class="logout-cancel"
-          id="cancelLogout">
-
-          Cancel
-
-        </button>
-
-        <a
-          href="logout.php?confirm=true"
-          class="logout-confirm">
-
-          Log Out
-
-        </a>
-
-      </div>
-
+<!-- LOGOUT CONFIRMATION MODAL -->
+<div class="logout-modal-overlay" id="logoutModal">
+  <div class="logout-modal" role="dialog" aria-modal="true" aria-labelledby="logoutTitle">
+    <h2 id="logoutTitle">Log Out?</h2>
+    <p>Are you sure you want to log out?</p>
+    <div class="logout-modal-actions">
+      <button type="button" class="logout-cancel" id="cancelLogout">Cancel</button>
+      <a href="logout.php?confirm=true" class="logout-confirm">Log Out</a>
     </div>
-
   </div>
+</div>
 
+<!-- FOOTER -->
+<?php
+if (file_exists('includes/footer.php')) {
+    include 'includes/footer.php';
+} else {
+?>
+<footer class="footer">
+    <div class="footer-container">
+        <div class="footer-columns">
+            <div class="footer-col col-brand">
+                <h4 class="col-title">PAWLIX</h4>
+                <p class="brand-text">Connecting dogs waiting for rescue with loving, permanent families across Nepal through a simple and secure platform.</p>
+            </div>
+            <div class="footer-col">
+                <h4 class="col-title">SERVICES</h4>
+                <p><a href="browse.php">Browse Dogs</a></p>
+                <p><a href="adopt.php">Apply for Adoption</a></p>
+                <p><a href="report.php">Report Stray / Injured</a></p>
+                <p><a href="contact.php">Support</a></p>
+            </div>
+            <div class="footer-col">
+                <h4 class="col-title">USEFUL LINKS</h4>
+                <p><a href="index.php">Home</a></p>
+                <p><a href="about.php">About Us</a></p>
+                <p><a href="contact.php">Contact Us</a></p>
+            </div>
+            <div class="footer-col col-contact">
+                <h4 class="col-title">CONTACT</h4>
+                <p><span class="icon">📍</span> Kathmandu, Nepal</p>
+                <p><span class="icon">✉</span> support@pawlix.org</p>
+                <p><span class="icon">📞</span> +977 9800000000</p>
+            </div>
+        </div>
+        <hr class="footer-hr">
+        <div class="footer-bottom">
+            <p class="copyright">© <?php echo date('Y'); ?> PawLix. All rights reserved.</p>
+        </div>
+    </div>
+</footer>
+<?php } ?>
 
-  <!-- FOOTER -->
-  <?php
+<!-- JAVASCRIPT -->
+<script>
+function toggleUserDropdown() {
+    const menu = document.getElementById("userDropdownMenu");
+    if (menu) { menu.classList.toggle("show"); }
+}
 
-  if (file_exists('includes/footer.php')) {
+window.addEventListener("click", function(e) {
+    const btn = document.getElementById("userMenuBtn");
+    const menu = document.getElementById("userDropdownMenu");
+    if (menu && btn && !btn.contains(e.target) && !menu.contains(e.target)) {
+        menu.classList.remove("show");
+    }
+});
 
-      include 'includes/footer.php';
-
-  } else {
-
-  ?>
-
-  <footer class="footer">
-
-      <div class="footer-container">
-
-          <div class="footer-columns">
-
-              <div class="footer-col col-brand">
-
-                  <h4 class="col-title">
-                    PAWLIX
-                  </h4>
-
-                  <p class="brand-text">
-                    Connecting dogs waiting for rescue with loving,
-                    permanent families across Nepal through a simple
-                    and secure platform.
-                  </p>
-
-              </div>
-
-
-              <div class="footer-col">
-
-                  <h4 class="col-title">
-                    SERVICES
-                  </h4>
-
-                  <p>
-                    <a href="browse.php">
-                      Browse Dogs
-                    </a>
-                  </p>
-
-                  <p>
-                    <a href="adopt.php">
-                      Apply for Adoption
-                    </a>
-                  </p>
-
-                  <p>
-                    <a href="report.php">
-                      Report Stray / Injured
-                    </a>
-                  </p>
-
-                  <p>
-                    <a href="contact.php">
-                      Support
-                    </a>
-                  </p>
-
-              </div>
-
-
-              <div class="footer-col">
-
-                  <h4 class="col-title">
-                    USEFUL LINKS
-                  </h4>
-
-                  <p>
-                    <a href="index.php">
-                      Home
-                    </a>
-                  </p>
-
-                  <p>
-                    <a href="about.php">
-                      About Us
-                    </a>
-                  </p>
-
-                  <p>
-                    <a href="contact.php">
-                      Contact Us
-                    </a>
-                  </p>
-
-              </div>
-
-
-              <div class="footer-col col-contact">
-
-                  <h4 class="col-title">
-                    CONTACT
-                  </h4>
-
-                  <p>
-                    <span class="icon">📍</span>
-                    Kathmandu, Nepal
-                  </p>
-
-                  <p>
-                    <span class="icon">✉</span>
-                    support@pawlix.org
-                  </p>
-
-                  <p>
-                    <span class="icon">📞</span>
-                    +977 9800000000
-                  </p>
-
-              </div>
-
-          </div>
-
-
-          <hr class="footer-hr">
-
-
-          <div class="footer-bottom">
-
-              <p class="copyright">
-                © <?php echo date('Y'); ?> PawLix.
-                All rights reserved.
-              </p>
-
-          </div>
-
-      </div>
-
-  </footer>
-
-  <?php } ?>
-
-
-  <!-- ================= JAVASCRIPT ================= -->
-
-  <script>
-
-  function toggleUserDropdown() {
-
-    var menu =
-      document.getElementById("userDropdownMenu");
-
-    if (menu) {
-
-      menu.classList.toggle("show");
-
+document.addEventListener("DOMContentLoaded", function() {
+    // Auto scroll to latest message
+    const chatBody = document.getElementById("chatBody");
+    if (chatBody) {
+        chatBody.scrollTop = chatBody.scrollHeight;
     }
 
-  }
-
-
-  /* Close dropdown when clicking outside */
-
-  window.addEventListener('click', function(e) {
-
-    var btn =
-      document.getElementById('userMenuBtn');
-
-    var menu =
-      document.getElementById('userDropdownMenu');
-
-    if (
-      menu &&
-      btn &&
-      !btn.contains(e.target) &&
-      !menu.contains(e.target)
-    ) {
-
-      menu.classList.remove('show');
-
-    }
-
-  });
-
-
-  /* =====================================================
-     LOGOUT MODAL
-     ===================================================== */
-
-  document.addEventListener("DOMContentLoaded", function() {
-
-    const logoutModal =
-      document.getElementById("logoutModal");
-
-    const cancelLogout =
-      document.getElementById("cancelLogout");
-
-    const logoutTrigger =
-      document.querySelector(".logout-trigger");
-
-
-    /* Open logout popup */
+    // Logout Modal
+    const logoutModal = document.getElementById("logoutModal");
+    const cancelLogout = document.getElementById("cancelLogout");
+    const logoutTrigger = document.querySelector(".logout-trigger");
 
     if (logoutTrigger) {
-
-      logoutTrigger.addEventListener("click", function(e) {
-
-        e.preventDefault();
-
-        logoutModal.classList.add("show");
-
-
-        /*
-         * Close the user dropdown
-         * before showing the modal.
-         */
-
-        const dropdown =
-          document.getElementById("userDropdownMenu");
-
-        if (dropdown) {
-
-          dropdown.classList.remove("show");
-
-        }
-
-      });
-
+        logoutTrigger.addEventListener("click", function(e) {
+            e.preventDefault();
+            logoutModal.classList.add("show");
+            const dropdown = document.getElementById("userDropdownMenu");
+            if (dropdown) { dropdown.classList.remove("show"); }
+        });
     }
-
-
-    /* Cancel logout */
 
     if (cancelLogout) {
-
-      cancelLogout.addEventListener("click", function() {
-
-        logoutModal.classList.remove("show");
-
-      });
-
+        cancelLogout.addEventListener("click", function() {
+            logoutModal.classList.remove("show");
+        });
     }
-
-
-    /* Click outside modal */
 
     if (logoutModal) {
-
-      logoutModal.addEventListener("click", function(e) {
-
-        if (e.target === logoutModal) {
-
-          logoutModal.classList.remove("show");
-
-        }
-
-      });
-
+        logoutModal.addEventListener("click", function(e) {
+            if (e.target === logoutModal) { logoutModal.classList.remove("show"); }
+        });
     }
 
-
-    /* ESC key */
-
     document.addEventListener("keydown", function(e) {
-
-      if (
-        e.key === "Escape" &&
-        logoutModal &&
-        logoutModal.classList.contains("show")
-      ) {
-
-        logoutModal.classList.remove("show");
-
-      }
-
+        if (e.key === "Escape" && logoutModal && logoutModal.classList.contains("show")) {
+            logoutModal.classList.remove("show");
+        }
     });
 
-  });
+    // Enter Key to Submit Form
+    const messageInput = document.getElementById("messageInput");
+    const chatForm = document.getElementById("chatForm");
 
-  </script>
+    if (messageInput && chatForm) {
+        messageInput.addEventListener("keydown", function(e) {
+            if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                if (this.value.trim() !== '') {
+                    chatForm.submit();
+                }
+            }
+        });
+    }
+});
+</script>
 
-
-  <script src="assets/js/script.js"></script>
-
+<script src="assets/js/script.js"></script>
 </body>
 </html>

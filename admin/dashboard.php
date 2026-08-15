@@ -26,7 +26,8 @@ adoption_application.*,
 user.first_name,
 user.last_name,
 user.email,
-dog.name AS dog_name
+dog.name AS dog_name,
+dog.image AS dog_image
 FROM adoption_application
 JOIN user ON adoption_application.user_id=user.user_id
 JOIN dog ON adoption_application.dog_id=dog.dog_id
@@ -56,7 +57,7 @@ body{
   color: #2b2b2b;
   min-height: 100vh;
   overflow-x: hidden;
-    overflow-y: hidden;
+  overflow-y: hidden;
 }
 
 .topbar{
@@ -267,7 +268,13 @@ table td{
   height: 40px;
   border-radius: 50%;
   object-fit: cover;
-  background: #d8cba9;
+  background: #4a3223;
+  color: #f3ecd5;
+  font-weight: 700;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
   border: 1px solid rgba(255, 255, 255, 0.6);
 }
@@ -395,11 +402,29 @@ table td{
       </div>
 
       <table>
-        <?php while($r=mysqli_fetch_assoc($requests)){ ?>
+        <?php while($r=mysqli_fetch_assoc($requests)){ 
+          // User Initials Avatar
+          $user_initials = strtoupper(substr($r['first_name'] ?? 'U', 0, 1) . substr($r['last_name'] ?? '', 0, 1));
+          
+          // Dog Image Path Resolution
+          $dog_img_name = trim($r['dog_image'] ?? '');
+          if (strpos($dog_img_name, ',') !== false) {
+              $img_arr = explode(',', $dog_img_name);
+              $dog_img_name = trim($img_arr[0]);
+          }
+          
+          if (!empty($dog_img_name) && file_exists('../uploads/' . $dog_img_name)) {
+              $dog_img_src = '../uploads/' . $dog_img_name;
+          } elseif (!empty($dog_img_name) && file_exists('../assets/images/' . $dog_img_name)) {
+              $dog_img_src = '../assets/images/' . $dog_img_name;
+          } else {
+              $dog_img_src = '../assets/images/default-dog.jpg';
+          }
+        ?>
         <tr>
           <td>
             <div class="person">
-              <img class="avatar" src="../assets/img/user-placeholder.jpg" alt="User">
+              <div class="avatar"><?php echo htmlspecialchars($user_initials); ?></div>
               <div>
                 <div class="name"><?php echo htmlspecialchars($r['first_name']." ".$r['last_name']); ?></div>
                 <div class="email"><?php echo htmlspecialchars($r['email']); ?></div>
@@ -408,7 +433,7 @@ table td{
           </td>
           <td>
             <div class="person">
-              <img class="avatar" src="../assets/img/dog-placeholder.jpg" alt="Dog">
+              <img class="avatar" src="<?php echo htmlspecialchars($dog_img_src); ?>" alt="Dog" onerror="this.onerror=null;this.src='../assets/images/default-dog.jpg';">
               <div>
                 <div class="name"><?php echo htmlspecialchars($r['dog_name']); ?></div>
               </div>

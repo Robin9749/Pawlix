@@ -10,6 +10,7 @@ require_once "config/config.php";
 
 $user_id = intval($_SESSION['user_id']);
 
+/* ================= FETCH STRAY / RESCUE REPORTS ================= */
 $reports = mysqli_query(
     $conn,
     "SELECT * FROM report_dogs 
@@ -17,6 +18,7 @@ $reports = mysqli_query(
      ORDER BY created_at DESC"
 );
 
+/* ================= FETCH ADOPTION APPLICATIONS ================= */
 $adoptions = mysqli_query(
     $conn,
     "SELECT adoption_application.*, dog.name AS dog_name 
@@ -26,6 +28,27 @@ $adoptions = mysqli_query(
      ORDER BY application_date DESC"
 );
 
+/* ================= FETCH ADMIN DIRECT MESSAGES ================= */
+@mysqli_query($conn, "CREATE TABLE IF NOT EXISTS messages (
+    message_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    admin_id INT NOT NULL DEFAULT 1,
+    sender_type ENUM('user', 'admin') NOT NULL,
+    subject VARCHAR(255) DEFAULT '',
+    message TEXT NOT NULL,
+    is_read TINYINT(1) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)");
+
+$user_messages = mysqli_query(
+    $conn,
+    "SELECT * FROM messages 
+     WHERE user_id = $user_id 
+     AND sender_type = 'admin' 
+     ORDER BY created_at DESC"
+);
+
+/* ================= CALCULATE UNREAD NOTIFICATION BADGE ================= */
 $unreadCount = 0;
 
 $r1 = @mysqli_query(
@@ -44,10 +67,20 @@ $r2 = @mysqli_query(
      AND status != 'Pending'"
 );
 
+$r3 = @mysqli_query(
+    $conn,
+    "SELECT COUNT(*) AS total 
+     FROM messages 
+     WHERE user_id = $user_id 
+     AND sender_type = 'admin' 
+     AND is_read = 0"
+);
+
 $c1 = ($r1) ? mysqli_fetch_assoc($r1)['total'] : 0;
 $c2 = ($r2) ? mysqli_fetch_assoc($r2)['total'] : 0;
+$c3 = ($r3) ? mysqli_fetch_assoc($r3)['total'] : 0;
 
-$unreadCount = $c1 + $c2;
+$unreadCount = $c1 + $c2 + $c3;
 ?>
 
 <!DOCTYPE html>
@@ -274,34 +307,20 @@ body {
 }
 
 
-/* ================================================= */
-/* LOGOUT CONFIRMATION MODAL                         */
-/* ================================================= */
+/* ================= LOGOUT CONFIRMATION MODAL ================= */
 
 .logout-modal-overlay {
   display: none;
-
   position: fixed;
   inset: 0;
-
   width: 100%;
   height: 100%;
-
-  /*
-   * This overlay is placed ABOVE the current page.
-   * Therefore the actual Notifications page underneath
-   * will be blurred instead of showing another page.
-   */
   background: rgba(0, 0, 0, 0.50);
-
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
-
   z-index: 99999;
-
   justify-content: center;
   align-items: center;
-
   padding: 20px;
 }
 
@@ -312,34 +331,24 @@ body {
 .logout-modal {
   width: 100%;
   max-width: 400px;
-
   background: #ede1c6;
-
   border-radius: 16px;
-
   padding: 32px 28px;
-
   text-align: center;
-
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.30);
-
   border: 1px solid rgba(255, 255, 255, 0.6);
-
   animation: logoutPopup 0.25s ease-out;
 }
 
 @keyframes logoutPopup {
-
   from {
     transform: scale(0.85);
     opacity: 0;
   }
-
   to {
     transform: scale(1);
     opacity: 1;
   }
-
 }
 
 .logout-modal h2 {
@@ -363,32 +372,21 @@ body {
 
 .logout-cancel,
 .logout-confirm {
-
   flex: 1;
-
   padding: 13px;
-
   border-radius: 10px;
-
   font-family: inherit;
   font-size: 14px;
   font-weight: 600;
-
   cursor: pointer;
-
   text-decoration: none;
-
   display: inline-block;
-
   text-align: center;
 }
 
 .logout-cancel {
-
   background: #ffffff;
-
   color: #2b2b2b;
-
   border: 1px solid #ddccae;
 }
 
@@ -397,13 +395,9 @@ body {
 }
 
 .logout-confirm {
-
   background: #b3261e;
-
   color: #ffffff;
-
   border: none;
-
   box-shadow: 0 4px 12px rgba(179, 38, 30, 0.3);
 }
 
@@ -439,177 +433,73 @@ body {
 <body>
 
 
-<!-- ================================================= -->
 <!-- HEADER -->
-<!-- ================================================= -->
-
 <header class="header">
 
   <div class="logo">
-
     <a href="index.php">
-
-      <img
-        src="assets/images/logo.png"
-        alt="PawLix logo"
-      >
-
+      <img src="assets/images/logo.png" alt="PawLix logo">
     </a>
-
   </div>
 
-
   <nav class="nav">
-
     <a href="index.php">Home</a>
-
     <a href="browse.php">Browse Dogs ▾</a>
-
     <a href="about.php">About</a>
-
     <a href="contact.php">Contact</a>
-
     <a href="report.php">Report a Dog</a>
-
   </nav>
 
-
   <div class="header-buttons">
-
     <div class="user-menu-wrapper">
-
       <button
         class="menu-icon-btn"
         id="userMenuBtn"
         onclick="toggleUserDropdown()"
         aria-label="User Menu"
       >
-
-        <span>👤</span>
-
-        ▾
-
+        <span>👤</span> ▾
         <?php if ($unreadCount > 0): ?>
-
           <span class="badge-count">
-
             <?php echo $unreadCount; ?>
-
           </span>
-
         <?php endif; ?>
-
       </button>
 
-
-      <div
-        class="user-dropdown-menu"
-        id="userDropdownMenu"
-      >
-
+      <div class="user-dropdown-menu" id="userDropdownMenu">
         <a href="account.php">
-
-          <span class="icon">👤</span>
-
-          Account
-
+          <span class="icon">👤</span> Account
         </a>
-
-
         <a href="messages.php">
-
-          <span class="icon">✉️</span>
-
-          Messages
-
+          <span class="icon">✉️</span> Messages
         </a>
-
-
         <a href="notifications.php">
-
-          <span class="icon">🔔</span>
-
-          Notification
-
+          <span class="icon">🔔</span> Notification
         </a>
-
-
         <a href="history.php">
-
-          <span class="icon">📜</span>
-
-          History
-
+          <span class="icon">📜</span> History
         </a>
-
-
         <a href="settings.php">
-
-          <span class="icon">⚙️</span>
-
-          Setting
-
+          <span class="icon">⚙️</span> Setting
         </a>
-
-
-        <div
-          style="
-            height: 1px;
-            background-color: #ddccae;
-            margin: 4px 0;
-          "
-        ></div>
-
-
-        <!-- IMPORTANT:
-             This is NOT logout.php.
-             It opens the modal on the CURRENT page.
-        -->
-
-        <a
-          href="#"
-          class="logout-link logout-trigger"
-        >
-
-          <span class="icon">🚪</span>
-
-          Logout
-
+        <div style="height: 1px; background-color: #ddccae; margin: 4px 0;"></div>
+        <a href="#" class="logout-link logout-trigger">
+          <span class="icon">🚪</span> Logout
         </a>
-
       </div>
-
     </div>
-
   </div>
 
-
-  <button
-    class="menu-toggle"
-    id="menuToggle"
-    aria-label="Toggle menu"
-  >
-
+  <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">
     ☰
-
   </button>
 
 </header>
 
-
-<hr
-  style="
-    background-color: white;
-    height: 1px;
-    border: none;
-  "
->
+<hr style="background-color: white; height: 1px; border: none;">
 
 
-<!-- ================================================= -->
 <!-- MAIN NOTIFICATIONS PANEL -->
-<!-- ================================================= -->
-
 <div class="page-container">
 
   <div class="panel-card">
@@ -618,39 +508,52 @@ body {
       🔔 Notifications & Status Alerts
     </h2>
 
-
     <?php
-
     $hasNotif = false;
 
+    /* ================= 1. ADMIN DIRECT MESSAGES NOTIFICATIONS ================= */
+    if ($user_messages && mysqli_num_rows($user_messages) > 0) {
+      while ($m = mysqli_fetch_assoc($user_messages)) {
+        $hasNotif = true;
+        $msgSubject = htmlspecialchars(!empty($m['subject']) ? $m['subject'] : 'Shelter Support Message');
+        $msgPreview = htmlspecialchars(substr($m['message'], 0, 110)) . (strlen($m['message']) > 110 ? '...' : '');
+        $isUnread = ($m['is_read'] == 0);
 
-    /* ================= REPORT NOTIFICATIONS ================= */
+        echo "<div class='notif-item'>";
+        echo "
+          <div>
+            <div class='notif-title'>
+              ✉️ Direct Support Message
+            </div>
+            <p class='notif-desc'>
+              Subject: <strong>".$msgSubject."</strong><br>
+              \"".$msgPreview."\"
+            </p>
+          </div>
+        ";
+        echo "
+          <a href='messages.php' class='status-badge badge-Dispatched' style='text-decoration:none;'>
+            ".($isUnread ? 'New Message' : 'View Chat')."
+          </a>
+        ";
+        echo "</div>";
+      }
+    }
 
+    /* ================= 2. RESCUE REPORT NOTIFICATIONS ================= */
     if ($reports && mysqli_num_rows($reports) > 0) {
-
       while ($r = mysqli_fetch_assoc($reports)) {
-
         if ($r['status'] != 'Pending') {
-
           $hasNotif = true;
-
-          $loc = htmlspecialchars(
-            $r['location_area'] ?? 'Reported Location'
-          );
-
-          $st = htmlspecialchars(
-            $r['status']
-          );
-
+          $loc = htmlspecialchars($r['location_area'] ?? 'Reported Location');
+          $st = htmlspecialchars($r['status']);
 
           echo "<div class='notif-item'>";
-
           echo "
             <div>
               <div class='notif-title'>
                 🚨 Rescue Report Update
               </div>
-
               <p class='notif-desc'>
                 Report at
                 <strong>".$loc."</strong>
@@ -659,49 +562,30 @@ body {
               </p>
             </div>
           ";
-
           echo "
             <span class='status-badge badge-".$st."'>
               ".$st."
             </span>
           ";
-
           echo "</div>";
-
         }
-
       }
-
     }
 
-
-    /* ================= ADOPTION NOTIFICATIONS ================= */
-
+    /* ================= 3. ADOPTION APPLICATION NOTIFICATIONS ================= */
     if ($adoptions && mysqli_num_rows($adoptions) > 0) {
-
       while ($a = mysqli_fetch_assoc($adoptions)) {
-
         if ($a['status'] != 'Pending') {
-
           $hasNotif = true;
-
-          $dogName = htmlspecialchars(
-            $a['dog_name'] ?? 'Dog'
-          );
-
-          $st = htmlspecialchars(
-            $a['status']
-          );
-
+          $dogName = htmlspecialchars($a['dog_name'] ?? 'Dog');
+          $st = htmlspecialchars($a['status']);
 
           echo "<div class='notif-item'>";
-
           echo "
             <div>
               <div class='notif-title'>
                 🐾 Adoption Request Update
               </div>
-
               <p class='notif-desc'>
                 Your adoption application for
                 <strong>".$dogName."</strong>
@@ -710,38 +594,25 @@ body {
               </p>
             </div>
           ";
-
-
           echo "
             <span class='status-badge badge-".$st."'>
               ".$st."
             </span>
           ";
-
-
           echo "</div>";
-
         }
-
       }
-
     }
-
 
     /* ================= NO NOTIFICATIONS ================= */
-
     if (!$hasNotif) {
-
       echo "
         <div class='no-notif-msg'>
-          No new status updates at the moment.
-          All rescue and adoption notifications
-          will appear here.
+          No new status updates or support messages at the moment.
+          All rescue, adoption, and direct messages will appear here.
         </div>
       ";
-
     }
-
     ?>
 
   </div>
@@ -749,344 +620,119 @@ body {
 </div>
 
 
-<!-- ================================================= -->
 <!-- LOGOUT CONFIRMATION MODAL -->
-<!-- ================================================= -->
-
-<div
-  class="logout-modal-overlay"
-  id="logoutModal"
->
-
+<div class="logout-modal-overlay" id="logoutModal">
   <div class="logout-modal">
-
-    <h2>
-      Log Out?
-    </h2>
-
-
-    <p>
-      Are you sure you want to log out?
-    </p>
-
-
+    <h2>Log Out?</h2>
+    <p>Are you sure you want to log out?</p>
     <div class="logout-modal-actions">
-
-
-      <!-- CANCEL -->
-
-      <button
-        type="button"
-        class="logout-cancel"
-        id="cancelLogout"
-      >
-
-        Cancel
-
-      </button>
-
-
-      <!-- ACTUAL LOGOUT -->
-
-      <a
-        href="logout.php?confirm=true"
-        class="logout-confirm"
-      >
-
-        Log Out
-
-      </a>
-
+      <button type="button" class="logout-cancel" id="cancelLogout">Cancel</button>
+      <a href="logout.php?confirm=true" class="logout-confirm">Log Out</a>
     </div>
-
   </div>
-
 </div>
 
 
-<!-- ================================================= -->
 <!-- FOOTER -->
-<!-- ================================================= -->
-
 <?php
-
 if (file_exists('includes/footer.php')) {
-
     include 'includes/footer.php';
-
 } else {
-
 ?>
-
 <footer class="footer">
-
   <div class="footer-container">
-
     <div class="footer-columns">
-
-
       <div class="footer-col col-brand">
-
-        <h4 class="col-title">
-          PAWLIX
-        </h4>
-
+        <h4 class="col-title">PAWLIX</h4>
         <p class="brand-text">
-          Connecting dogs waiting for rescue with loving,
-          permanent families across Nepal through a simple
-          and secure platform.
+          Connecting dogs waiting for rescue with loving, permanent families across Nepal through a simple and secure platform.
         </p>
-
       </div>
-
 
       <div class="footer-col">
-
-        <h4 class="col-title">
-          SERVICES
-        </h4>
-
-        <p>
-          <a href="browse.php">
-            Browse Dogs
-          </a>
-        </p>
-
-        <p>
-          <a href="adopt.php">
-            Apply for Adoption
-          </a>
-        </p>
-
-        <p>
-          <a href="report.php">
-            Report Stray / Injured
-          </a>
-        </p>
-
-        <p>
-          <a href="contact.php">
-            Support
-          </a>
-        </p>
-
+        <h4 class="col-title">SERVICES</h4>
+        <p><a href="browse.php">Browse Dogs</a></p>
+        <p><a href="adopt.php">Apply for Adoption</a></p>
+        <p><a href="report.php">Report Stray / Injured</a></p>
+        <p><a href="contact.php">Support</a></p>
       </div>
-
 
       <div class="footer-col">
-
-        <h4 class="col-title">
-          USEFUL LINKS
-        </h4>
-
-        <p>
-          <a href="index.php">
-            Home
-          </a>
-        </p>
-
-        <p>
-          <a href="about.php">
-            About Us
-          </a>
-        </p>
-
-        <p>
-          <a href="contact.php">
-            Contact Us
-          </a>
-        </p>
-
+        <h4 class="col-title">USEFUL LINKS</h4>
+        <p><a href="index.php">Home</a></p>
+        <p><a href="about.php">About Us</a></p>
+        <p><a href="contact.php">Contact Us</a></p>
       </div>
-
 
       <div class="footer-col col-contact">
-
-        <h4 class="col-title">
-          CONTACT
-        </h4>
-
-        <p>
-          <span class="icon">📍</span>
-          Kathmandu, Nepal
-        </p>
-
-        <p>
-          <span class="icon">✉</span>
-          support@pawlix.org
-        </p>
-
-        <p>
-          <span class="icon">📞</span>
-          +977 9800000000
-        </p>
-
-        <p>
-          <span class="icon">🐾</span>
-          Emergency 24/7 Support
-        </p>
-
+        <h4 class="col-title">CONTACT</h4>
+        <p><span class="icon">📍</span> Kathmandu, Nepal</p>
+        <p><span class="icon">✉</span> support@pawlix.org</p>
+        <p><span class="icon">📞</span> +977 9800000000</p>
+        <p><span class="icon">🐾</span> Emergency 24/7 Support</p>
       </div>
-
     </div>
-
 
     <hr class="footer-hr">
 
-
     <div class="footer-bottom">
-
       <p class="copyright">
-
-        © <?php echo date('Y'); ?>
-        PawLix. All rights reserved.
-
+        © <?php echo date('Y'); ?> PawLix. All rights reserved.
       </p>
-
     </div>
-
   </div>
-
 </footer>
-
 <?php } ?>
 
 
-<!-- ================================================= -->
 <!-- JAVASCRIPT -->
-<!-- ================================================= -->
-
 <script>
-
-/* ================= USER DROPDOWN ================= */
-
 function toggleUserDropdown() {
-
-  var menu =
-    document.getElementById("userDropdownMenu");
-
-  if (menu) {
-
-    menu.classList.toggle("show");
-
-  }
-
+  var menu = document.getElementById("userDropdownMenu");
+  if (menu) { menu.classList.toggle("show"); }
 }
 
-
 window.addEventListener('click', function(e) {
-
-  var btn =
-    document.getElementById('userMenuBtn');
-
-  var menu =
-    document.getElementById('userDropdownMenu');
-
-
-  if (
-    menu &&
-    btn &&
-    !btn.contains(e.target) &&
-    !menu.contains(e.target)
-  ) {
-
+  var btn = document.getElementById('userMenuBtn');
+  var menu = document.getElementById('userDropdownMenu');
+  if (menu && btn && !btn.contains(e.target) && !menu.contains(e.target)) {
     menu.classList.remove('show');
-
   }
-
 });
 
+document.addEventListener("DOMContentLoaded", function () {
+    const logoutModal = document.getElementById("logoutModal");
+    const cancelLogout = document.getElementById("cancelLogout");
+    const logoutTriggers = document.querySelectorAll(".logout-trigger");
 
-/* ================================================= */
-/* LOGOUT CONFIRMATION MODAL                         */
-/* ================================================= */
-
-document.addEventListener(
-  "DOMContentLoaded",
-  function () {
-
-
-    const logoutModal =
-      document.getElementById("logoutModal");
-
-
-    const cancelLogout =
-      document.getElementById("cancelLogout");
-
-
-    const logoutTriggers =
-      document.querySelectorAll(".logout-trigger");
-
-
-    /* ================= OPEN MODAL ================= */
-
-    logoutTriggers.forEach(
-      function (trigger) {
-
-        trigger.addEventListener(
-          "click",
-          function (e) {
-
+    logoutTriggers.forEach(function (trigger) {
+        trigger.addEventListener("click", function (e) {
             e.preventDefault();
-
             logoutModal.classList.add("show");
+        });
+    });
 
-          }
-        );
+    if (cancelLogout) {
+        cancelLogout.addEventListener("click", function () {
+            logoutModal.classList.remove("show");
+        });
+    }
 
-      }
-    );
+    if (logoutModal) {
+        logoutModal.addEventListener("click", function (e) {
+            if (e.target === logoutModal) {
+                logoutModal.classList.remove("show");
+            }
+        });
+    }
 
-
-    /* ================= CANCEL ================= */
-
-    cancelLogout.addEventListener(
-      "click",
-      function () {
-
-        logoutModal.classList.remove("show");
-
-      }
-    );
-
-
-    /* ================= CLICK OUTSIDE ================= */
-
-    logoutModal.addEventListener(
-      "click",
-      function (e) {
-
-        if (e.target === logoutModal) {
-
-          logoutModal.classList.remove("show");
-
+    document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape" && logoutModal) {
+            logoutModal.classList.remove("show");
         }
-
-      }
-    );
-
-
-    /* ================= ESC KEY ================= */
-
-    document.addEventListener(
-      "keydown",
-      function (e) {
-
-        if (e.key === "Escape") {
-
-          logoutModal.classList.remove("show");
-
-        }
-
-      }
-    );
-
-
-  }
-);
-
+    });
+});
 </script>
-
 
 <script src="assets/js/script.js"></script>
 

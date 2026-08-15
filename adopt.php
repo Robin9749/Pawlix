@@ -17,13 +17,32 @@ if (!isset($_SESSION['user_id'])) {
 
 $user_id = (int)$_SESSION['user_id'];
 
+/* SAFE HELPER TO ADD COLUMNS WITHOUT DUPLICATE COLUMN EXCEPTION IN PHP 8.1+ */
+if (!function_exists('safeAddColumnAdopt')) {
+    function safeAddColumnAdopt($conn, $table, $column, $definition) {
+        try {
+            $check = mysqli_query($conn, "SHOW COLUMNS FROM `$table` LIKE '$column'");
+            if ($check && mysqli_num_rows($check) == 0) {
+                mysqli_query($conn, "ALTER TABLE `$table` ADD COLUMN `$column` $definition");
+            }
+        } catch (Throwable $e) {}
+    }
+}
+
+safeAddColumnAdopt($conn, 'adoption_application', 'housing_type', "VARCHAR(100) DEFAULT ''");
+safeAddColumnAdopt($conn, 'adoption_application', 'current_pets', "VARCHAR(100) DEFAULT ''");
+safeAddColumnAdopt($conn, 'adoption_application', 'adoption_reason', "VARCHAR(255) DEFAULT ''");
+safeAddColumnAdopt($conn, 'adoption_application', 'why_this_dog', "TEXT");
+
 // Unread Notifications Count
 $unreadCount = 0;
 $r1 = @mysqli_query($conn, "SELECT COUNT(*) AS total FROM report_dogs WHERE user_id = $user_id AND status != 'Pending'");
 $r2 = @mysqli_query($conn, "SELECT COUNT(*) AS total FROM adoption_application WHERE user_id = $user_id AND status != 'Pending'");
+$r3 = @mysqli_query($conn, "SELECT COUNT(*) AS total FROM messages WHERE user_id = $user_id AND sender_type = 'admin' AND is_read = 0");
 $c1 = ($r1) ? mysqli_fetch_assoc($r1)['total'] : 0;
 $c2 = ($r2) ? mysqli_fetch_assoc($r2)['total'] : 0;
-$unreadCount = $c1 + $c2;
+$c3 = ($r3) ? mysqli_fetch_assoc($r3)['total'] : 0;
+$unreadCount = $c1 + $c2 + $c3;
 
 $user_stmt = mysqli_prepare($conn, "SELECT * FROM user WHERE user_id = ?");
 mysqli_stmt_bind_param($user_stmt, "i", $user_id);
@@ -67,6 +86,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($post_dog_id <= 0) {
         $error_msg = "Please select a valid dog to adopt.";
     } else {
+        $housing_type = trim($_POST['housing_type'] ?? '');
+        $current_pets = trim($_POST['current_pets'] ?? '');
+        $adoption_reason = trim($_POST['adoption_reason'] ?? '');
+        $why_this_dog = trim($_POST['why_this_dog'] ?? '');
+
+        // Update phone & address on user profile if provided and not set
+        $input_phone = trim($_POST['phone'] ?? '');
+        $input_address = trim($_POST['address'] ?? '');
+        if (!empty($input_phone) && empty($user_data['phone'])) {
+            @mysqli_query($conn, "UPDATE user SET phone = '" . mysqli_real_escape_string($conn, $input_phone) . "' WHERE user_id = $user_id");
+        }
+        if (!empty($input_address) && empty($user_data['address'])) {
+            @mysqli_query($conn, "UPDATE user SET address = '" . mysqli_real_escape_string($conn, $input_address) . "' WHERE user_id = $user_id");
+        }
+
         $check_stmt = mysqli_prepare($conn, "SELECT * FROM adoption_application WHERE user_id = ? AND dog_id = ? AND status = 'Pending'");
         mysqli_stmt_bind_param($check_stmt, "ii", $user_id, $post_dog_id);
         mysqli_stmt_execute($check_stmt);
@@ -75,8 +109,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($check_res && mysqli_num_rows($check_res) > 0) {
             $error_msg = "You already have a pending application for this dog.";
         } else {
-            $insert_stmt = mysqli_prepare($conn, "INSERT INTO adoption_application (user_id, dog_id, status) VALUES (?, ?, 'Pending')");
-            mysqli_stmt_bind_param($insert_stmt, "ii", $user_id, $post_dog_id);
+            $insert_stmt = mysqli_prepare($conn, "INSERT INTO adoption_application (user_id, dog_id, housing_type, current_pets, adoption_reason, why_this_dog, status) VALUES (?, ?, ?, ?, ?, ?, 'Pending')");
+            mysqli_stmt_bind_param($insert_stmt, "iissss", $user_id, $post_dog_id, $housing_type, $current_pets, $adoption_reason, $why_this_dog);
             $executed = mysqli_stmt_execute($insert_stmt);
 
             if ($executed) {
@@ -89,7 +123,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         mysqli_stmt_close($check_stmt);
     }
 
-    // Re-fetch the dog for this dog_id so the form still shows the right dog after POST
+    // Re-fetch dog details
     if ($post_dog_id > 0 && $post_dog_id !== $dog_id) {
         $dog_id = $post_dog_id;
         $dog_stmt = mysqli_prepare($conn, "SELECT * FROM dog WHERE dog_id = ?");
@@ -160,7 +194,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .btn-dark:hover{ background:var(--orange); }
         .menu-toggle{ display:none; font-size:32px; background:none; color:var(--dark-brown); }
 
-        /* Header Menu Icon Dropdown Styles */
         .user-menu-wrapper {
           position: relative;
           display: inline-block;
@@ -180,9 +213,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           transition: background 0.2s;
         }
 
-        .menu-icon-btn:hover {
-          background: #dccfad;
-        }
+        .menu-icon-btn:hover { background: #dccfad; }
 
         .badge-count {
           background: #e63946;
@@ -208,9 +239,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           border: 1px solid #ddccae;
         }
 
-        .user-dropdown-menu.show {
-          display: block;
-        }
+        .user-dropdown-menu.show { display: block; }
 
         .user-dropdown-menu a {
           color: #2b2b2b;
@@ -224,19 +253,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           transition: background 0.2s;
         }
 
-        .user-dropdown-menu a:hover {
-          background-color: #ddceac;
-        }
-
-        .dropdown-divider {
-          height: 1px;
-          background-color: #ddccae;
-          margin: 4px 0;
-        }
-
-        .logout-link {
-          color: #b3261e !important;
-        }
+        .user-dropdown-menu a:hover { background-color: #ddceac; }
+        .dropdown-divider { height: 1px; background-color: #ddccae; margin: 4px 0; }
+        .logout-link { color: #b3261e !important; }
 
         .badge-sub {
           margin-left: auto;
@@ -293,13 +312,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .btn-cancel-adopt:hover{ background:var(--dark-brown); color:#fff; }
 
         .footer{ background:var(--navy); color:#fff; padding:70px 80px 30px; }
-        .footer-top{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:20px; margin-bottom:40px; }
-        .footer .logo{ font-size:32px; font-weight:700; color:#fff; }
-        .search-box{ display:flex; max-width:520px; width:100%; background:#fff; border-radius:50px; overflow:hidden; }
-        .search-box input{ flex:1; border:none; outline:none; padding:18px 22px; font-size:15px; }
-        .search-box button{ background:var(--blue); color:#fff; padding:0 30px; font-size:16px; transition:.3s; }
-        .search-box button:hover{ background:var(--blue-dark); }
-        .footer hr{ border:none; height:1px; background:rgba(255,255,255,.15); margin:35px 0; }
         .footer-columns{ display:grid; grid-template-columns:repeat(4,1fr); gap:40px; }
         .footer-col h4{ margin-bottom:18px; font-size:15px; letter-spacing:1px; color:#cfcfcf; }
         .footer-col p{ margin-bottom:12px; color:#b9b9b9; transition:.3s; cursor:pointer; }
@@ -309,9 +321,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .socials span:hover{ background:var(--orange); transform:translateY(-4px); }
         .footer-bottom{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:20px; }
         .footer-bottom p{ color:#999; font-size:14px; }
-        .footer-links{ display:flex; gap:30px; }
-        .footer-links a{ color:#ccc; transition:.3s; font-size:15px; }
-        .footer-links a:hover{ color:var(--orange); }
 
         @media(max-width:1100px){ .adopt-section{ padding:40px 30px; } .adopt-form{ padding:30px 25px; } .footer-columns{ grid-template-columns:repeat(2,1fr); } }
         @media(max-width:768px){
@@ -346,11 +355,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <a href="report.php">Report a Dog</a>
         </nav>
 
-        <!-- Header Action Buttons -->
         <div class="header-buttons">
           <?php if (isset($_SESSION['user_id'])): ?>
-            
-            <!-- LOGGED IN: MENU ICON DROPDOWN -->
             <div class="user-menu-wrapper">
               <button class="menu-icon-btn" id="userMenuBtn" onclick="toggleUserDropdown()" aria-label="User Menu">
                 <span>👤</span> ▾ <?php if ($unreadCount > 0): ?><span class="badge-count"><?php echo $unreadCount; ?></span><?php endif; ?>
@@ -366,13 +372,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <a href="logout.php" class="logout-link"><span class="icon">🚪</span> Logout</a>
               </div>
             </div>
-
           <?php else: ?>
-
-            <!-- LOGGED OUT: LOGIN & SIGNUP -->
             <a href="signup.php" class="btn btn-outline" style="text-decoration:none;">Sign Up</a>
             <a href="login.php" class="btn btn-dark" style="text-decoration:none;">Login</a>
-
           <?php endif; ?>
         </div>
 
@@ -536,21 +538,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </main>
 
-   <footer class="footer">
-    <div class="footer-container">
-        
-        <!-- 4 Columns Grid -->
+    <footer class="footer">
+      <div class="footer-container">
         <div class="footer-columns">
-            
-            <!-- Column 1: PawLix -->
             <div class="footer-col col-brand">
                 <h4 class="col-title">PAWLIX</h4>
-                <p class="brand-text">
-                    Connecting dogs waiting for rescue with loving, permanent families across Nepal through a simple and secure platform.
-                </p>
+                <p class="brand-text">Connecting dogs waiting for rescue with loving, permanent families across Nepal through a simple and secure platform.</p>
             </div>
-
-            <!-- Column 2: Services -->
             <div class="footer-col">
                 <h4 class="col-title">SERVICES</h4>
                 <p><a href="browse.php">Browse Dogs</a></p>
@@ -558,17 +552,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <p><a href="report.php">Report Stray / Injured</a></p>
                 <p><a href="contact.php">Support</a></p>
             </div>
-
-            <!-- Column 3: Useful Links -->
             <div class="footer-col">
                 <h4 class="col-title">USEFUL LINKS</h4>
                 <p><a href="index.php">Home</a></p>
                 <p><a href="about.php">About Us</a></p>
                 <p><a href="contact.php">Contact Us</a></p>
-        
             </div>
-
-            <!-- Column 4: Contact -->
             <div class="footer-col col-contact">
                 <h4 class="col-title">CONTACT</h4>
                 <p><span class="icon">📍</span> Kathmandu, Nepal</p>
@@ -576,41 +565,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <p><span class="icon">📞</span> +977 9800000000</p>
                 <p><span class="icon">🐾</span> Emergency 24/7 Support</p>
             </div>
-
         </div>
-
-        <!-- Thin Horizontal Line -->
         <hr class="footer-hr">
-
-        <!-- Footer Bottom Bar -->
         <div class="footer-bottom">
             <p class="copyright">© <?php echo date('Y'); ?> PawLix. All rights reserved.</p>
-
-            <div class="footer-bottom-right">
-                <!-- Social Circle Buttons -->
-                <div class="socials">
-                    <a href="#" aria-label="Facebook"><span>f</span></a>
-                    <a href="#" aria-label="X"><span>𝕏</span></a>
-                    <a href="#" aria-label="Instagram"><span>◎</span></a>
-                    <a href="#" aria-label="YouTube"><span>▶</span></a>
-                </div>
-
-                <!-- Call To Action Button (Back to Top) -->
-                <button class="scroll-top-btn" id="scrollTopBtn" type="button" aria-label="Back to top">
-                    <span>↑</span> Back to Top
-                </button>
-            </div>
         </div>
-
-    </div>
-</footer>
+      </div>
+    </footer>
 
     <script>
     function toggleUserDropdown() {
       var menu = document.getElementById("userDropdownMenu");
-      if (menu) {
-        menu.classList.toggle("show");
-      }
+      if (menu) { menu.classList.toggle("show"); }
     }
 
     window.addEventListener('click', function(e) {

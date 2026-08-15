@@ -11,13 +11,38 @@ include("../config/config.php");
 $success = "";
 $error = "";
 
+/* SAFE HELPER TO ADD COLUMNS WITHOUT DUPLICATE COLUMN EXCEPTION IN PHP 8.1+ */
+if (!function_exists('safeAddColumnDogs')) {
+    function safeAddColumnDogs($conn, $table, $column, $definition) {
+        try {
+            $check = mysqli_query($conn, "SHOW COLUMNS FROM `$table` LIKE '$column'");
+            if ($check && mysqli_num_rows($check) == 0) {
+                mysqli_query($conn, "ALTER TABLE `$table` ADD COLUMN `$column` $definition");
+            }
+        } catch (Throwable $e) {}
+    }
+}
+
+safeAddColumnDogs($conn, 'dog', 'color', "VARCHAR(50) DEFAULT ''");
+safeAddColumnDogs($conn, 'dog', 'size', "VARCHAR(50) DEFAULT ''");
+safeAddColumnDogs($conn, 'dog', 'weight', "FLOAT DEFAULT 0");
+safeAddColumnDogs($conn, 'dog', 'vaccination_status', "VARCHAR(100) DEFAULT ''");
+safeAddColumnDogs($conn, 'dog', 'health_status', "VARCHAR(255) DEFAULT ''");
+safeAddColumnDogs($conn, 'dog', 'adoption_status', "ENUM('Available', 'Pending', 'Adopted') DEFAULT 'Available'");
+
+/* ================= DELETE DOG ================= */
 if (isset($_GET['delete'])) {
     $id = intval($_GET['delete']);
     mysqli_query($conn, "DELETE FROM dog WHERE dog_id = $id");
-    header("Location: dogs.php");
+    header("Location: dogs.php?msg=deleted");
     exit();
 }
 
+if (isset($_GET['msg']) && $_GET['msg'] === 'deleted') {
+    $success = "Dog deleted successfully!";
+}
+
+/* ================= ADD DOG ================= */
 if (isset($_POST['add_dog'])) {
     $name = mysqli_real_escape_string($conn, trim($_POST['name']));
     $breed = mysqli_real_escape_string($conn, trim($_POST['breed']));
@@ -78,9 +103,9 @@ if (isset($_POST['add_dog'])) {
             $image_string = implode(",", $uploaded_images);
 
             $sql = "INSERT INTO dog 
-            (name, breed, age, gender, color, size, weight, vaccination_status, health_status, description, image)
+            (name, breed, age, gender, color, size, weight, vaccination_status, health_status, description, image, adoption_status)
             VALUES
-            ('$name', '$breed', '$age', '$gender', '$color', '$size', '$weight', '$vaccination_status', '$health_status', '$description', '$image_string')";
+            ('$name', '$breed', '$age', '$gender', '$color', '$size', '$weight', '$vaccination_status', '$health_status', '$description', '$image_string', 'Available')";
 
             if (mysqli_query($conn, $sql)) {
                 $success = "Dog added successfully!";
@@ -90,6 +115,80 @@ if (isset($_POST['add_dog'])) {
         } else {
             $error = "Failed to upload images.";
         }
+    }
+}
+
+/* ================= UPDATE / EDIT DOG ================= */
+if (isset($_POST['update_dog'])) {
+    $dog_id = intval($_POST['dog_id']);
+    $name = mysqli_real_escape_string($conn, trim($_POST['name']));
+    $breed = mysqli_real_escape_string($conn, trim($_POST['breed']));
+    
+    if ($breed === 'Other' && !empty($_POST['custom_breed'])) {
+        $breed = mysqli_real_escape_string($conn, trim($_POST['custom_breed']));
+    }
+    
+    $age = intval($_POST['age']);
+    $gender = mysqli_real_escape_string($conn, $_POST['gender']);
+    $color = mysqli_real_escape_string($conn, trim($_POST['color']));
+    $size = mysqli_real_escape_string($conn, $_POST['size']);
+    $weight = floatval($_POST['weight']);
+    $vaccination_status = mysqli_real_escape_string($conn, $_POST['vaccination_status']);
+    $health_status = mysqli_real_escape_string($conn, trim($_POST['health_status']));
+    $description = mysqli_real_escape_string($conn, trim($_POST['description']));
+    $adoption_status = mysqli_real_escape_string($conn, $_POST['adoption_status'] ?? 'Available');
+
+    $upload_folder = "../uploads/";
+    $uploaded_images = [];
+
+    if (!is_dir($upload_folder)) {
+        mkdir($upload_folder, 0777, true);
+    }
+
+    if (!empty($_FILES['images']['name'][0])) {
+        $total_files = count($_FILES['images']['name']);
+        for ($i = 0; $i < $total_files; $i++) {
+            $image_name = $_FILES['images']['name'][$i];
+            $temp_name = $_FILES['images']['tmp_name'][$i];
+            $error_code = $_FILES['images']['error'][$i];
+
+            if ($error_code === UPLOAD_ERR_OK && !empty($image_name)) {
+                $clean_filename = preg_replace("/[^a-zA-Z0-9\._-]/", "", basename($image_name));
+                $image_name_save = time() . "_" . $i . "_" . $clean_filename;
+
+                if (move_uploaded_file($temp_name, $upload_folder . $image_name_save)) {
+                    $uploaded_images[] = $image_name_save;
+                }
+            }
+        }
+    }
+
+    if (!empty($uploaded_images)) {
+        $image_string = implode(",", $uploaded_images);
+        $image_update_sql = ", image = '$image_string'";
+    } else {
+        $image_update_sql = "";
+    }
+
+    $update_sql = "UPDATE dog SET 
+        name = '$name', 
+        breed = '$breed', 
+        age = '$age', 
+        gender = '$gender', 
+        color = '$color', 
+        size = '$size', 
+        weight = '$weight', 
+        vaccination_status = '$vaccination_status', 
+        health_status = '$health_status', 
+        description = '$description',
+        adoption_status = '$adoption_status'
+        $image_update_sql
+        WHERE dog_id = $dog_id";
+
+    if (mysqli_query($conn, $update_sql)) {
+        $success = "Dog details updated successfully!";
+    } else {
+        $error = "Failed to update dog: " . mysqli_error($conn);
     }
 }
 
@@ -393,7 +492,8 @@ tbody td {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  text-decoration: none;
+  border: none;
+  cursor: pointer;
   transition: all 0.2s ease;
 }
 
@@ -560,7 +660,7 @@ tbody td {
 <body>
 
 <div class="topbar">
-  <div class="logo">PawLix</div>
+  <div class="logo">PawLix Admin</div>
   <a class="logout" href="logout.php">Logout</a>
 </div>
 
@@ -588,7 +688,7 @@ tbody td {
 
     <div class="main-header">
       <h1>All Dogs</h1>
-      <button type="button" class="add-btn" onclick="openModal()">+ Add New Dog</button>
+      <button type="button" class="add-btn" onclick="openAddModal()">+ Add New Dog</button>
     </div>
 
     <div class="table-card">
@@ -617,45 +717,72 @@ tbody td {
         </thead>
         <tbody>
           <?php 
-          $i = 1; 
-          while($d = mysqli_fetch_assoc($dogs)) { 
-            $images_array = explode(",", $d['image']);
-            $first_image = !empty($images_array[0]) ? trim($images_array[0]) : 'default.jpg';
-            $image_count = count($images_array);
+          if (!$dogs || mysqli_num_rows($dogs) === 0) {
           ?>
           <tr>
-            <td class="text-center"><?php echo $i++; ?></td>
-            <td class="text-center">
-              <div class="img-container">
-                <img class="dog-photo" src="../uploads/<?php echo $first_image; ?>" onerror="this.src='../assets/img/default.jpg';" alt="Dog">
-                <?php if ($image_count > 1) { ?>
-                  <span class="photo-count">+<?php echo ($image_count - 1); ?></span>
-                <?php } ?>
-              </div>
-            </td>
-            <td class="text-left"><strong><?php echo htmlspecialchars($d['name']); ?></strong></td>
-            <td class="text-left"><?php echo htmlspecialchars($d['breed']); ?></td>
-            <td class="text-center"><?php echo htmlspecialchars($d['age']); ?> yrs</td>
-            <td class="text-center"><?php echo htmlspecialchars($d['gender']); ?></td>
-            <td class="text-center">
-              <?php
-                $cls = "status-available";
-                if (($d['adoption_status'] ?? '') == "Adopted") $cls = "status-adopted";
-                if (($d['adoption_status'] ?? '') == "Pending") $cls = "status-pending";
-              ?>
-              <span class="status <?php echo $cls; ?>"><?php echo htmlspecialchars($d['adoption_status'] ?? 'Available'); ?></span>
-            </td>
-            <td class="text-center">
-              <div class="action-links">
-                <a class="edit-btn" href="edit_dog.php?id=<?php echo $d['dog_id']; ?>" title="Edit">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-                </a>
-                <a class="delete-btn" href="dogs.php?delete=<?php echo $d['dog_id']; ?>" onclick="return confirm('Delete this dog?');" title="Delete">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                </a>
-              </div>
-            </td>
+            <td colspan="8" class="text-center" style="padding:25px; color:#665444;">No dogs found. Click "+ Add New Dog" to add one!</td>
           </tr>
+          <?php
+          } else {
+            $i = 1; 
+            while($d = mysqli_fetch_assoc($dogs)) { 
+              $images_array = explode(",", $d['image']);
+              $first_image = !empty($images_array[0]) ? trim($images_array[0]) : 'default.jpg';
+              $image_count = count($images_array);
+              $status_val = $d['adoption_status'] ?? 'Available';
+            ?>
+            <tr>
+              <td class="text-center"><?php echo $i++; ?></td>
+              <td class="text-center">
+                <div class="img-container">
+                  <img class="dog-photo" src="../uploads/<?php echo $first_image; ?>" onerror="this.src='../assets/img/default.jpg';" alt="Dog">
+                  <?php if ($image_count > 1) { ?>
+                    <span class="photo-count">+<?php echo ($image_count - 1); ?></span>
+                  <?php } ?>
+                </div>
+              </td>
+              <td class="text-left"><strong><?php echo htmlspecialchars($d['name']); ?></strong></td>
+              <td class="text-left"><?php echo htmlspecialchars($d['breed']); ?></td>
+              <td class="text-center"><?php echo htmlspecialchars($d['age']); ?> yrs</td>
+              <td class="text-center"><?php echo htmlspecialchars($d['gender']); ?></td>
+              <td class="text-center">
+                <?php
+                  $cls = "status-available";
+                  if ($status_val == "Adopted") $cls = "status-adopted";
+                  if ($status_val == "Pending") $cls = "status-pending";
+                ?>
+                <span class="status <?php echo $cls; ?>"><?php echo htmlspecialchars($status_val); ?></span>
+              </td>
+              <td class="text-center">
+                <div class="action-links">
+                  <button 
+                    type="button"
+                    class="edit-btn" 
+                    title="Edit Dog"
+                    onclick="openEditModal(
+                      <?php echo $d['dog_id']; ?>, 
+                      '<?php echo addslashes($d['name']); ?>', 
+                      '<?php echo addslashes($d['breed']); ?>', 
+                      <?php echo intval($d['age']); ?>, 
+                      '<?php echo addslashes($d['gender']); ?>', 
+                      '<?php echo addslashes($d['color'] ?? ''); ?>', 
+                      '<?php echo addslashes($d['size'] ?? ''); ?>', 
+                      '<?php echo floatval($d['weight'] ?? 0); ?>', 
+                      '<?php echo addslashes($d['vaccination_status'] ?? ''); ?>', 
+                      '<?php echo addslashes($d['health_status'] ?? ''); ?>', 
+                      '<?php echo addslashes(str_replace(array("\r", "\n"), ' ', $d['description'] ?? '')); ?>', 
+                      '<?php echo addslashes($status_val); ?>'
+                    )"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                  </button>
+                  <a class="delete-btn" href="dogs.php?delete=<?php echo $d['dog_id']; ?>" onclick="return confirm('Are you sure you want to delete <?php echo addslashes($d['name']); ?>?');" title="Delete">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                  </a>
+                </div>
+              </td>
+            </tr>
+            <?php } ?>
           <?php } ?>
         </tbody>
       </table>
@@ -665,24 +792,23 @@ tbody td {
 
 </div>
 
+<!-- ADD NEW DOG MODAL -->
 <div class="modal-overlay" id="addDogModal">
   <div class="modal-content">
-    
     <div class="modal-header">
       <h2>Add New Dog</h2>
-      <button class="close-modal" onclick="closeModal()">&times;</button>
+      <button class="close-modal" onclick="closeAddModal()">&times;</button>
     </div>
 
     <div class="modal-body">
       <form method="POST" action="dogs.php" enctype="multipart/form-data">
-
         <div>
-          <label>Dog Name</label>
+          <label>Dog Name *</label>
           <input type="text" name="name" required>
         </div>
 
         <div>
-          <label>Breed</label>
+          <label>Breed *</label>
           <select name="breed" id="breedSelect" onchange="toggleCustomBreed(this)" required>
             <option value="">Select Breed</option>
             <option value="German Shepherd">German Shepherd</option>
@@ -705,12 +831,12 @@ tbody td {
         </div>
 
         <div>
-          <label>Age</label>
+          <label>Age (years) *</label>
           <input type="number" name="age" min="0" required>
         </div>
 
         <div>
-          <label>Gender</label>
+          <label>Gender *</label>
           <select name="gender" required>
             <option value="">Select Gender</option>
             <option value="Male">Male</option>
@@ -719,12 +845,12 @@ tbody td {
         </div>
 
         <div>
-          <label>Color</label>
+          <label>Color *</label>
           <input type="text" name="color" required>
         </div>
 
         <div>
-          <label>Size</label>
+          <label>Size *</label>
           <select name="size" required>
             <option value="">Select Size</option>
             <option value="Small">Small</option>
@@ -734,12 +860,12 @@ tbody td {
         </div>
 
         <div>
-          <label>Weight (kg)</label>
+          <label>Weight (kg) *</label>
           <input type="number" step="0.01" name="weight" required>
         </div>
 
         <div>
-          <label>Vaccination Status</label>
+          <label>Vaccination Status *</label>
           <select name="vaccination_status" required>
             <option value="">Select</option>
             <option value="Vaccinated">Vaccinated</option>
@@ -748,41 +874,193 @@ tbody td {
         </div>
 
         <div class="full">
-          <label>Health Status</label>
+          <label>Health Status *</label>
           <input type="text" name="health_status" required>
         </div>
 
         <div class="full">
-          <label>Description</label>
+          <label>Description *</label>
           <textarea name="description" required></textarea>
         </div>
 
         <div class="full">
-          <label>Dog Images</label>
+          <label>Dog Images *</label>
           <input type="file" name="images[]" accept="image/*" multiple required>
         </div>
 
-        <button type="submit" name="add_dog" class="submit-btn">Add Dog</button>
-
+        <button type="submit" name="add_dog" class="submit-btn">+ Add Dog</button>
       </form>
     </div>
+  </div>
+</div>
 
+<!-- EDIT DOG MODAL -->
+<div class="modal-overlay" id="editDogModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Edit Dog Details</h2>
+      <button class="close-modal" onclick="closeEditModal()">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      <form method="POST" action="dogs.php" enctype="multipart/form-data">
+        <input type="hidden" name="update_dog" value="1">
+        <input type="hidden" name="dog_id" id="editDogId" value="">
+
+        <div>
+          <label>Dog Name *</label>
+          <input type="text" name="name" id="editName" required>
+        </div>
+
+        <div>
+          <label>Breed *</label>
+          <select name="breed" id="editBreedSelect" onchange="toggleEditCustomBreed(this)" required>
+            <option value="German Shepherd">German Shepherd</option>
+            <option value="Labrador Retriever">Labrador Retriever</option>
+            <option value="Golden Retriever">Golden Retriever</option>
+            <option value="Japanese Spitz">Japanese Spitz</option>
+            <option value="Tibetan Mastiff (Bhote Kukur)">Tibetan Mastiff (Bhote Kukur)</option>
+            <option value="Himalayan Sheepdog (Bhotia Kukur)">Himalayan Sheepdog (Bhotia Kukur)</option>
+            <option value="Local / Cross Breed (Local Kukur)">Local / Cross Breed (Local Kukur)</option>
+            <option value="Beagle">Beagle</option>
+            <option value="Pug">Pug</option>
+            <option value="Husky">Husky</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <div id="editCustomBreedGroup" style="display: none;" class="full">
+          <label>Specify Custom Breed Name</label>
+          <input type="text" name="custom_breed" id="editCustomBreedInput">
+        </div>
+
+        <div>
+          <label>Age (years) *</label>
+          <input type="number" name="age" id="editAge" min="0" required>
+        </div>
+
+        <div>
+          <label>Gender *</label>
+          <select name="gender" id="editGender" required>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+          </select>
+        </div>
+
+        <div>
+          <label>Color *</label>
+          <input type="text" name="color" id="editColor" required>
+        </div>
+
+        <div>
+          <label>Size *</label>
+          <select name="size" id="editSize" required>
+            <option value="Small">Small</option>
+            <option value="Medium">Medium</option>
+            <option value="Large">Large</option>
+          </select>
+        </div>
+
+        <div>
+          <label>Weight (kg) *</label>
+          <input type="number" step="0.01" name="weight" id="editWeight" required>
+        </div>
+
+        <div>
+          <label>Vaccination Status *</label>
+          <select name="vaccination_status" id="editVaccinationStatus" required>
+            <option value="Vaccinated">Vaccinated</option>
+            <option value="Not Vaccinated">Not Vaccinated</option>
+          </select>
+        </div>
+
+        <div>
+          <label>Adoption Status *</label>
+          <select name="adoption_status" id="editAdoptionStatus" required>
+            <option value="Available">Available</option>
+            <option value="Pending">Pending</option>
+            <option value="Adopted">Adopted</option>
+          </select>
+        </div>
+
+        <div class="full">
+          <label>Health Status *</label>
+          <input type="text" name="health_status" id="editHealthStatus" required>
+        </div>
+
+        <div class="full">
+          <label>Description *</label>
+          <textarea name="description" id="editDescription" required></textarea>
+        </div>
+
+        <div class="full">
+          <label>Replace Images (Optional - leave empty to keep existing images)</label>
+          <input type="file" name="images[]" accept="image/*" multiple>
+        </div>
+
+        <button type="submit" class="submit-btn">Save & Update Dog Details ➔</button>
+      </form>
+    </div>
   </div>
 </div>
 
 <script>
-function openModal() {
+function openAddModal() {
   document.getElementById('addDogModal').style.display = 'flex';
 }
 
-function closeModal() {
+function closeAddModal() {
   document.getElementById('addDogModal').style.display = 'none';
 }
 
+function openEditModal(id, name, breed, age, gender, color, size, weight, vaccinationStatus, healthStatus, description, adoptionStatus) {
+  document.getElementById('editDogId').value = id;
+  document.getElementById('editName').value = name;
+  
+  const breedSelect = document.getElementById('editBreedSelect');
+  let optionFound = false;
+  for (let i = 0; i < breedSelect.options.length; i++) {
+    if (breedSelect.options[i].value === breed) {
+      breedSelect.selectedIndex = i;
+      optionFound = true;
+      break;
+    }
+  }
+  
+  if (!optionFound) {
+    breedSelect.value = 'Other';
+    document.getElementById('editCustomBreedGroup').style.display = 'block';
+    document.getElementById('editCustomBreedInput').value = breed;
+  } else {
+    document.getElementById('editCustomBreedGroup').style.display = 'none';
+    document.getElementById('editCustomBreedInput').value = '';
+  }
+
+  document.getElementById('editAge').value = age;
+  document.getElementById('editGender').value = gender;
+  document.getElementById('editColor').value = color;
+  document.getElementById('editSize').value = size;
+  document.getElementById('editWeight').value = weight;
+  document.getElementById('editVaccinationStatus').value = vaccinationStatus;
+  document.getElementById('editHealthStatus').value = healthStatus;
+  document.getElementById('editDescription').value = description;
+  document.getElementById('editAdoptionStatus').value = adoptionStatus;
+
+  document.getElementById('editDogModal').style.display = 'flex';
+}
+
+function closeEditModal() {
+  document.getElementById('editDogModal').style.display = 'none';
+}
+
 window.onclick = function(event) {
-  var modal = document.getElementById('addDogModal');
-  if (event.target == modal) {
-    closeModal();
+  var addModal = document.getElementById('addDogModal');
+  var editModal = document.getElementById('editDogModal');
+  if (event.target == addModal) {
+    closeAddModal();
+  }
+  if (event.target == editModal) {
+    closeEditModal();
   }
 }
 
@@ -799,8 +1077,21 @@ function toggleCustomBreed(selectElement) {
   }
 }
 
-<?php if ($error != "") { ?>
-openModal();
+function toggleEditCustomBreed(selectElement) {
+  var customGroup = document.getElementById('editCustomBreedGroup');
+  var customInput = document.getElementById('editCustomBreedInput');
+  if (selectElement.value === 'Other') {
+    customGroup.style.display = 'block';
+    customInput.setAttribute('required', 'required');
+  } else {
+    customGroup.style.display = 'none';
+    customInput.removeAttribute('required');
+    customInput.value = '';
+  }
+}
+
+<?php if ($error != "" && !isset($_POST['update_dog'])) { ?>
+openAddModal();
 <?php } ?>
 </script>
 

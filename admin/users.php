@@ -8,11 +8,18 @@ if (!isset($_SESSION['admin_id'])) {
 
 include("../config/config.php");
 
-$users = mysqli_query($conn, "
-SELECT *
-FROM user
-ORDER BY user_id DESC
-");
+/* ================= FETCH ALL USERS WITH ACTIVITY STATS ================= */
+$users_query = "
+SELECT 
+    u.*,
+    (SELECT COUNT(*) FROM adoption_application a WHERE a.user_id = u.user_id) AS total_adoptions,
+    (SELECT COUNT(*) FROM report_dogs r WHERE r.user_id = u.user_id) AS total_reports,
+    (SELECT COUNT(*) FROM messages m WHERE m.user_id = u.user_id) AS total_messages
+FROM user u
+ORDER BY u.user_id DESC
+";
+
+$users = mysqli_query($conn, $users_query);
 ?>
 
 <!DOCTYPE html>
@@ -23,7 +30,7 @@ ORDER BY user_id DESC
 <title>Users | PawLix Admin</title>
 
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
 
 :root {
   --bg-body: #e8dcc0;
@@ -214,16 +221,6 @@ tbody td {
   gap: 12px;
 }
 
-.avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  object-fit: cover;
-  background: #d8cba9;
-  flex-shrink: 0;
-  border: 1px solid rgba(255, 255, 255, 0.6);
-}
-
 .name {
   font-weight: 600;
   font-size: 14px;
@@ -235,14 +232,206 @@ tbody td {
   font-size: 13px;
 }
 
-.view-link {
-  color: var(--primary-blue);
+.view-btn {
+  background: var(--primary-blue);
+  color: white;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 16px;
+  font-family: inherit;
+  font-size: 12px;
   font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(31,111,214,0.25);
+  display: inline-block;
   text-decoration: none;
-  font-size: 13px;
 }
 
-.view-link:hover { text-decoration: underline; }
+.view-btn:hover { background: #1656aa; transform: translateY(-1px); }
+
+/* ================= VIEW USER MODAL OVERLAY ================= */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 99999;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.modal-overlay.show { display: flex; }
+
+.modal-card {
+  width: 100%;
+  max-width: 580px;
+  max-height: 85vh;
+  background: #ede1c6;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.7);
+  animation: modalSlide 0.25s ease-out;
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes modalSlide {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.modal-header {
+  background: var(--bg-topbar);
+  padding: 18px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.modal-header h2 { margin: 0; font-size: 18px; font-weight: 700; color: var(--text-dark); }
+
+.close-btn {
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #665444;
+  line-height: 1;
+}
+
+.close-btn:hover { color: #000; }
+
+.modal-body {
+  flex: 1;
+  padding: 22px 26px;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.modal-body::-webkit-scrollbar { width: 6px; }
+.modal-body::-webkit-scrollbar-thumb { background: #cbb997; border-radius: 10px; }
+
+.user-profile-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+  background: #f5ecd7;
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid var(--border-color);
+}
+
+.avatar-large {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--primary-orange);
+  color: white;
+  font-size: 24px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(242,147,43,0.3);
+}
+
+.user-profile-title h3 { font-size: 18px; font-weight: 700; color: #1a1a1a; margin-bottom: 2px; }
+.user-profile-title p { font-size: 13px; color: #665444; }
+
+.section-head {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary-orange);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin: 16px 0 10px;
+  border-bottom: 1.5px dashed #dfcfb0;
+  padding-bottom: 4px;
+}
+
+.section-head:first-of-type { margin-top: 0; }
+
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 16px;
+  margin-bottom: 16px;
+  background: #f5ecd7;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+}
+
+.info-item label { display: block; font-size: 11px; font-weight: 700; color: #7a6350; text-transform: uppercase; }
+.info-item span { font-size: 13.5px; font-weight: 600; color: #222; word-break: break-word; }
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.stat-box {
+  background: #fff8eb;
+  padding: 12px;
+  border-radius: 12px;
+  text-align: center;
+  border: 1px solid #e2d2b5;
+}
+
+.stat-number { font-size: 20px; font-weight: 800; color: var(--primary-orange); }
+.stat-label { font-size: 11px; font-weight: 600; color: #665444; }
+
+.modal-footer {
+  padding: 14px 24px;
+  background: var(--bg-topbar);
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.btn-chat {
+  background: var(--primary-orange);
+  color: white;
+  border: none;
+  padding: 9px 20px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 4px 12px rgba(242,147,43,0.3);
+}
+
+.btn-chat:hover { background: #e06600; }
+
+.btn-close {
+  background: white;
+  border: 1px solid var(--border-color);
+  padding: 9px 18px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+}
 
 @media(max-width: 850px) {
   .layout {
@@ -263,7 +452,7 @@ tbody td {
 <body>
 
 <div class="topbar">
-  <div class="logo">PawLix</div>
+  <div class="logo">PawLix Admin</div>
   <a class="logout" href="logout.php">Logout</a>
 </div>
 
@@ -272,7 +461,7 @@ tbody td {
   <div class="sidebar">
     <a href="dashboard.php"><span class="icon">🏠</span> Dashboard</a>
     <a href="dogs.php"><span class="icon">🐾</span> Dogs</a>
-        <a href="reported_dogs.php"><span class="icon">🚨</span> Report Dogs</a>
+    <a href="reported_dogs.php"><span class="icon">🚨</span> Report Dogs</a>
     <a href="adoption_requests.php"><span class="icon">📋</span> Adoption Request</a>
     <a href="messages.php"><span class="icon">✉️</span> Messages</a>
     <a href="users.php" class="active"><span class="icon">👤</span> Users</a>
@@ -281,7 +470,7 @@ tbody td {
 
   <div class="main">
 
-    <h1>Users</h1>
+    <h1>Registered Users</h1>
 
     <div class="table-card">
       <table>
@@ -304,21 +493,61 @@ tbody td {
           </tr>
         </thead>
         <tbody>
-          <?php $i = 1; while($u = mysqli_fetch_assoc($users)) { ?>
-          <tr>
-            <td class="text-center"><?php echo $i++; ?></td>
-            <td class="text-left">
-              <div class="person">
-                <img class="avatar" src="../assets/img/user-placeholder.jpg" alt="User">
-                <div class="name"><?php echo htmlspecialchars(($u['first_name'] ?? '') . " " . ($u['last_name'] ?? '')); ?></div>
-              </div>
-            </td>
-            <td class="text-left email"><?php echo htmlspecialchars($u['email']); ?></td>
-            <td class="text-center role"><?php echo htmlspecialchars($u['role'] ?? 'User'); ?></td>
-            <td class="text-center joined"><?php echo date("M d, Y", strtotime($u['created_at'] ?? $u['joined_date'] ?? 'now')); ?></td>
-            <td class="text-center"><a class="view-link" href="view_user.php?id=<?php echo $u['user_id']; ?>">View</a></td>
-          </tr>
-          <?php } ?>
+          <?php if (!$users || mysqli_num_rows($users) === 0): ?>
+            <tr>
+              <td colspan="6" class="text-center" style="padding:30px; color:#665444;">No users found.</td>
+            </tr>
+          <?php else: ?>
+            <?php $i = 1; while($u = mysqli_fetch_assoc($users)) { ?>
+            <?php 
+              $user_id = intval($u['user_id']);
+              $first_name = htmlspecialchars($u['first_name'] ?? 'User');
+              $last_name = htmlspecialchars($u['last_name'] ?? '');
+              $full_name = trim($first_name . ' ' . $last_name);
+              $email = htmlspecialchars($u['email']);
+              $phone = htmlspecialchars(!empty($u['phone']) ? $u['phone'] : 'Not provided');
+              $address = htmlspecialchars(!empty($u['address']) ? $u['address'] : 'Not provided');
+              $role = htmlspecialchars($u['role'] ?? 'User');
+              $joined = date("M d, Y", strtotime($u['created_at'] ?? $u['joined_date'] ?? 'now'));
+              $adoptions = intval($u['total_adoptions'] ?? 0);
+              $reports = intval($u['total_reports'] ?? 0);
+              $messages_cnt = intval($u['total_messages'] ?? 0);
+              $initial = strtoupper(substr($first_name, 0, 1));
+            ?>
+            <tr>
+              <td class="text-center"><?php echo $i++; ?></td>
+              <td class="text-left">
+                <div class="person">
+                  <div class="name"><?php echo $full_name; ?></div>
+                </div>
+              </td>
+              <td class="text-left email"><?php echo $email; ?></td>
+              <td class="text-center role"><?php echo $role; ?></td>
+              <td class="text-center joined"><?php echo $joined; ?></td>
+              <td class="text-center">
+                <button 
+                  type="button" 
+                  class="view-btn"
+                  onclick="openUserModal(
+                    <?php echo $user_id; ?>,
+                    '<?php echo addslashes($full_name); ?>',
+                    '<?php echo addslashes($email); ?>',
+                    '<?php echo addslashes($phone); ?>',
+                    '<?php echo addslashes($address); ?>',
+                    '<?php echo addslashes($role); ?>',
+                    '<?php echo addslashes($joined); ?>',
+                    <?php echo $adoptions; ?>,
+                    <?php echo $reports; ?>,
+                    <?php echo $messages_cnt; ?>,
+                    '<?php echo $initial; ?>'
+                  )"
+                >
+                  View 
+                </button>
+              </td>
+            </tr>
+            <?php } ?>
+          <?php endif; ?>
         </tbody>
       </table>
     </div>
@@ -326,6 +555,94 @@ tbody td {
   </div>
 
 </div>
+
+<!-- VIEW USER DETAILS MODAL -->
+<div class="modal-overlay" id="viewUserModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h2>👤 User Details</h2>
+      <button type="button" class="close-btn" onclick="closeUserModal()">&times;</button>
+    </div>
+
+    <div class="modal-body">
+
+      <div class="user-profile-header">
+        <div class="avatar-large" id="mUserInitial">U</div>
+        <div class="user-profile-title">
+          <h3 id="mUserName">User Name</h3>
+          <p id="mUserEmail">user@example.com</p>
+        </div>
+      </div>
+
+      <div class="section-head">Contact & Account Information</div>
+      <div class="info-grid">
+        <div class="info-item"><label>Phone Number</label><span id="mUserPhone">-</span></div>
+        <div class="info-item"><label>Role</label><span id="mUserRole">User</span></div>
+        <div class="info-item"><label>Joined Date</label><span id="mUserJoined">-</span></div>
+        <div class="info-item"><label>Residential Address</label><span id="mUserAddress">-</span></div>
+      </div>
+
+      <div class="section-head">Activity Overview</div>
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-number" id="mUserAdoptions">0</div>
+          <div class="stat-label">Adoption Requests</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-number" id="mUserReports">0</div>
+          <div class="stat-label">Dog Reports</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-number" id="mUserMessages">0</div>
+          <div class="stat-label">Messages</div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn-close" onclick="closeUserModal()">Close</button>
+      <a href="#" id="mUserChatBtn" class="btn-chat">✉️ Direct Message User</a>
+    </div>
+  </div>
+</div>
+
+<script>
+function openUserModal(id, name, email, phone, address, role, joined, adoptions, reports, messages, initial) {
+    document.getElementById("mUserInitial").innerText = initial || "U";
+    document.getElementById("mUserName").innerText = name;
+    document.getElementById("mUserEmail").innerText = email;
+    document.getElementById("mUserPhone").innerText = phone;
+    document.getElementById("mUserAddress").innerText = address;
+    document.getElementById("mUserRole").innerText = role;
+    document.getElementById("mUserJoined").innerText = joined;
+    
+    document.getElementById("mUserAdoptions").innerText = adoptions;
+    document.getElementById("mUserReports").innerText = reports;
+    document.getElementById("mUserMessages").innerText = messages;
+    
+    document.getElementById("mUserChatBtn").href = "messages.php?user_id=" + id;
+    
+    document.getElementById("viewUserModal").classList.add("show");
+}
+
+function closeUserModal() {
+    document.getElementById("viewUserModal").classList.remove("show");
+}
+
+window.addEventListener("click", function(e) {
+    const modal = document.getElementById("viewUserModal");
+    if (e.target === modal) {
+        closeUserModal();
+    }
+});
+
+document.addEventListener("keydown", function(e) {
+    if (e.key === "Escape") {
+        closeUserModal();
+    }
+});
+</script>
 
 </body>
 </html>

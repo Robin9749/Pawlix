@@ -379,74 +379,7 @@ $main_image = $images_list[0];
         </div>
     </main>
 
-    <!-- FOOTER -->
-    <footer class="footer">
-        <div class="footer-container">
-            
-            <!-- 4 Columns Grid -->
-            <div class="footer-columns">
-                
-                <!-- Column 1: PawLix -->
-                <div class="footer-col col-brand">
-                    <h4 class="col-title">PAWLIX</h4>
-                    <p class="brand-text">
-                        Connecting dogs waiting for rescue with loving, permanent families across Nepal through a simple and secure platform.
-                    </p>
-                </div>
-
-                <!-- Column 2: Services -->
-                <div class="footer-col">
-                    <h4 class="col-title">SERVICES</h4>
-                    <p><a href="browse.php">Browse Dogs</a></p>
-                    <p><a href="adopt.php">Apply for Adoption</a></p>
-                    <p><a href="report.php">Report Stray / Injured</a></p>
-                    <p><a href="contact.php">Support</a></p>
-                </div>
-
-                <!-- Column 3: Useful Links -->
-                <div class="footer-col">
-                    <h4 class="col-title">USEFUL LINKS</h4>
-                    <p><a href="index.php">Home</a></p>
-                    <p><a href="about.php">About Us</a></p>
-                    <p><a href="contact.php">Contact Us</a></p>
-                </div>
-
-                <!-- Column 4: Contact -->
-                <div class="footer-col col-contact">
-                    <h4 class="col-title">CONTACT</h4>
-                    <p><span class="icon">📍</span> Kathmandu, Nepal</p>
-                    <p><span class="icon">✉</span> support@pawlix.org</p>
-                    <p><span class="icon">📞</span> +977 9800000000</p>
-                    <p><span class="icon">🐾</span> Emergency 24/7 Support</p>
-                </div>
-
-            </div>
-
-            <!-- Thin Horizontal Line -->
-            <hr class="footer-hr">
-
-            <!-- Footer Bottom Bar -->
-            <div class="footer-bottom">
-                <p class="copyright">© <?php echo date('Y'); ?> PawLix. All rights reserved.</p>
-
-                <div class="footer-bottom-right">
-                    <!-- Social Circle Buttons -->
-                    <div class="socials">
-                        <a href="#" aria-label="Facebook"><span>f</span></a>
-                        <a href="#" aria-label="X"><span>𝕏</span></a>
-                        <a href="#" aria-label="Instagram"><span>◎</span></a>
-                        <a href="#" aria-label="YouTube"><span>▶</span></a>
-                    </div>
-
-                    <!-- Call To Action Button (Back to Top) -->
-                    <button class="scroll-top-btn" id="scrollTopBtn" type="button" aria-label="Back to top">
-                        <span>↑</span> Back to Top
-                    </button>
-                </div>
-            </div>
-
-        </div>
-    </footer>
+  
 
     <script>
     function toggleUserDropdown() {

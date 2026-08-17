@@ -10,7 +10,7 @@ include("../config/config.php");
 
 $admin_id = intval($_SESSION['admin_id']);
 
-/* ================= AUTO-CREATE MESSAGES TABLE IF NOT EXISTS ================= */
+/* SAFE HELPER TO CREATE TABLES IF NOT EXIST */
 @mysqli_query($conn, "CREATE TABLE IF NOT EXISTS messages (
     message_id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -22,7 +22,17 @@ $admin_id = intval($_SESSION['admin_id']);
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )");
 
-/* ================= GET ADMIN ================= */
+@mysqli_query($conn, "CREATE TABLE IF NOT EXISTS contact_message (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    full_name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    phone VARCHAR(50) DEFAULT '',
+    subject VARCHAR(255) DEFAULT '',
+    message TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)");
+
+/* ================= GET ADMIN DETAILS ================= */
 $admin_query = mysqli_query($conn, "SELECT * FROM admin WHERE admin_id = $admin_id");
 $admin = $admin_query ? mysqli_fetch_assoc($admin_query) : [];
 
@@ -34,16 +44,16 @@ $error = "";
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $recipient_user_id = intval($_POST['recipient_user_id'] ?? 0);
     $message_text = trim($_POST['message'] ?? '');
-    $subject = trim($_POST['subject'] ?? 'PawLix Support');
+    $subject = trim($_POST['subject'] ?? 'PawLix Support Response');
 
     if ($recipient_user_id <= 0 || $message_text === '') {
         if (isset($_POST['send_admin_message']) || isset($_POST['submitted'])) {
-            $error = "Please enter a message.";
+            $error = "Please enter a message before sending.";
         }
     } else {
         $user_check = mysqli_query($conn, "SELECT user_id FROM user WHERE user_id = $recipient_user_id LIMIT 1");
         if (!$user_check || mysqli_num_rows($user_check) === 0) {
-            $error = "User not found.";
+            $error = "User account not found.";
         } else {
             $message_db = mysqli_real_escape_string($conn, $message_text);
             $subject_db = mysqli_real_escape_string($conn, $subject);
@@ -57,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 header("Location: messages.php?user_id=" . $recipient_user_id . "&sent=1");
                 exit();
             } else {
-                $error = "Unable to send message.";
+                $error = "Unable to send message: " . mysqli_error($conn);
             }
         }
     }
@@ -70,6 +80,7 @@ $conversations = mysqli_query($conn, "
         u.first_name, 
         u.last_name, 
         u.email,
+        u.phone,
         (
             SELECT m.message 
             FROM messages m 
@@ -97,10 +108,10 @@ $conversations = mysqli_query($conn, "
         FROM messages m2 
         WHERE m2.user_id = u.user_id
     )
-    ORDER BY last_message_time DESC
+    ORDER BY last_message_time DESC, u.user_id DESC
 ");
 
-/* ================= MARK USER MESSAGES READ WHEN SELECTED ================= */
+/* ================= MARK USER MESSAGES AS READ WHEN SELECTED ================= */
 if ($selected_user_id > 0) {
     @mysqli_query($conn, "UPDATE messages SET is_read = 1 WHERE user_id = $selected_user_id AND sender_type = 'user'");
 }
@@ -127,6 +138,9 @@ if ($unread_result) {
     $row = mysqli_fetch_assoc($unread_result);
     $totalUnread = intval($row['total']);
 }
+
+/* ================= PUBLIC CONTACT INQUIRIES ================= */
+$public_inquiries = mysqli_query($conn, "SELECT * FROM contact_message ORDER BY created_at DESC LIMIT 15");
 ?>
 
 <!DOCTYPE html>
@@ -134,10 +148,10 @@ if ($unread_result) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Messages | PawLix Admin</title>
+<title>Messages Center | PawLix Admin</title>
 
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
 
 :root {
     --bg-body: #e8dcc0;
@@ -148,39 +162,38 @@ if ($unread_result) {
     --primary-orange: #f2932b;
     --primary-blue: #1f6fd6;
     --text-dark: #2b2b2b;
-    --text-muted: #5c5c5c;
+    --text-muted: #665444;
     --border-color: #ddccae;
     --online-green: #2ecc71;
+    --radius-md: 12px;
+    --radius-lg: 18px;
+    --font-family: 'Poppins', Arial, sans-serif;
 }
 
-* { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; height: 100%; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
-body {
-    font-family: 'Poppins', Arial, sans-serif;
-    background: var(--bg-body);
-    color: var(--text-dark);
-}
+html, body { height: 100%; font-family: var(--font-family); background: var(--bg-body); color: var(--text-dark); }
 
-/* TOPBAR */
+body { display: flex; flex-direction: column; min-height: 100vh; }
+
 .topbar {
-    height: 70px;
+    height: 65px;
     background: var(--bg-topbar);
-    padding: 0 35px;
+    padding: 0 45px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 2px solid white;
+    border-bottom: 2px solid #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+    flex-shrink: 0;
 }
 
 .topbar .logo { font-size: 20px; font-weight: 700; color: var(--text-dark); }
 .topbar .logout { color: var(--primary-blue); text-decoration: none; font-weight: 600; font-size: 14px; }
 .topbar .logout:hover { text-decoration: underline; }
 
-/* LAYOUT */
-.layout { display: flex; height: calc(100vh - 70px); }
+.layout { display: flex; flex: 1; height: calc(100vh - 65px); }
 
-/* SIDEBAR */
 .sidebar {
     width: 240px;
     background: var(--bg-sidebar);
@@ -207,10 +220,9 @@ body {
 .sidebar a.active { background: var(--primary-orange); color: white; box-shadow: 0 4px 12px rgba(242,147,43,0.35); }
 .sidebar .icon { width: 20px; text-align: center; font-size: 16px; }
 
-/* MAIN AREA */
 .main {
     flex: 1;
-    padding: 25px 30px;
+    padding: 24px 32px;
     min-width: 0;
     display: flex;
     flex-direction: column;
@@ -220,34 +232,35 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 18px;
+    margin-bottom: 16px;
 }
 
-.page-title h1 { margin: 0; font-size: 24px; font-weight: 700; }
+.page-title h1 { margin: 0; font-size: 24px; font-weight: 700; color: #1a1a1a; }
 
 .unread-pill {
     background: var(--primary-orange);
     color: white;
-    padding: 6px 14px;
+    padding: 6px 16px;
     border-radius: 20px;
     font-size: 12.5px;
     font-weight: 700;
+    box-shadow: 0 3px 10px rgba(242,147,43,0.3);
 }
 
-/* CHAT APPLICATION */
 .chat-layout {
     flex: 1;
     display: flex;
     background: var(--bg-card);
-    border-radius: 18px;
+    border-radius: var(--radius-lg);
     overflow: hidden;
-    box-shadow: 0 5px 20px rgba(0,0,0,.06);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.06);
     border: 1px solid var(--border-color);
+    min-height: 0;
 }
 
-/* CONVERSATION LIST (LEFT SIDEBAR) */
+/* CONVERSATION LIST (LEFT PANEL) */
 .conversation-list {
-    width: 320px;
+    width: 360px;
     background: #e8dcc0;
     border-right: 1px solid var(--border-color);
     display: flex;
@@ -256,22 +269,17 @@ body {
 }
 
 .conversation-header {
-    padding: 18px;
+    padding: 16px 18px;
     border-bottom: 1px solid var(--border-color);
+    background: #ebdcb8;
 }
 
-.conversation-header h3 {
-    margin: 0 0 12px 0;
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--text-dark);
-}
+.conversation-header h3 { margin: 0 0 10px 0; font-size: 16px; font-weight: 700; color: var(--text-dark); }
 
 .search-box-wrapper { position: relative; }
-
 .search-box-wrapper input {
     width: 100%;
-    padding: 10px 14px 10px 36px;
+    padding: 9px 14px 9px 36px;
     border: 1px solid #dfcfb0;
     border-radius: 20px;
     background: #f5ecd7;
@@ -279,27 +287,39 @@ body {
     font-size: 13px;
     outline: none;
     box-sizing: border-box;
+    transition: all 0.2s;
 }
 
-.search-box-wrapper input:focus { background: #ffffff; border-color: var(--primary-orange); }
+.search-box-wrapper input:focus { background: #ffffff; border-color: var(--primary-orange); box-shadow: 0 0 0 3px rgba(242,147,43,0.15); }
+.search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 13px; color: #806d5c; }
 
-.search-icon {
-    position: absolute;
-    left: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 13px;
-    color: #806d5c;
+.conversations-scroll {
+    flex: 1;
+    overflow-y: auto;
+    overscroll-behavior: contain;
 }
 
-.conversations-scroll { flex: 1; overflow-y: auto; }
+.conversations-scroll::-webkit-scrollbar { width: 5px; }
+.conversations-scroll::-webkit-scrollbar-thumb { background: #cbb997; border-radius: 10px; }
+
+.inquiry-section-title {
+    padding: 10px 18px;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    background: #dcc9a3;
+    color: #4a3223;
+    border-bottom: 1px solid var(--border-color);
+    border-top: 1px solid var(--border-color);
+}
 
 .conversation {
     display: block;
-    padding: 14px 16px;
+    padding: 14px 18px;
     text-decoration: none;
     color: var(--text-dark);
-    border-bottom: 1px solid rgba(221,204,174,.6);
+    border-bottom: 1px solid rgba(221,204,174,0.6);
     transition: background 0.2s;
 }
 
@@ -309,7 +329,6 @@ body {
 .conversation-top { display: flex; align-items: center; gap: 12px; }
 
 .avatar-container { position: relative; flex-shrink: 0; }
-
 .avatar {
     width: 44px;
     height: 44px;
@@ -321,104 +340,88 @@ body {
     justify-content: center;
     font-weight: 700;
     font-size: 15px;
+    border: 1.5px solid white;
 }
 
-.conversation.active .avatar { background: rgba(255,255,255,.25); color: white; }
-
-.status-dot {
-    position: absolute;
-    bottom: 1px;
-    right: 1px;
-    width: 11px;
-    height: 11px;
-    background: var(--online-green);
-    border: 2px solid white;
-    border-radius: 50%;
-}
+.conversation.active .avatar { background: rgba(255,255,255,0.25); color: white; border-color: rgba(255,255,255,0.5); }
+.status-dot { position: absolute; bottom: 1px; right: 1px; width: 11px; height: 11px; background: var(--online-green); border: 2px solid white; border-radius: 50%; }
 
 .conversation-info { min-width: 0; flex: 1; }
-
 .conversation-name { font-size: 13.5px; font-weight: 700; line-height: 1.2; }
-
-.conversation-preview {
-    font-size: 12px;
-    opacity: .75;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin-top: 3px;
-}
+.conversation-preview { font-size: 12px; opacity: 0.8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 3px; }
 
 .conversation-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.conversation-time { font-size: 10.5px; opacity: 0.8; white-space: nowrap; }
+.unread-badge { background: #e63946; color: white; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 10.5px; font-weight: 700; }
 
-.conversation-time { font-size: 10.5px; opacity: .75; white-space: nowrap; }
-
-.unread-badge {
-    background: #e63946;
-    color: white;
-    min-width: 20px;
-    height: 20px;
-    padding: 0 6px;
-    border-radius: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 10.5px;
-    font-weight: 700;
+.inquiry-item {
+    padding: 14px 18px;
+    border-bottom: 1px solid rgba(221,204,174,0.6);
+    font-size: 12px;
+    background: #f4eaaf;
+    transition: background 0.2s;
 }
 
-/* CHAT WINDOW */
-.chat-window { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.inquiry-item:hover { background: #ebdca0; }
+.inquiry-item strong { color: #1a1a1a; font-size: 12.5px; }
+.inquiry-item p { margin: 4px 0 4px; color: #443427; line-height: 1.45; word-break: break-word; }
+.inquiry-item .date { font-size: 10px; color: #7a6350; font-weight: 600; display: block; margin-top: 4px; }
+
+.empty-list { padding: 24px 18px; text-align: center; color: #806d5c; font-size: 12.5px; }
+
+/* CHAT WINDOW (RIGHT PANEL) */
+.chat-window { flex: 1; display: flex; flex-direction: column; min-width: 0; background: #f5ecd7; }
 
 .chat-header {
-    height: 70px;
+    height: 65px;
     background: var(--bg-topbar);
     border-bottom: 1px solid var(--border-color);
-    padding: 12px 24px;
+    padding: 0 24px;
     display: flex;
     align-items: center;
     gap: 14px;
+    flex-shrink: 0;
 }
 
-.chat-header .avatar { width: 44px; height: 44px; }
+.chat-header .avatar { width: 42px; height: 42px; font-size: 15px; }
 .chat-header-info h3 { margin: 0; font-size: 16px; font-weight: 700; color: var(--text-dark); }
-.chat-header-info p { margin: 2px 0 0; font-size: 11.5px; color: var(--online-green); font-weight: 600; }
+.chat-header-info p { margin: 1px 0 0; font-size: 11.5px; color: var(--online-green); font-weight: 600; }
 
+/* CHAT BODY SCROLL */
 .chat-body {
     flex: 1;
     overflow-y: auto;
     padding: 24px;
-    background: #f5ecd7;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 14px;
+    overscroll-behavior: contain;
 }
 
-.chat-body::-webkit-scrollbar { width: 7px; }
+.chat-body::-webkit-scrollbar { width: 6px; }
 .chat-body::-webkit-scrollbar-thumb { background: #cbb997; border-radius: 10px; }
 
-/* MESSAGE BUBBLES */
-.message-row { display: flex; gap: 10px; align-items: flex-end; width: 100%; }
+.message-row { display: flex; gap: 12px; align-items: flex-end; width: 100%; }
 .message-row.user { justify-content: flex-start; }
 .message-row.admin { justify-content: flex-end; }
 
-.message-bubble-wrapper { max-width: 70%; display: flex; flex-direction: column; }
-.message-sender-name { font-size: 11px; font-weight: 600; color: #806d5c; margin-bottom: 3px; }
+.message-bubble-wrapper { max-width: 68%; display: flex; flex-direction: column; }
+.message-sender-name { font-size: 11px; font-weight: 700; color: #7a6350; margin-bottom: 4px; }
 .message-row.admin .message-sender-name { text-align: right; }
 
 .message-bubble {
-    padding: 11px 15px 8px;
-    border-radius: 16px;
+    padding: 12px 16px 10px;
+    border-radius: 18px;
     font-size: 13.5px;
     line-height: 1.5;
-    box-shadow: 0 2px 5px rgba(0,0,0,.04);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
     position: relative;
 }
 
 .message-row.user .message-bubble {
-    background: #fffaf0;
-    color: #43352a;
-    border: 1px solid #e4d5b9;
+    background: #ffffff;
+    color: #2b2b2b;
+    border: 1px solid #e0d0b4;
     border-bottom-left-radius: 4px;
 }
 
@@ -428,25 +431,33 @@ body {
     border-bottom-right-radius: 4px;
 }
 
-.message-text { margin: 0 0 4px; white-space: pre-wrap; word-break: break-word; }
-.message-subject { font-weight: 700; margin-bottom: 4px; font-size: 13px; border-bottom: 1px dashed rgba(0,0,0,0.1); padding-bottom: 3px; }
-.message-row.admin .message-subject { border-bottom-color: rgba(255,255,255,0.3); }
-.message-time { display: block; text-align: right; font-size: 9.5px; opacity: .75; margin-top: 2px; }
+.message-text { margin: 0; white-space: pre-wrap; word-break: break-word; }
+.message-subject {
+    font-weight: 700;
+    margin-bottom: 6px;
+    font-size: 13px;
+    border-bottom: 1px dashed rgba(0,0,0,0.12);
+    padding-bottom: 4px;
+}
+
+.message-row.admin .message-subject { border-bottom-color: rgba(255,255,255,0.35); }
+.message-time { display: block; text-align: right; font-size: 10px; opacity: 0.75; margin-top: 4px; }
 
 /* COMPOSER */
 .composer {
-    padding: 14px 20px;
+    padding: 14px 22px;
     background: var(--bg-topbar);
     border-top: 1px solid var(--border-color);
+    flex-shrink: 0;
 }
 
-.composer-form { display: flex; align-items: flex-end; gap: 10px; }
+.composer-form { display: flex; align-items: flex-end; gap: 12px; }
 
 .composer-input {
     flex: 1;
     resize: none;
-    min-height: 46px;
-    max-height: 110px;
+    min-height: 48px;
+    max-height: 120px;
     border: 1px solid #d8c6a5;
     border-radius: 22px;
     padding: 12px 18px;
@@ -455,14 +466,14 @@ body {
     background: #fffaf0;
     outline: none;
     color: #222;
-    transition: border-color 0.2s;
+    transition: all 0.2s;
 }
 
-.composer-input:focus { border-color: var(--primary-orange); background: #ffffff; }
+.composer-input:focus { border-color: var(--primary-orange); background: #ffffff; box-shadow: 0 0 0 3px rgba(242,147,43,0.18); }
 
 .send-button {
-    width: 46px;
-    height: 46px;
+    width: 48px;
+    height: 48px;
     border: none;
     border-radius: 50%;
     background: var(--primary-orange);
@@ -474,12 +485,11 @@ body {
     justify-content: center;
     flex-shrink: 0;
     transition: transform 0.2s, background 0.2s;
-    box-shadow: 0 4px 12px rgba(242,147,43,0.3);
+    box-shadow: 0 4px 12px rgba(242,147,43,0.35);
 }
 
 .send-button:hover { background: #e06600; transform: translateY(-1px); }
 
-/* WELCOME & EMPTY STATES */
 .no-conversation {
     flex: 1;
     display: flex;
@@ -489,39 +499,21 @@ body {
     color: #806d5c;
     padding: 20px;
 }
+
 .no-conversation-icon { font-size: 52px; margin-bottom: 12px; }
 .no-conversation h2 { color: #4a3223; margin: 0 0 6px 0; font-size: 20px; font-weight: 700; }
 .no-conversation p { font-size: 13.5px; margin: 0; }
-
-.empty-list { padding: 40px 20px; text-align: center; color: #806d5c; font-size: 13px; }
-
-@media(max-width: 850px) {
-    .sidebar { display: none; }
-    .main { padding: 15px; }
-    .conversation-list { width: 250px; }
-}
-
-@media(max-width: 600px) {
-    .conversation-list { width: 90px; }
-    .conversation-info, .conversation-meta, .search-box-wrapper, .conversation-header h3 { display: none; }
-    .conversation { display: flex; justify-content: center; padding: 10px; }
-    .chat-body { padding: 14px; }
-    .message-bubble-wrapper { max-width: 85%; }
-}
 </style>
 </head>
 
 <body>
 
-<!-- TOPBAR -->
 <div class="topbar">
     <div class="logo">PawLix Admin</div>
     <a class="logout" href="logout.php">Logout</a>
 </div>
 
 <div class="layout">
-
-    <!-- SIDEBAR -->
     <div class="sidebar">
         <a href="dashboard.php"><span class="icon">🏠</span> Dashboard</a>
         <a href="dogs.php"><span class="icon">🐾</span> Dogs</a>
@@ -537,32 +529,30 @@ body {
         <a href="settings.php"><span class="icon">⚙️</span> Settings</a>
     </div>
 
-    <!-- MAIN CONTENT AREA -->
     <div class="main">
-
         <div class="page-title">
-            <h1>Messages</h1>
+            <h1>Messages Center</h1>
             <?php if ($totalUnread > 0): ?>
-                <span class="unread-pill"><?php echo $totalUnread; ?> New Message<?php echo $totalUnread > 1 ? 's' : ''; ?></span>
+                <span class="unread-pill"><?php echo $totalUnread; ?> New Unread Message<?php echo $totalUnread > 1 ? 's' : ''; ?></span>
             <?php endif; ?>
         </div>
 
-        <!-- CHAT APPLICATION SPLIT-PANE -->
         <div class="chat-layout">
-
-            <!-- LEFT: CONVERSATION LIST -->
+            
+            <!-- LEFT PANEL: CONVERSATIONS & INQUIRIES -->
             <div class="conversation-list">
                 <div class="conversation-header">
-                    <h3>Recent Chats</h3>
+                    <h3>Conversations & Inquiries</h3>
                     <div class="search-box-wrapper">
                         <span class="search-icon">🔍</span>
-                        <input type="text" id="searchContacts" placeholder="Search contacts..." onkeyup="filterContacts()">
+                        <input type="text" id="searchContacts" placeholder="Search contacts by name..." onkeyup="filterContacts()">
                     </div>
                 </div>
 
                 <div class="conversations-scroll" id="conversationsContainer">
+                    <div class="inquiry-section-title">💬 Live User Chats</div>
                     <?php if (!$conversations || mysqli_num_rows($conversations) === 0): ?>
-                        <div class="empty-list">No user conversations yet.</div>
+                        <div class="empty-list">No user chat threads yet.</div>
                     <?php else: ?>
                         <?php while ($conv = mysqli_fetch_assoc($conversations)): ?>
                             <?php 
@@ -598,27 +588,38 @@ body {
                             </a>
                         <?php endwhile; ?>
                     <?php endif; ?>
+
+                    <div class="inquiry-section-title">📩 Public Contact Inquiries</div>
+                    <?php if ($public_inquiries && mysqli_num_rows($public_inquiries) > 0): ?>
+                        <?php while ($inq = mysqli_fetch_assoc($public_inquiries)): ?>
+                            <div class="inquiry-item">
+                                <strong><?php echo htmlspecialchars($inq['full_name']); ?></strong> 
+                                <span style="font-size:11px; color:#665444;">(<?php echo htmlspecialchars($inq['email']); ?>)</span>
+                                <p><strong>Subject:</strong> <?php echo htmlspecialchars($inq['subject']); ?></p>
+                                <p><?php echo htmlspecialchars($inq['message']); ?></p>
+                                <span class="date">📅 <?php echo date('M d, Y g:i A', strtotime($inq['created_at'])); ?></span>
+                            </div>
+                        <?php endwhile; ?>
+                    <?php else: ?>
+                        <div class="empty-list">No guest contact form submissions yet.</div>
+                    <?php endif; ?>
                 </div>
             </div>
 
-            <!-- RIGHT: CHAT WINDOW -->
+            <!-- RIGHT PANEL: ACTIVE CHAT WINDOW -->
             <?php if ($selected_user): ?>
                 <div class="chat-window">
-
-                    <!-- CHAT HEADER -->
                     <div class="chat-header">
                         <div class="avatar-container">
                             <div class="avatar"><?php echo strtoupper(substr($selected_user['first_name'] ?? 'U', 0, 1)); ?></div>
                             <span class="status-dot"></span>
                         </div>
-
                         <div class="chat-header-info">
                             <h3><?php echo htmlspecialchars(trim(($selected_user['first_name'] ?? '') . ' ' . ($selected_user['last_name'] ?? ''))); ?></h3>
-                            <p>🟢 online • <?php echo htmlspecialchars($selected_user['email']); ?></p>
+                            <p>🟢 online • <?php echo htmlspecialchars($selected_user['email']); ?> <?php echo !empty($selected_user['phone']) ? '• ' . htmlspecialchars($selected_user['phone']) : ''; ?></p>
                         </div>
                     </div>
 
-                    <!-- CHAT BODY -->
                     <div class="chat-body" id="chatBody">
                         <?php if ($chat_messages && mysqli_num_rows($chat_messages) > 0): ?>
                             <?php while ($msg = mysqli_fetch_assoc($chat_messages)): ?>
@@ -628,7 +629,7 @@ body {
                                 ?>
                                 <div class="message-row <?php echo $isAdmin ? 'admin' : 'user'; ?>">
                                     <?php if (!$isAdmin): ?>
-                                        <div class="avatar" style="width:34px; height:34px; font-size:12px; flex-shrink:0; background:#d2c29f; color:#5c4320; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700;"><?php echo $user_initial; ?></div>
+                                        <div class="avatar" style="width:34px; height:34px; font-size:12px; flex-shrink:0; background:#d2c29f; color:#5c4320; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; border:1px solid white;"><?php echo $user_initial; ?></div>
                                     <?php endif; ?>
 
                                     <div class="message-bubble-wrapper">
@@ -636,8 +637,8 @@ body {
                                             <?php echo $isAdmin ? 'PawLix Support' : htmlspecialchars($selected_user['first_name']); ?>
                                         </div>
                                         <div class="message-bubble">
-                                            <?php if (!empty($msg['subject']) && $msg['subject'] !== 'PawLix Support'): ?>
-                                                <div class="message-subject"><?php echo htmlspecialchars($msg['subject']); ?></div>
+                                            <?php if (!empty($msg['subject']) && $msg['subject'] !== 'PawLix Support Response'): ?>
+                                                <div class="message-subject">📌 <?php echo htmlspecialchars($msg['subject']); ?></div>
                                             <?php endif; ?>
                                             <p class="message-text"><?php echo htmlspecialchars($msg['message']); ?></p>
                                             <span class="message-time"><?php echo date('M d, g:i A', strtotime($msg['created_at'])); ?></span>
@@ -645,7 +646,7 @@ body {
                                     </div>
 
                                     <?php if ($isAdmin): ?>
-                                        <div class="avatar" style="width:34px; height:34px; font-size:12px; flex-shrink:0; background:var(--dark-brown); color:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700;">🐾</div>
+                                        <div class="avatar" style="width:34px; height:34px; font-size:12px; flex-shrink:0; background:#4a3223; color:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; border:1px solid white;">🐾</div>
                                     <?php endif; ?>
                                 </div>
                             <?php endwhile; ?>
@@ -660,10 +661,9 @@ body {
                         <?php endif; ?>
                     </div>
 
-                    <!-- COMPOSER -->
                     <div class="composer">
                         <?php if ($error): ?>
-                            <div style="background:#f8d7da; color:#721c24; padding:8px 12px; border-radius:7px; font-size:12.5px; margin-bottom:8px; font-weight:600;">
+                            <div style="background:#fdeaea; color:#b3261e; border:1px solid #f3c6c6; padding:9px 14px; border-radius:8px; font-size:12.5px; margin-bottom:10px; font-weight:600;">
                                 <?php echo htmlspecialchars($error); ?>
                             </div>
                         <?php endif; ?>
@@ -671,52 +671,34 @@ body {
                         <form method="POST" action="messages.php?user_id=<?php echo $selected_user_id; ?>" class="composer-form" id="adminChatForm">
                             <input type="hidden" name="send_admin_message" value="1">
                             <input type="hidden" name="recipient_user_id" value="<?php echo $selected_user_id; ?>">
-                            <input type="hidden" name="subject" value="PawLix Support">
+                            <input type="hidden" name="subject" value="PawLix Support Response">
 
-                            <textarea
-                                name="message"
-                                id="messageInput"
-                                class="composer-input"
-                                placeholder="Type a message to <?php echo htmlspecialchars($selected_user['first_name']); ?>..."
-                                rows="1"
-                                required
-                            ></textarea>
+                            <textarea name="message" id="messageInput" class="composer-input" placeholder="Type a message to <?php echo htmlspecialchars($selected_user['first_name']); ?>..." rows="1" required></textarea>
 
-                            <button type="submit" name="send_admin_message_btn" id="sendBtn" class="send-button" title="Send message">
-                                ➤
-                            </button>
+                            <button type="submit" name="send_admin_message_btn" id="sendBtn" class="send-button" title="Send message (Enter)">➤</button>
                         </form>
                     </div>
-
                 </div>
             <?php else: ?>
-                <!-- EMPTY STATE WHEN NO CONVERSATION SELECTED -->
                 <div class="chat-window">
                     <div class="no-conversation">
                         <div>
                             <div class="no-conversation-icon">✉️</div>
                             <h2>Select a Conversation</h2>
-                            <p>Choose a user contact from the left list to view their message thread and reply directly.</p>
+                            <p>Choose a user chat thread from the left list to view their live conversation or review guest inquiries.</p>
                         </div>
                     </div>
                 </div>
             <?php endif; ?>
-
         </div>
-
     </div>
-
 </div>
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
-    // Auto scroll to bottom
     const chatBody = document.getElementById("chatBody");
-    if (chatBody) {
-        chatBody.scrollTop = chatBody.scrollHeight;
-    }
+    if (chatBody) { chatBody.scrollTop = chatBody.scrollHeight; }
 
-    // Enter Key to Submit Admin Form
     const messageInput = document.getElementById("messageInput");
     const adminChatForm = document.getElementById("adminChatForm");
 
@@ -732,7 +714,6 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 });
 
-// Live filter contact search list
 function filterContacts() {
     const query = document.getElementById("searchContacts").value.toLowerCase();
     const items = document.querySelectorAll("#conversationsContainer .conversation");
@@ -747,6 +728,5 @@ function filterContacts() {
     });
 }
 </script>
-
 </body>
 </html>

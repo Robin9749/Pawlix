@@ -2,18 +2,57 @@
 session_start();
 require_once "config/config.php";
 
-// Unread Notifications Count
+/* ================= SAFE HELPER TO ENSURE TABLE COLUMNS EXIST ================= */
+if (!function_exists('safeAddColumnContact')) {
+    function safeAddColumnContact($conn, $table, $column, $definition) {
+        try {
+            $check = mysqli_query($conn, "SHOW COLUMNS FROM `$table` LIKE '$column'");
+            if ($check && mysqli_num_rows($check) == 0) {
+                mysqli_query($conn, "ALTER TABLE `$table` ADD COLUMN `$column` $definition");
+            }
+        } catch (Throwable $e) {}
+    }
+}
+
+/* AUTO-CREATE OR ALTER TABLES IF MISSING COLUMNS */
+@mysqli_query($conn, "CREATE TABLE IF NOT EXISTS contact_message (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    full_name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    phone VARCHAR(50) DEFAULT '',
+    subject VARCHAR(255) DEFAULT '',
+    message TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)");
+
+safeAddColumnContact($conn, 'contact_message', 'phone', "VARCHAR(50) DEFAULT ''");
+safeAddColumnContact($conn, 'contact_message', 'subject', "VARCHAR(255) DEFAULT ''");
+
+@mysqli_query($conn, "CREATE TABLE IF NOT EXISTS messages (
+    message_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    admin_id INT NOT NULL DEFAULT 1,
+    sender_type ENUM('user', 'admin') NOT NULL,
+    subject VARCHAR(255) DEFAULT '',
+    message TEXT NOT NULL,
+    is_read TINYINT(1) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)");
+
+/* ================= UNREAD NOTIFICATIONS COUNT ================= */
 $unreadCount = 0;
 if (isset($_SESSION['user_id'])) {
     $uid = intval($_SESSION['user_id']);
     
     $r1 = @mysqli_query($conn, "SELECT COUNT(*) AS total FROM report_dogs WHERE user_id = $uid AND status != 'Pending'");
     $r2 = @mysqli_query($conn, "SELECT COUNT(*) AS total FROM adoption_application WHERE user_id = $uid AND status != 'Pending'");
+    $r3 = @mysqli_query($conn, "SELECT COUNT(*) AS total FROM messages WHERE user_id = $uid AND sender_type = 'admin' AND is_read = 0");
     
     $c1 = ($r1) ? mysqli_fetch_assoc($r1)['total'] : 0;
     $c2 = ($r2) ? mysqli_fetch_assoc($r2)['total'] : 0;
+    $c3 = ($r3) ? mysqli_fetch_assoc($r3)['total'] : 0;
     
-    $unreadCount = $c1 + $c2;
+    $unreadCount = $c1 + $c2 + $c3;
 }
 
 $success = "";
@@ -30,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
     $full_name = trim($_POST['userName'] ?? '');
     $email     = trim($_POST['userEmail'] ?? '');
     $phone     = trim($_POST['userPhone'] ?? '');
-    $subject   = trim($_POST['userSubject'] ?? '');
+    $subject   = trim($_POST['userSubject'] ?? 'PawLix Contact Inquiry');
     $message   = trim($_POST['userMessage'] ?? '');
 
     if ($full_name === '' || $email === '' || $subject === '' || $message === '') {
@@ -38,16 +77,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $error = "Please enter a valid email address.";
     } else {
-        $stmt = mysqli_prepare($conn, "INSERT INTO contact_message (full_name, email, subject, message) VALUES (?, ?, ?, ?)");
-        mysqli_stmt_bind_param($stmt, "ssss", $full_name, $email, $subject, $message);
+        $fn_clean = mysqli_real_escape_string($conn, $full_name);
+        $em_clean = mysqli_real_escape_string($conn, $email);
+        $ph_clean = mysqli_real_escape_string($conn, $phone);
+        $sb_clean = mysqli_real_escape_string($conn, $subject);
+        $ms_clean = mysqli_real_escape_string($conn, $message);
 
-        if (mysqli_stmt_execute($stmt)) {
-            $success = "Thanks, " . htmlspecialchars($full_name) . "! Your message has been sent — we'll get back to you soon.";
-            $full_name = $email = $phone = $subject = $message = "";
-        } else {
-            $error = "Something went wrong while sending your message. Please try again.";
+        // 1. SAVE TO contact_message TABLE SAFELY
+        try {
+            @mysqli_query($conn, "INSERT INTO contact_message (full_name, email, phone, subject, message) 
+                VALUES ('$fn_clean', '$em_clean', '$ph_clean', '$sb_clean', '$ms_clean')");
+        } catch (Throwable $t) {
+            // Fallback if phone column isn't accessible
+            @mysqli_query($conn, "INSERT INTO contact_message (full_name, email, subject, message) 
+                VALUES ('$fn_clean', '$em_clean', '$sb_clean', '$ms_clean')");
         }
-        mysqli_stmt_close($stmt);
+
+        // 2. CHECK IF USER IS LOGGED IN OR REGISTERED BY EMAIL
+        $target_user_id = 0;
+        if (isset($_SESSION['user_id'])) {
+            $target_user_id = intval($_SESSION['user_id']);
+        } else {
+            $check_user = mysqli_query($conn, "SELECT user_id FROM user WHERE email = '$em_clean' LIMIT 1");
+            if ($check_user && mysqli_num_rows($check_user) > 0) {
+                $u_row = mysqli_fetch_assoc($check_user);
+                $target_user_id = intval($u_row['user_id']);
+            }
+        }
+
+        // 3. IF USER ACCOUNT EXISTS -> INSERT INTO LIVE CHAT MESSAGES TABLE
+        if ($target_user_id > 0) {
+            try {
+                @mysqli_query($conn, "INSERT INTO messages (user_id, admin_id, sender_type, subject, message, is_read) 
+                    VALUES ($target_user_id, 1, 'user', '$sb_clean', '$ms_clean', 0)");
+            } catch (Throwable $t) {}
+
+            if (isset($_SESSION['user_id'])) {
+                header("Location: messages.php?sent=1");
+                exit();
+            }
+        }
+
+        $success = "Thanks, " . htmlspecialchars($full_name) . "! Your message has been sent — our team will get back to you soon.";
+        $full_name = $email = $phone = $subject = $message = "";
     }
 }
 ?>
@@ -155,7 +227,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
 
     <header class="header">
         <div class="logo">
-            <img src="assets/images/logo.png" alt="PawLix logo">
+            <a href="index.php"><img src="assets/images/logo.png" alt="PawLix logo"></a>
         </div>
         <nav class="nav">
             <a href="index.php">Home</a>
@@ -177,8 +249,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
 
               <div class="user-dropdown-menu" id="userDropdownMenu">
                 <a href="account.php"><span class="icon">👤</span> Account</a>
-                <a href="messages.php"><span class="icon">✉️</span> Messages</a>
-                <a href="notifications.php"><span class="icon">🔔</span> Notification <?php if ($unreadCount > 0): ?><span class="badge-sub"><?php echo $unreadCount; ?></span><?php endif; ?></a>
+                <a href="messages.php"><span class="icon">✉️</span> Messages <?php if ($unreadCount > 0): ?><span class="badge-sub"><?php echo $unreadCount; ?></span><?php endif; ?></a>
+                <a href="notifications.php"><span class="icon">🔔</span> Notification</a>
                 <a href="history.php"><span class="icon">📜</span> History</a>
                 <a href="settings.php"><span class="icon">⚙️</span> Setting</a>
                 <div class="dropdown-divider"></div>
@@ -229,9 +301,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
 
                 <div class="info-items">
                     <div class="info-item">
-                        <div class="info-icon">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-                        </div>
+                        <div class="info-icon">📍</div>
                         <div class="info-details">
                             <h4>Address</h4>
                             <p>Asian College of Higher Studies<br>Kathmandu, Nepal</p>
@@ -239,9 +309,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
                     </div>
 
                     <div class="info-item">
-                        <div class="info-icon">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
-                        </div>
+                        <div class="info-icon">📞</div>
                         <div class="info-details">
                             <h4>Phone</h4>
                             <p>+977-98XXXXXXXX</p>
@@ -249,12 +317,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
                     </div>
 
                     <div class="info-item">
-                        <div class="info-icon">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
-                        </div>
+                        <div class="info-icon">✉</div>
                         <div class="info-details">
                             <h4>Email</h4>
-                            <p>support@lucypawnest.com</p>
+                            <p>support@pawlix.org</p>
                         </div>
                     </div>
                 </div>
@@ -310,11 +376,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
 
     <footer class="footer">
         <div class="footer-container">
-            
-            <!-- 4 Columns Grid -->
             <div class="footer-columns">
-                
-                <!-- Column 1: PawLix -->
                 <div class="footer-col col-brand">
                     <h4 class="col-title">PAWLIX</h4>
                     <p class="brand-text">
@@ -322,7 +384,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
                     </p>
                 </div>
 
-                <!-- Column 2: Services -->
                 <div class="footer-col">
                     <h4 class="col-title">SERVICES</h4>
                     <p><a href="browse.php">Browse Dogs</a></p>
@@ -331,7 +392,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
                     <p><a href="contact.php">Support</a></p>
                 </div>
 
-                <!-- Column 3: Useful Links -->
                 <div class="footer-col">
                     <h4 class="col-title">USEFUL LINKS</h4>
                     <p><a href="index.php">Home</a></p>
@@ -339,7 +399,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
                     <p><a href="contact.php">Contact Us</a></p>
                 </div>
 
-                <!-- Column 4: Contact -->
                 <div class="footer-col col-contact">
                     <h4 class="col-title">CONTACT</h4>
                     <p><span class="icon">📍</span> Kathmandu, Nepal</p>
@@ -347,18 +406,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
                     <p><span class="icon">📞</span> +977 9800000000</p>
                     <p><span class="icon">🐾</span> Emergency 24/7 Support</p>
                 </div>
-
             </div>
 
-            <!-- Thin Horizontal Line -->
             <hr class="footer-hr">
 
-            <!-- Footer Bottom Bar -->
             <div class="footer-bottom">
                 <p class="copyright">© <?php echo date('Y'); ?> PawLix. All rights reserved.</p>
 
                 <div class="footer-bottom-right">
-                    <!-- Social Circle Buttons -->
                     <div class="socials">
                         <a href="#" aria-label="Facebook"><span>f</span></a>
                         <a href="#" aria-label="X"><span>𝕏</span></a>
@@ -366,13 +421,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
                         <a href="#" aria-label="YouTube"><span>▶</span></a>
                     </div>
 
-                    <!-- Call To Action Button (Back to Top) -->
                     <button class="scroll-top-btn" id="scrollTopBtn" type="button" aria-label="Back to top">
                         <span>↑</span> Back to Top
                     </button>
                 </div>
             </div>
-
         </div>
     </footer>
 

@@ -301,7 +301,7 @@ tbody td { padding: 13px 10px; font-size: 13px; vertical-align: middle; }
 }
 
 .status-approved { background: #bfe3c4; color: #1e6e2e; }
-.status-rejected { background: #f8d7da; color: #721c24; }
+.status-rejected { background: #f9cace; color: #ed1c31; }
 .status-pending { background: #f6cba3; color: #a15c00; }
 
 .btn-view {
@@ -673,13 +673,13 @@ tbody td { padding: 13px 10px; font-size: 13px; vertical-align: middle; }
         </div>
 
         <div class="form-group">
-          <label for="modalAdminNote">Admin Note / Feedback Message to User (Optional)</label>
+          <label for="modalAdminNote">Admin Note / Feedback Message to User</label>
           <textarea 
             name="admin_note" 
             id="modalAdminNote" 
             class="form-textarea" 
             rows="3" 
-            placeholder="Type feedback or note to send with this status update (will notify user on notifications.php)..."
+            placeholder="Type feedback or note to send with this status update..."
           ></textarea>
         </div>
       </div>

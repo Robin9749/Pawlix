@@ -184,7 +184,32 @@ body { display: flex; flex-direction: column; }
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
 }
 
-.topbar .logo { font-size: 20px; font-weight: 700; color: var(--text-dark); }
+.topbar{
+  background: #f2e6c9;
+  height: 75px;
+  padding: 0 55px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  box-sizing: border-box;
+}
+
+.topbar .logo{
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  height: 100%;
+}
+
+.topbar .logo img{
+  width: 110px;
+  display: block;
+  position: static;
+  padding-top: 20px;
+}
+
 .topbar a.logout { color: var(--primary-blue); font-weight: 600; text-decoration: none; font-size: 14px; }
 
 .layout { display: flex; flex: 1; }
@@ -478,7 +503,9 @@ tbody td { padding: 13px 10px; font-size: 13px; vertical-align: middle; }
 <body>
 
 <div class="topbar">
-  <div class="logo">PawLix Admin</div>
+   <div class="logo">
+      <img src="../assets/images/logo.png" alt="PawLix logo">
+    </div>
   <a class="logout" href="logout.php">Logout</a>
 </div>
 

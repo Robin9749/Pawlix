@@ -51,22 +51,29 @@ body{
 }
 
 .navbar{
-    background: #f2e6c9;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px 48px;
-    margin: 0;
-    border-bottom: 2px solid #ffffff;
+  background: #f2e6c9;
+  height: 75px;
+  padding: 0 55px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  box-sizing: border-box;
 }
 
 .navbar .logo{
-  font-size: 20px;
-  font-weight: 700;
-  color: #2b2b2b;
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: flex-start;
+  height: 100%;
+}
+
+.navbar .logo img{
+  width: 110px;
+  display: block;
+  position: static;
+  padding-top: 20px;
 }
 
 .navbar .links a{
@@ -287,7 +294,9 @@ button.signup-btn:hover{
 <body>
 
 <div class="navbar">
-  <div class="logo">PawLix</div>
+   <div class="logo">
+      <img src="../assets/images/logo.png" alt="PawLix logo">
+    </div>
   <div class="links">
     <a href="#">Home</a>
     <a href="#">Browse Dogs</a>

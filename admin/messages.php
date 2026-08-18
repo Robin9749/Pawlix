@@ -10,7 +10,18 @@ include("../config/config.php");
 
 $admin_id = intval($_SESSION['admin_id']);
 
-/* SAFE HELPER TO CREATE TABLES IF NOT EXIST */
+/* SAFE HELPER TO CREATE TABLE & ADD IMAGE COLUMN */
+if (!function_exists('safeAddColumnMessages')) {
+    function safeAddColumnMessages($conn, $table, $column, $definition) {
+        try {
+            $check = mysqli_query($conn, "SHOW COLUMNS FROM `$table` LIKE '$column'");
+            if ($check && mysqli_num_rows($check) == 0) {
+                mysqli_query($conn, "ALTER TABLE `$table` ADD COLUMN `$column` $definition");
+            }
+        } catch (Throwable $e) {}
+    }
+}
+
 @mysqli_query($conn, "CREATE TABLE IF NOT EXISTS messages (
     message_id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -18,9 +29,12 @@ $admin_id = intval($_SESSION['admin_id']);
     sender_type ENUM('user', 'admin') NOT NULL,
     subject VARCHAR(255) DEFAULT '',
     message TEXT NOT NULL,
+    image TEXT DEFAULT NULL,
     is_read TINYINT(1) DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )");
+
+safeAddColumnMessages($conn, 'messages', 'image', "TEXT DEFAULT NULL");
 
 @mysqli_query($conn, "CREATE TABLE IF NOT EXISTS contact_message (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -39,16 +53,35 @@ $admin = $admin_query ? mysqli_fetch_assoc($admin_query) : [];
 /* ================= SELECT CONVERSATION ================= */
 $selected_user_id = intval($_GET['user_id'] ?? 0);
 
-/* ================= SEND ADMIN MESSAGE ================= */
+/* ================= SEND ADMIN MESSAGE WITH OPTIONAL IMAGE ================= */
 $error = "";
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $recipient_user_id = intval($_POST['recipient_user_id'] ?? 0);
     $message_text = trim($_POST['message'] ?? '');
     $subject = trim($_POST['subject'] ?? 'PawLix Support Response');
 
-    if ($recipient_user_id <= 0 || $message_text === '') {
-        if (isset($_POST['send_admin_message']) || isset($_POST['submitted'])) {
-            $error = "Please enter a message before sending.";
+    // Handle Image Upload
+    $uploaded_image = "";
+    if (!empty($_FILES['image']['name'])) {
+        $upload_folder = "../uploads/";
+        if (!is_dir($upload_folder)) {
+            mkdir($upload_folder, 0777, true);
+        }
+
+        $img_name = $_FILES['image']['name'];
+        $tmp_name = $_FILES['image']['tmp_name'];
+        $err = $_FILES['image']['error'];
+
+        if ($err === UPLOAD_ERR_OK && !empty($img_name)) {
+            $clean_filename = preg_replace("/[^a-zA-Z0-9\._-]/", "", basename($img_name));
+            $uploaded_image = time() . "_admin_" . $clean_filename;
+            move_uploaded_file($tmp_name, $upload_folder . $uploaded_image);
+        }
+    }
+
+    if ($recipient_user_id <= 0 || ($message_text === '' && $uploaded_image === '')) {
+        if (isset($_POST['send_admin_message']) || isset($_POST['submitted']) || isset($_POST['send_admin_message_btn'])) {
+            $error = "Please enter a message or choose an image to send.";
         }
     } else {
         $user_check = mysqli_query($conn, "SELECT user_id FROM user WHERE user_id = $recipient_user_id LIMIT 1");
@@ -57,10 +90,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $message_db = mysqli_real_escape_string($conn, $message_text);
             $subject_db = mysqli_real_escape_string($conn, $subject);
+            $image_db = mysqli_real_escape_string($conn, $uploaded_image);
 
             $insert = "
-                INSERT INTO messages (user_id, admin_id, sender_type, subject, message, is_read)
-                VALUES ($recipient_user_id, $admin_id, 'admin', '$subject_db', '$message_db', 0)
+                INSERT INTO messages (user_id, admin_id, sender_type, subject, message, image, is_read)
+                VALUES ($recipient_user_id, $admin_id, 'admin', '$subject_db', '$message_db', '$image_db', 0)
             ";
 
             if (mysqli_query($conn, $insert)) {
@@ -88,6 +122,13 @@ $conversations = mysqli_query($conn, "
             ORDER BY m.created_at DESC, m.message_id DESC 
             LIMIT 1
         ) AS last_message,
+        (
+            SELECT m.image
+            FROM messages m 
+            WHERE m.user_id = u.user_id 
+            ORDER BY m.created_at DESC, m.message_id DESC 
+            LIMIT 1
+        ) AS last_message_image,
         (
             SELECT m.created_at 
             FROM messages m 
@@ -176,23 +217,36 @@ html, body { height: 100%; font-family: var(--font-family); background: var(--bg
 
 body { display: flex; flex-direction: column; min-height: 100vh; }
 
-.topbar {
-    height: 65px;
-    background: var(--bg-topbar);
-    padding: 0 45px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 2px solid #ffffff;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
-    flex-shrink: 0;
+.topbar{
+  background: #f2e6c9;
+  height: 75px;
+  padding: 0 55px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  box-sizing: border-box;
 }
 
-.topbar .logo { font-size: 20px; font-weight: 700; color: var(--text-dark); }
+.topbar .logo{
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  height: 100%;
+}
+
+.topbar .logo img{
+  width: 110px;
+  display: block;
+  position: static;
+  padding-top: 20px;
+}
+
 .topbar .logout { color: var(--primary-blue); text-decoration: none; font-weight: 600; font-size: 14px; }
 .topbar .logout:hover { text-decoration: underline; }
 
-.layout { display: flex; flex: 1; height: calc(100vh - 65px); }
+.layout { display: flex; flex: 1; height: calc(100vh - 75px); }
 
 .sidebar {
     width: 240px;
@@ -432,6 +486,23 @@ body { display: flex; flex-direction: column; min-height: 100vh; }
 }
 
 .message-text { margin: 0; white-space: pre-wrap; word-break: break-word; }
+
+/* CHAT ATTACHED IMAGE STYLING */
+.message-img-container { margin-top: 8px; }
+.message-img {
+    max-width: 250px;
+    max-height: 250px;
+    border-radius: 12px;
+    object-fit: cover;
+    display: block;
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.4);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    transition: transform 0.2s;
+}
+
+.message-img:hover { transform: scale(1.03); }
+
 .message-subject {
     font-weight: 700;
     margin-bottom: 6px;
@@ -451,12 +522,47 @@ body { display: flex; flex-direction: column; min-height: 100vh; }
     flex-shrink: 0;
 }
 
-.composer-form { display: flex; align-items: flex-end; gap: 12px; }
+.image-preview-bar {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    background: #ffffff;
+    padding: 6px 12px;
+    border-radius: 10px;
+    border: 1px solid #d8c6a5;
+    margin-bottom: 8px;
+    width: fit-content;
+}
+
+.image-preview-bar.show { display: flex; }
+.image-preview-bar img { width: 36px; height: 36px; border-radius: 6px; object-fit: cover; }
+.image-preview-bar span { font-size: 12px; font-weight: 600; color: #4a3223; }
+.remove-img-btn { background: none; border: none; font-weight: bold; color: #b3261e; cursor: pointer; font-size: 16px; margin-left: 6px; }
+
+.composer-form { display: flex; align-items: flex-end; gap: 10px; }
+
+.attach-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid #d8c6a5;
+    background: #fffaf0;
+    color: #5c4320;
+    cursor: pointer;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s;
+}
+
+.attach-btn:hover { background: #f0e4c7; border-color: var(--primary-orange); color: var(--primary-orange); }
 
 .composer-input {
     flex: 1;
     resize: none;
-    min-height: 48px;
+    min-height: 46px;
     max-height: 120px;
     border: 1px solid #d8c6a5;
     border-radius: 22px;
@@ -472,8 +578,8 @@ body { display: flex; flex-direction: column; min-height: 100vh; }
 .composer-input:focus { border-color: var(--primary-orange); background: #ffffff; box-shadow: 0 0 0 3px rgba(242,147,43,0.18); }
 
 .send-button {
-    width: 48px;
-    height: 48px;
+    width: 46px;
+    height: 46px;
     border: none;
     border-radius: 50%;
     background: var(--primary-orange);
@@ -509,7 +615,9 @@ body { display: flex; flex-direction: column; min-height: 100vh; }
 <body>
 
 <div class="topbar">
-    <div class="logo">PawLix Admin</div>
+    <div class="logo">
+      <img src="../assets/images/logo.png" alt="PawLix logo">
+    </div>
     <a class="logout" href="logout.php">Logout</a>
 </div>
 
@@ -562,6 +670,7 @@ body { display: flex; flex-direction: column; min-height: 100vh; }
                                 $initial = strtoupper(substr($conv_name, 0, 1));
                                 $active = ($selected_user_id === $conv_user_id);
                                 $unread_cnt = intval($conv['unread_count'] ?? 0);
+                                $preview_text = !empty($conv['last_message']) ? $conv['last_message'] : (!empty($conv['last_message_image']) ? '📷 [Image attachment]' : 'No messages yet');
                             ?>
                             <a class="conversation <?php echo $active ? 'active' : ''; ?>" href="messages.php?user_id=<?php echo $conv_user_id; ?>" data-name="<?php echo htmlspecialchars(strtolower($conv_name)); ?>">
                                 <div class="conversation-top">
@@ -572,7 +681,7 @@ body { display: flex; flex-direction: column; min-height: 100vh; }
 
                                     <div class="conversation-info">
                                         <div class="conversation-name"><?php echo htmlspecialchars($conv_name); ?></div>
-                                        <div class="conversation-preview"><?php echo htmlspecialchars($conv['last_message'] ?? 'No messages yet'); ?></div>
+                                        <div class="conversation-preview"><?php echo htmlspecialchars($preview_text); ?></div>
                                     </div>
 
                                     <div class="conversation-meta">
@@ -640,7 +749,17 @@ body { display: flex; flex-direction: column; min-height: 100vh; }
                                             <?php if (!empty($msg['subject']) && $msg['subject'] !== 'PawLix Support Response'): ?>
                                                 <div class="message-subject">📌 <?php echo htmlspecialchars($msg['subject']); ?></div>
                                             <?php endif; ?>
-                                            <p class="message-text"><?php echo htmlspecialchars($msg['message']); ?></p>
+                                            
+                                            <?php if (!empty($msg['message'])): ?>
+                                                <p class="message-text"><?php echo htmlspecialchars($msg['message']); ?></p>
+                                            <?php endif; ?>
+
+                                            <?php if (!empty($msg['image'])): ?>
+                                                <div class="message-img-container">
+                                                    <img src="../uploads/<?php echo htmlspecialchars($msg['image']); ?>" class="message-img" onclick="window.open(this.src)" alt="Chat Image Attachment">
+                                                </div>
+                                            <?php endif; ?>
+
                                             <span class="message-time"><?php echo date('M d, g:i A', strtotime($msg['created_at'])); ?></span>
                                         </div>
                                     </div>
@@ -655,7 +774,7 @@ body { display: flex; flex-direction: column; min-height: 100vh; }
                                 <div>
                                     <div class="no-conversation-icon">🐾</div>
                                     <h2>Start Conversation</h2>
-                                    <p>Send a direct message to <?php echo htmlspecialchars($selected_user['first_name']); ?>.</p>
+                                    <p>Send a direct message or share photos with <?php echo htmlspecialchars($selected_user['first_name']); ?>.</p>
                                 </div>
                             </div>
                         <?php endif; ?>
@@ -668,12 +787,22 @@ body { display: flex; flex-direction: column; min-height: 100vh; }
                             </div>
                         <?php endif; ?>
 
-                        <form method="POST" action="messages.php?user_id=<?php echo $selected_user_id; ?>" class="composer-form" id="adminChatForm">
+                        <div class="image-preview-bar" id="imgPreviewBar">
+                            <img id="imgPreviewThumb" src="" alt="Preview">
+                            <span id="imgPreviewName">image.jpg</span>
+                            <button type="button" class="remove-img-btn" onclick="clearSelectedImage()">&times;</button>
+                        </div>
+
+                        <form method="POST" action="messages.php?user_id=<?php echo $selected_user_id; ?>" enctype="multipart/form-data" class="composer-form" id="adminChatForm">
                             <input type="hidden" name="send_admin_message" value="1">
                             <input type="hidden" name="recipient_user_id" value="<?php echo $selected_user_id; ?>">
                             <input type="hidden" name="subject" value="PawLix Support Response">
 
-                            <textarea name="message" id="messageInput" class="composer-input" placeholder="Type a message to <?php echo htmlspecialchars($selected_user['first_name']); ?>..." rows="1" required></textarea>
+                            <input type="file" name="image" id="imageInput" accept="image/*" style="display:none;" onchange="handleImageSelection(this)">
+
+                            <button type="button" class="attach-btn" onclick="document.getElementById('imageInput').click();" title="Attach Image">📷</button>
+
+                            <textarea name="message" id="messageInput" class="composer-input" placeholder="Type a message to <?php echo htmlspecialchars($selected_user['first_name']); ?>..." rows="1"></textarea>
 
                             <button type="submit" name="send_admin_message_btn" id="sendBtn" class="send-button" title="Send message (Enter)">➤</button>
                         </form>
@@ -706,13 +835,32 @@ document.addEventListener("DOMContentLoaded", function() {
         messageInput.addEventListener("keydown", function(e) {
             if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
-                if (this.value.trim() !== '') {
+                const imageInput = document.getElementById("imageInput");
+                if (this.value.trim() !== '' || (imageInput && imageInput.files.length > 0)) {
                     adminChatForm.submit();
                 }
             }
         });
     }
 });
+
+function handleImageSelection(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById("imgPreviewThumb").src = e.target.result;
+            document.getElementById("imgPreviewName").innerText = input.files[0].name;
+            document.getElementById("imgPreviewBar").classList.add("show");
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+function clearSelectedImage() {
+    const input = document.getElementById("imageInput");
+    if (input) { input.value = ""; }
+    document.getElementById("imgPreviewBar").classList.remove("show");
+}
 
 function filterContacts() {
     const query = document.getElementById("searchContacts").value.toLowerCase();

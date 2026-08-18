@@ -73,24 +73,30 @@ body {
   min-height: 100vh;
 }
 
-.topbar {
-  background: var(--bg-topbar);
-  padding: 20px 45px;
+.topbar{
+  background: #f2e6c9;
+  height: 75px;
+  padding: 0 55px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   border-bottom: 2px solid #ffffff;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
-  z-index: 10;
+  box-sizing: border-box;
 }
 
-.topbar .logo {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--text-dark);
+.topbar .logo{
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: flex-start;
+  height: 100%;
+}
+
+.topbar .logo img{
+  width: 110px;
+  display: block;
+  position: static;
+  padding-top: 20px;
 }
 
 .topbar a.logout {
@@ -452,7 +458,9 @@ tbody td {
 <body>
 
 <div class="topbar">
-  <div class="logo">PawLix Admin</div>
+   <div class="logo">
+      <img src="../assets/images/logo.png" alt="PawLix logo">
+    </div>
   <a class="logout" href="logout.php">Logout</a>
 </div>
 

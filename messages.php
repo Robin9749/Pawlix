@@ -10,6 +10,18 @@ require_once "config/config.php";
 
 $user_id = intval($_SESSION['user_id']);
 
+/* SAFE HELPER TO CREATE TABLE & ADD IMAGE COLUMN */
+if (!function_exists('safeAddColumnMessages')) {
+    function safeAddColumnMessages($conn, $table, $column, $definition) {
+        try {
+            $check = mysqli_query($conn, "SHOW COLUMNS FROM `$table` LIKE '$column'");
+            if ($check && mysqli_num_rows($check) == 0) {
+                mysqli_query($conn, "ALTER TABLE `$table` ADD COLUMN `$column` $definition");
+            }
+        } catch (Throwable $e) {}
+    }
+}
+
 /* ================= AUTO-CREATE MESSAGES TABLE IF NOT EXISTS ================= */
 @mysqli_query($conn, "CREATE TABLE IF NOT EXISTS messages (
     message_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -18,9 +30,12 @@ $user_id = intval($_SESSION['user_id']);
     sender_type ENUM('user', 'admin') NOT NULL,
     subject VARCHAR(255) DEFAULT '',
     message TEXT NOT NULL,
+    image TEXT DEFAULT NULL,
     is_read TINYINT(1) DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )");
+
+safeAddColumnMessages($conn, 'messages', 'image', "TEXT DEFAULT NULL");
 
 /* ================= GET USER DETAILS ================= */
 $user_query = mysqli_query($conn, "SELECT * FROM user WHERE user_id = $user_id");
@@ -33,19 +48,39 @@ $admin_query = mysqli_query($conn, "SELECT admin_id, name, email FROM admin ORDE
 $admin = ($admin_query) ? mysqli_fetch_assoc($admin_query) : null;
 $admin_id = $admin ? intval($admin['admin_id']) : 1;
 
-/* ================= SEND USER MESSAGE ================= */
+/* ================= SEND USER MESSAGE WITH OPTIONAL IMAGE ================= */
 $message_error = "";
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $message_text = trim($_POST['message'] ?? '');
     $subject = trim($_POST['subject'] ?? 'PawLix Support');
 
-    if ($message_text !== '') {
+    // Handle Image Upload
+    $uploaded_image = "";
+    if (!empty($_FILES['image']['name'])) {
+        $upload_folder = "uploads/";
+        if (!is_dir($upload_folder)) {
+            mkdir($upload_folder, 0777, true);
+        }
+
+        $img_name = $_FILES['image']['name'];
+        $tmp_name = $_FILES['image']['tmp_name'];
+        $err = $_FILES['image']['error'];
+
+        if ($err === UPLOAD_ERR_OK && !empty($img_name)) {
+            $clean_filename = preg_replace("/[^a-zA-Z0-9\._-]/", "", basename($img_name));
+            $uploaded_image = time() . "_user_" . $clean_filename;
+            move_uploaded_file($tmp_name, $upload_folder . $uploaded_image);
+        }
+    }
+
+    if ($message_text !== '' || $uploaded_image !== '') {
         $message_text_db = mysqli_real_escape_string($conn, $message_text);
         $subject_db = mysqli_real_escape_string($conn, $subject);
+        $image_db = mysqli_real_escape_string($conn, $uploaded_image);
 
         $insert_sql = "
-            INSERT INTO messages (user_id, admin_id, sender_type, subject, message, is_read)
-            VALUES ($user_id, $admin_id, 'user', '$subject_db', '$message_text_db', 0)
+            INSERT INTO messages (user_id, admin_id, sender_type, subject, message, image, is_read)
+            VALUES ($user_id, $admin_id, 'user', '$subject_db', '$message_text_db', '$image_db', 0)
         ";
 
         if (mysqli_query($conn, $insert_sql)) {
@@ -54,8 +89,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $message_error = "Unable to send message. Please try again.";
         }
-    } elseif (isset($_POST['send_message']) || isset($_POST['submitted'])) {
-        $message_error = "Please enter a message.";
+    } elseif (isset($_POST['send_message']) || isset($_POST['submitted']) || isset($_POST['send_message_btn'])) {
+        $message_error = "Please enter a message or select an image to send.";
     }
 }
 
@@ -64,7 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 /* ================= GET CONVERSATION ================= */
 $messages = mysqli_query($conn, "
-    SELECT message_id, user_id, admin_id, sender_type, subject, message, is_read, created_at
+    SELECT message_id, user_id, admin_id, sender_type, subject, message, image, is_read, created_at
     FROM messages
     WHERE user_id = $user_id
     ORDER BY created_at ASC, message_id ASC
@@ -439,6 +474,22 @@ body {
     word-break: break-word;
 }
 
+/* CHAT ATTACHED IMAGE STYLING */
+.message-img-container { margin-top: 8px; }
+.message-img {
+    max-width: 250px;
+    max-height: 250px;
+    border-radius: 12px;
+    object-fit: cover;
+    display: block;
+    cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.4);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    transition: transform 0.2s;
+}
+
+.message-img:hover { transform: scale(1.03); }
+
 .message-subject {
     font-weight: 700;
     margin-bottom: 6px;
@@ -464,11 +515,46 @@ body {
     border-top: 1px solid var(--border-color);
 }
 
+.image-preview-bar {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    background: #ffffff;
+    padding: 6px 12px;
+    border-radius: 10px;
+    border: 1px solid #d8c6a5;
+    margin-bottom: 8px;
+    width: fit-content;
+}
+
+.image-preview-bar.show { display: flex; }
+.image-preview-bar img { width: 36px; height: 36px; border-radius: 6px; object-fit: cover; }
+.image-preview-bar span { font-size: 12px; font-weight: 600; color: #4a3223; }
+.remove-img-btn { background: none; border: none; font-weight: bold; color: #b3261e; cursor: pointer; font-size: 16px; margin-left: 6px; }
+
 .composer-form {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
 }
+
+.attach-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid #d8c6a5;
+    background: #fffaf0;
+    color: #5c4320;
+    cursor: pointer;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s;
+}
+
+.attach-btn:hover { background: #f0e4c7; border-color: var(--orange); color: var(--orange); }
 
 .composer-input {
     flex: 1;
@@ -610,7 +696,7 @@ body {
                 <div class="empty-chat">
                     <div class="empty-chat-icon">🐾</div>
                     <h3>Start a conversation</h3>
-                    <p>Have a question about dog adoption, rescue status, or PawLix shelter services? Send us a message below and our team will reply directly to your thread!</p>
+                    <p>Have a question about dog adoption, rescue status, or PawLix shelter services? Send us a message or photo below and our team will reply directly to your thread!</p>
                 </div>
             <?php else: ?>
 
@@ -636,7 +722,16 @@ body {
                                     <div class="message-subject"><?php echo htmlspecialchars($msg['subject']); ?></div>
                                 <?php endif; ?>
 
-                                <p class="message-text"><?php echo htmlspecialchars($msg['message']); ?></p>
+                                <?php if (!empty($msg['message'])): ?>
+                                    <p class="message-text"><?php echo htmlspecialchars($msg['message']); ?></p>
+                                <?php endif; ?>
+
+                                <?php if (!empty($msg['image'])): ?>
+                                    <div class="message-img-container">
+                                        <img src="uploads/<?php echo htmlspecialchars($msg['image']); ?>" class="message-img" onclick="window.open(this.src)" alt="Chat Image Attachment">
+                                    </div>
+                                <?php endif; ?>
+
                                 <span class="message-time"><?php echo $formatted_time; ?></span>
                             </div>
                         </div>
@@ -657,14 +752,24 @@ body {
                 <div class="chat-alert"><?php echo htmlspecialchars($message_error); ?></div>
             <?php endif; ?>
 
-            <form method="POST" action="messages.php" class="composer-form" id="chatForm">
+            <div class="image-preview-bar" id="imgPreviewBar">
+                <img id="imgPreviewThumb" src="" alt="Preview">
+                <span id="imgPreviewName">image.jpg</span>
+                <button type="button" class="remove-img-btn" onclick="clearSelectedImage()">&times;</button>
+            </div>
+
+            <form method="POST" action="messages.php" enctype="multipart/form-data" class="composer-form" id="chatForm">
                 <input type="hidden" name="send_message" value="1">
                 <input type="hidden" name="subject" value="PawLix Support">
+
+                <input type="file" name="image" id="imageInput" accept="image/*" style="display:none;" onchange="handleImageSelection(this)">
+
+                <button type="button" class="attach-btn" onclick="document.getElementById('imageInput').click();" title="Attach Image">📷</button>
+
                 <textarea
                     name="message"
                     class="composer-input"
-                    placeholder="Type a message to PawLix Shelter Admin..."
-                    required
+                    placeholder="Type a message or attach photo..."
                     rows="1"
                     id="messageInput"
                 ></textarea>
@@ -793,13 +898,32 @@ document.addEventListener("DOMContentLoaded", function() {
         messageInput.addEventListener("keydown", function(e) {
             if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
-                if (this.value.trim() !== '') {
+                const imageInput = document.getElementById("imageInput");
+                if (this.value.trim() !== '' || (imageInput && imageInput.files.length > 0)) {
                     chatForm.submit();
                 }
             }
         });
     }
 });
+
+function handleImageSelection(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById("imgPreviewThumb").src = e.target.result;
+            document.getElementById("imgPreviewName").innerText = input.files[0].name;
+            document.getElementById("imgPreviewBar").classList.add("show");
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+function clearSelectedImage() {
+    const input = document.getElementById("imageInput");
+    if (input) { input.value = ""; }
+    document.getElementById("imgPreviewBar").classList.remove("show");
+}
 </script>
 
 <script src="assets/js/script.js"></script>

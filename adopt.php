@@ -17,7 +17,6 @@ if (!isset($_SESSION['user_id'])) {
 
 $user_id = (int)$_SESSION['user_id'];
 
-/* SAFE HELPER TO ADD COLUMNS WITHOUT DUPLICATE COLUMN EXCEPTION IN PHP 8.1+ */
 if (!function_exists('safeAddColumnAdopt')) {
     function safeAddColumnAdopt($conn, $table, $column, $definition) {
         try {
@@ -34,7 +33,6 @@ safeAddColumnAdopt($conn, 'adoption_application', 'current_pets', "VARCHAR(100) 
 safeAddColumnAdopt($conn, 'adoption_application', 'adoption_reason', "VARCHAR(255) DEFAULT ''");
 safeAddColumnAdopt($conn, 'adoption_application', 'why_this_dog', "TEXT");
 
-// Unread Notifications Count
 $unreadCount = 0;
 $r1 = @mysqli_query($conn, "SELECT COUNT(*) AS total FROM report_dogs WHERE user_id = $user_id AND status != 'Pending'");
 $r2 = @mysqli_query($conn, "SELECT COUNT(*) AS total FROM adoption_application WHERE user_id = $user_id AND status != 'Pending'");
@@ -91,7 +89,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $adoption_reason = trim($_POST['adoption_reason'] ?? '');
         $why_this_dog = trim($_POST['why_this_dog'] ?? '');
 
-        // Update phone & address on user profile if provided and not set
         $input_phone = trim($_POST['phone'] ?? '');
         $input_address = trim($_POST['address'] ?? '');
         if (!empty($input_phone) && empty($user_data['phone'])) {
@@ -123,7 +120,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         mysqli_stmt_close($check_stmt);
     }
 
-    // Re-fetch dog details
     if ($post_dog_id > 0 && $post_dog_id !== $dog_id) {
         $dog_id = $post_dog_id;
         $dog_stmt = mysqli_prepare($conn, "SELECT * FROM dog WHERE dog_id = ?");

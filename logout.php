@@ -1,9 +1,7 @@
 <?php
 session_start();
 
-/*
- * Only destroy the session when the user has confirmed logout.
- */
+
 if (
     isset($_GET['confirm']) &&
     ($_GET['confirm'] === 'true' || $_GET['confirm'] === 'yes')

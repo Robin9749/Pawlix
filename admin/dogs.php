@@ -800,7 +800,7 @@ tbody td {
 
 </div>
 
-<!-- ADD NEW DOG MODAL -->
+
 <div class="modal-overlay" id="addDogModal">
   <div class="modal-content">
     <div class="modal-header">
@@ -902,7 +902,7 @@ tbody td {
   </div>
 </div>
 
-<!-- EDIT DOG MODAL -->
+
 <div class="modal-overlay" id="editDogModal">
   <div class="modal-content">
     <div class="modal-header">

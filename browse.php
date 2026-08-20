@@ -2,12 +2,10 @@
 session_start();
 require_once 'config/config.php';
 
-// Unread Notifications Count (Directly from existing tables)
 $unreadCount = 0;
 if (isset($_SESSION['user_id'])) {
     $uid = intval($_SESSION['user_id']);
     
-    // Count status updates from report_dogs and adoption_application
     $r1 = @mysqli_query($conn, "SELECT COUNT(*) AS total FROM report_dogs WHERE user_id = $uid AND status != 'Pending'");
     $r2 = @mysqli_query($conn, "SELECT COUNT(*) AS total FROM adoption_application WHERE user_id = $uid AND status != 'Pending'");
     
@@ -17,7 +15,6 @@ if (isset($_SESSION['user_id'])) {
     $unreadCount = $c1 + $c2;
 }
 
-// Retrieve filter criteria from GET params or POST
 $where_clauses = ["adoption_status = 'Available'"];
 
 $selected_breeds = $_GET['breed'] ?? [];
@@ -30,7 +27,6 @@ if (!empty($selected_breeds)) {
         $raw_b = trim($b);
         $escaped_b = mysqli_real_escape_string($conn, $raw_b);
         
-        // Extract primary keyword for flexible breed matching
         $first_word = strtok($raw_b, " (/");
         $escaped_word = mysqli_real_escape_string($conn, $first_word);
         
@@ -84,7 +80,8 @@ if (!$result) {
     <link rel="stylesheet" href="assets/css/browses.css">
 
     <style>
-    /* Header Menu Icon Dropdown Styles */
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+
     .user-menu-wrapper {
       position: relative;
       display: inline-block;
@@ -152,6 +149,12 @@ if (!$result) {
       background-color: #ddceac;
     }
 
+    .user-dropdown-menu a .icon {
+      font-size: 16px;
+      width: 20px;
+      text-align: center;
+    }
+
     .dropdown-divider {
       height: 1px;
       background-color: #ddccae;
@@ -162,6 +165,10 @@ if (!$result) {
       color: #b3261e !important;
     }
 
+    .logout-link:hover {
+      background-color: #f8d7da !important;
+    }
+
     .badge-sub {
       margin-left: auto;
       background: #e63946;
@@ -169,6 +176,102 @@ if (!$result) {
       font-size: 11px;
       padding: 2px 6px;
       border-radius: 10px;
+    }
+
+    .logout-modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.50);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        z-index: 99999;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+    }
+
+    .logout-modal-overlay.show {
+        display: flex;
+    }
+
+    .logout-modal {
+        width: 100%;
+        max-width: 400px;
+        background: #ede1c6;
+        border-radius: 16px;
+        padding: 32px 28px;
+        text-align: center;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.30);
+        border: 1px solid rgba(255,255,255,0.6);
+        animation: logoutPopup 0.25s ease-out;
+    }
+
+    @keyframes logoutPopup {
+        from {
+            transform: scale(0.85);
+            opacity: 0;
+        }
+        to {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+
+    .logout-modal h2 {
+        font-size: 22px;
+        font-weight: 700;
+        color: #1a1a1a;
+        margin-bottom: 8px;
+    }
+
+    .logout-modal p {
+        font-size: 14px;
+        color: #555;
+        margin-bottom: 26px;
+        line-height: 1.5;
+    }
+
+    .logout-modal-actions {
+        display: flex;
+        gap: 12px;
+    }
+
+    .logout-cancel,
+    .logout-confirm {
+        flex: 1;
+        padding: 13px;
+        border-radius: 10px;
+        font-family: inherit;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        text-align: center;
+    }
+
+    .logout-cancel {
+        background: #ffffff;
+        color: #2b2b2b;
+        border: 1px solid #ddccae;
+    }
+
+    .logout-cancel:hover {
+        background: #f5ecda;
+    }
+
+    .logout-confirm {
+        background: #b3261e;
+        color: #ffffff;
+        border: none;
+        box-shadow: 0 4px 12px rgba(179,38,30,0.3);
+    }
+
+    .logout-confirm:hover {
+        background: #961e17;
     }
     </style>
 </head>
@@ -186,11 +289,9 @@ if (!$result) {
             <a href="report.php">Report a Dog</a>
         </nav>
 
-        <!-- Header Action Buttons -->
         <div class="header-buttons">
           <?php if (isset($_SESSION['user_id'])): ?>
             
-            <!-- LOGGED IN: MENU ICON DROPDOWN -->
             <div class="user-menu-wrapper">
               <button class="menu-icon-btn" id="userMenuBtn" onclick="toggleUserDropdown()" aria-label="User Menu">
                 <span>👤</span> ▾ <?php if ($unreadCount > 0): ?><span class="badge-count"><?php echo $unreadCount; ?></span><?php endif; ?>
@@ -203,13 +304,12 @@ if (!$result) {
                 <a href="history.php"><span class="icon">📜</span> History</a>
                 <a href="settings.php"><span class="icon">⚙️</span> Setting</a>
                 <div class="dropdown-divider"></div>
-                <a href="logout.php" class="logout-link"><span class="icon">🚪</span> Logout</a>
+                <a href="#" class="logout-trigger logout-link"><span class="icon">🚪</span> Logout</a>
               </div>
             </div>
 
           <?php else: ?>
 
-            <!-- LOGGED OUT: LOGIN & SIGNUP -->
             <a href="signup.php" class="btn btn-outline" style="text-decoration:none;">Sign Up</a>
             <a href="login.php" class="btn btn-dark" style="text-decoration:none;">Login</a>
 
@@ -221,7 +321,6 @@ if (!$result) {
 
     <hr style="background-color: white; height: 1px; border: none;">
 
-    <!-- HERO SECTION -->
     <section class="browse-hero">
         <div class="browse-hero-text">
             <h1>Find Your <span>New Best Friend</span></h1>
@@ -233,15 +332,12 @@ if (!$result) {
         </div>
     </section>
 
-    <!-- BROWSE SECTION -->
     <section class="browse-section">
         <div class="browse-layout">
 
-            <!-- FILTER SIDEBAR -->
             <form method="GET" action="browse.php" class="filters" id="filterForm">
                 <div class="filters-title">Filters</div>
 
-                <!-- BREED -->
                 <div class="filter-group">
                     <h4>Breed</h4>
                     <?php
@@ -261,7 +357,6 @@ if (!$result) {
                     <?php endforeach; ?>
                 </div>
 
-                <!-- GENDER -->
                 <div class="filter-group">
                     <h4>Gender</h4>
                     <label class="checkbox-row">
@@ -274,7 +369,6 @@ if (!$result) {
                     </label>
                 </div>
 
-                <!-- SIZE -->
                 <div class="filter-group">
                     <h4>Size</h4>
                     <label class="checkbox-row">
@@ -295,7 +389,6 @@ if (!$result) {
                 <a href="browse.php" class="btn-clear" style="display:block; text-align:center; margin-top:10px; text-decoration:none; line-height:38px;">Clear Filters</a>
             </form>
 
-            <!-- DOG RESULTS -->
             <main>
                 <div class="results-grid" id="resultsGrid">
 
@@ -367,12 +460,20 @@ if (!$result) {
         </div>
     </section>
 
-    <!-- FOOTER -->
+<div class="logout-modal-overlay" id="logoutModal">
+    <div class="logout-modal" role="dialog" aria-modal="true" aria-labelledby="logoutTitle">
+        <h2 id="logoutTitle">Log Out?</h2>
+        <p>Are you sure you want to log out?</p>
+        <div class="logout-modal-actions">
+            <button type="button" class="logout-cancel" id="cancelLogout">Cancel</button>
+            <a href="logout.php?confirm=true" class="logout-confirm">Log Out</a>
+        </div>
+    </div>
+</div>
+
     <footer class="footer">
         <div class="footer-container">
-            <!-- 4 Columns Grid -->
             <div class="footer-columns">
-                <!-- Column 1: PawLix -->
                 <div class="footer-col col-brand">
                     <h4 class="col-title">PAWLIX</h4>
                     <p class="brand-text">
@@ -380,7 +481,6 @@ if (!$result) {
                     </p>
                 </div>
 
-                <!-- Column 2: Services -->
                 <div class="footer-col">
                     <h4 class="col-title">SERVICES</h4>
                     <p><a href="browse.php">Browse Dogs</a></p>
@@ -389,7 +489,6 @@ if (!$result) {
                     <p><a href="contact.php">Support</a></p>
                 </div>
 
-                <!-- Column 3: Useful Links -->
                 <div class="footer-col">
                     <h4 class="col-title">USEFUL LINKS</h4>
                     <p><a href="index.php">Home</a></p>
@@ -397,7 +496,6 @@ if (!$result) {
                     <p><a href="contact.php">Contact Us</a></p>
                 </div>
 
-                <!-- Column 4: Contact -->
                 <div class="footer-col col-contact">
                     <h4 class="col-title">CONTACT</h4>
                     <p><span class="icon">📍</span> Kathmandu, Nepal</p>
@@ -407,15 +505,12 @@ if (!$result) {
                 </div>
             </div>
 
-            <!-- Thin Horizontal Line -->
             <hr class="footer-hr">
 
-            <!-- Footer Bottom Bar -->
             <div class="footer-bottom">
                 <p class="copyright">© <?php echo date('Y'); ?> PawLix. All rights reserved.</p>
 
                 <div class="footer-bottom-right">
-                    <!-- Social Circle Buttons -->
                     <div class="socials">
                         <a href="#" aria-label="Facebook"><span>f</span></a>
                         <a href="#" aria-label="X"><span>𝕏</span></a>
@@ -423,7 +518,6 @@ if (!$result) {
                         <a href="#" aria-label="YouTube"><span>▶</span></a>
                     </div>
 
-                    <!-- Call To Action Button (Back to Top) -->
                     <button class="scroll-top-btn" id="scrollTopBtn" type="button" aria-label="Back to top">
                         <span>↑</span> Back to Top
                     </button>
@@ -449,7 +543,6 @@ if (!$result) {
     });
 
     document.addEventListener('DOMContentLoaded', function() {
-        // Restore scroll position if previously saved before filter form submit
         const savedScrollPos = sessionStorage.getItem('browseScrollPos');
         if (savedScrollPos !== null) {
             window.scrollTo({
@@ -466,7 +559,6 @@ if (!$result) {
             });
         }
 
-        // Auto-submit filter form on checkbox change and maintain scroll position
         const filterForm = document.getElementById('filterForm');
         if (filterForm) {
             const checkboxes = filterForm.querySelectorAll('input[type="checkbox"]');
@@ -477,6 +569,41 @@ if (!$result) {
                 });
             });
         }
+
+        const logoutModal = document.getElementById("logoutModal");
+        const cancelLogout = document.getElementById("cancelLogout");
+        const logoutTrigger = document.querySelector(".logout-trigger");
+
+        if (logoutTrigger) {
+            logoutTrigger.addEventListener("click", function(e) {
+                e.preventDefault();
+                logoutModal.classList.add("show");
+                const dropdown = document.getElementById("userDropdownMenu");
+                if (dropdown) {
+                    dropdown.classList.remove("show");
+                }
+            });
+        }
+
+        if (cancelLogout) {
+            cancelLogout.addEventListener("click", function() {
+                logoutModal.classList.remove("show");
+            });
+        }
+
+        if (logoutModal) {
+            logoutModal.addEventListener("click", function(e) {
+                if (e.target === logoutModal) {
+                    logoutModal.classList.remove("show");
+                }
+            });
+        }
+
+        document.addEventListener("keydown", function(e) {
+            if (e.key === "Escape" && logoutModal && logoutModal.classList.contains("show")) {
+                logoutModal.classList.remove("show");
+            }
+        });
     });
     </script>
     <script src="assets/js/script.js"></script>

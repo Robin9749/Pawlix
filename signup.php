@@ -11,7 +11,7 @@ if (isset($_POST['signup'])) {
     $password         = trim($_POST['password']);
     $confirm_password = trim($_POST['confirm_password']);
 
-    // Split "Full Name" into first_name / last_name to match the `user` table
+  
     $name_parts = preg_split('/\s+/', $full_name, 2);
     $first_name = $name_parts[0] ?? '';
     $last_name  = $name_parts[1] ?? '';
@@ -25,7 +25,7 @@ if (isset($_POST['signup'])) {
         $last_name_esc  = mysqli_real_escape_string($conn, $last_name);
         $email_esc      = mysqli_real_escape_string($conn, $email);
 
-        // Check for an existing account with this email before inserting
+        
         $check = mysqli_query($conn, "SELECT user_id FROM user WHERE email = '$email_esc'");
 
         if ($check && mysqli_num_rows($check) > 0) {
@@ -43,7 +43,7 @@ if (isset($_POST['signup'])) {
                     $error = "Something went wrong: " . mysqli_error($conn);
                 }
             } catch (mysqli_sql_exception $e) {
-                // 1062 = duplicate entry (e.g. a race with another signup for the same email)
+          
                 if ($e->getCode() == 1062) {
                     $error = "An account with this email already exists. Please log in instead.";
                 } else {
@@ -79,24 +79,30 @@ body{
     flex-direction: column;
     color: #2b2b2b;
 }
-
 .navbar{
-    background: #f2e6c9;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px 48px;
-    margin: 0;
-    border-bottom: 2px solid #ffffff;
+  background: #f2e6c9;
+  height: 75px;
+  padding: 0 55px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  box-sizing: border-box;
 }
 
 .navbar .logo{
-  font-size: 20px;
-  font-weight: 700;
-  color: #2b2b2b;
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: flex-start;
+  height: 100%;
+}
+
+.navbar .logo img{
+  width: 110px;
+  display: block;
+  position: static;
+  padding-top: 20px;
 }
 
 .navbar .links a{
@@ -317,7 +323,9 @@ button.signup-btn:hover{
 <body>
 
 <div class="navbar">
-  <div class="logo">PawLix</div>
+  <div class="logo">
+      <img src="assets/images/logo.png" alt="PawLix logo">
+    </div>
   <div class="links">
     <a href="index.php">Home</a>
     <a href="browse.php">Browse Dogs</a>

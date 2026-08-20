@@ -120,7 +120,6 @@ body {
   color: #b3261e !important;
 }
 
-/* Page & Panel Container */
 .page-container {
   max-width: 860px;
   margin: 45px auto 65px;
@@ -158,7 +157,6 @@ body {
   gap: 8px;
 }
 
-/* History Item Card */
 .hist-item {
   background: var(--pale-yellow);
   border-radius: 14px;
@@ -190,7 +188,6 @@ body {
   line-height: 1.5;
 }
 
-/* Status Badges */
 .status-badge {
   padding: 6px 16px;
   border-radius: 20px;
@@ -231,11 +228,6 @@ body {
   margin-bottom: 15px;
 }
 
-
-/* =========================================================
-   LOGOUT CONFIRMATION MODAL
-   ========================================================= */
-
 .logout-modal-overlay {
   display: none;
   position: fixed;
@@ -243,7 +235,6 @@ body {
   width: 100%;
   height: 100%;
 
-  /* Dark overlay + blur of the CURRENT history page */
   background: rgba(0, 0, 0, 0.50);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
@@ -347,8 +338,6 @@ body {
   background: #961e17;
 }
 
-
-/* Mobile */
 @media (max-width: 600px) {
 
   .panel-card {
@@ -374,7 +363,6 @@ body {
 
 <body>
 
-<!-- HEADER -->
 <header class="header">
 
   <div class="logo">
@@ -435,7 +423,6 @@ body {
 
         <div style="height: 1px; background-color: #ddccae; margin: 4px 0;"></div>
 
-        <!-- LOGOUT TRIGGER -->
         <a href="#" class="logout-link logout-trigger">
           <span class="icon">🚪</span> Logout
         </a>
@@ -458,20 +445,15 @@ body {
 
 <hr style="background-color: white; height: 1px; border: none;">
 
-
-<!-- MAIN HISTORY PANEL -->
-
 <div class="page-container">
 
   <div class="panel-card">
 
     <h2>📜 Activity History</h2>
 
-
     <div class="section-subtitle">
       📋 Adoption Applications
     </div>
-
 
     <?php if ($adoptions && mysqli_num_rows($adoptions) > 0) { ?>
 
@@ -511,11 +493,9 @@ body {
 
     } ?>
 
-
     <div class="section-subtitle" style="margin-top:35px;">
       🚨 Reported Dogs History
     </div>
-
 
     <?php if ($reports && mysqli_num_rows($reports) > 0) { ?>
 
@@ -561,9 +541,6 @@ body {
 
 </div>
 
-
-<!-- LOGOUT CONFIRMATION MODAL -->
-
 <div class="logout-modal-overlay" id="logoutModal">
 
   <div class="logout-modal">
@@ -597,9 +574,6 @@ body {
 
 </div>
 
-
-<!-- FOOTER -->
-
 <?php
 
 if (file_exists('includes/footer.php')) {
@@ -628,7 +602,6 @@ if (file_exists('includes/footer.php')) {
 
       </div>
 
-
       <div class="footer-col">
 
         <h4 class="col-title">SERVICES</h4>
@@ -643,7 +616,6 @@ if (file_exists('includes/footer.php')) {
 
       </div>
 
-
       <div class="footer-col">
 
         <h4 class="col-title">USEFUL LINKS</h4>
@@ -655,7 +627,6 @@ if (file_exists('includes/footer.php')) {
         <p><a href="contact.php">Contact Us</a></p>
 
       </div>
-
 
       <div class="footer-col col-contact">
 
@@ -702,12 +673,7 @@ if (file_exists('includes/footer.php')) {
 
 <?php } ?>
 
-
 <script>
-
-/* ============================
-   USER DROPDOWN
-   ============================ */
 
 function toggleUserDropdown() {
 
@@ -718,7 +684,6 @@ function toggleUserDropdown() {
   }
 
 }
-
 
 window.addEventListener('click', function(e) {
 
@@ -739,11 +704,6 @@ window.addEventListener('click', function(e) {
 
 });
 
-
-/* ============================
-   LOGOUT CONFIRMATION MODAL
-   ============================ */
-
 document.addEventListener("DOMContentLoaded", function () {
 
   const logoutModal =
@@ -755,16 +715,11 @@ document.addEventListener("DOMContentLoaded", function () {
   const logoutTriggers =
     document.querySelectorAll(".logout-trigger");
 
-
-  /* Open logout popup */
-
   logoutTriggers.forEach(function (button) {
 
     button.addEventListener("click", function (e) {
 
       e.preventDefault();
-
-      /* Close user dropdown */
 
       const dropdown =
         document.getElementById("userDropdownMenu");
@@ -773,25 +728,17 @@ document.addEventListener("DOMContentLoaded", function () {
         dropdown.classList.remove("show");
       }
 
-      /* Show modal */
-
       logoutModal.classList.add("show");
 
     });
 
   });
 
-
-  /* Cancel logout */
-
   cancelLogout.addEventListener("click", function () {
 
     logoutModal.classList.remove("show");
 
   });
-
-
-  /* Click outside modal */
 
   logoutModal.addEventListener("click", function (e) {
 
@@ -802,9 +749,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
   });
-
-
-  /* ESC key */
 
   document.addEventListener("keydown", function (e) {
 
@@ -819,7 +763,6 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 </script>
-
 
 <script src="assets/js/script.js"></script>
 

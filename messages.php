@@ -10,7 +10,6 @@ require_once "config/config.php";
 
 $user_id = intval($_SESSION['user_id']);
 
-/* SAFE HELPER TO CREATE TABLE & ADD IMAGE COLUMN */
 if (!function_exists('safeAddColumnMessages')) {
     function safeAddColumnMessages($conn, $table, $column, $definition) {
         try {
@@ -22,7 +21,6 @@ if (!function_exists('safeAddColumnMessages')) {
     }
 }
 
-/* ================= AUTO-CREATE MESSAGES TABLE IF NOT EXISTS ================= */
 @mysqli_query($conn, "CREATE TABLE IF NOT EXISTS messages (
     message_id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -37,24 +35,20 @@ if (!function_exists('safeAddColumnMessages')) {
 
 safeAddColumnMessages($conn, 'messages', 'image', "TEXT DEFAULT NULL");
 
-/* ================= GET USER DETAILS ================= */
 $user_query = mysqli_query($conn, "SELECT * FROM user WHERE user_id = $user_id");
 $user = ($user_query) ? mysqli_fetch_assoc($user_query) : [];
 $first_name = htmlspecialchars($user['first_name'] ?? 'User');
 $full_name = htmlspecialchars(trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')));
 
-/* ================= GET DEFAULT ADMIN ================= */
 $admin_query = mysqli_query($conn, "SELECT admin_id, name, email FROM admin ORDER BY admin_id ASC LIMIT 1");
 $admin = ($admin_query) ? mysqli_fetch_assoc($admin_query) : null;
 $admin_id = $admin ? intval($admin['admin_id']) : 1;
 
-/* ================= SEND USER MESSAGE WITH OPTIONAL IMAGE ================= */
 $message_error = "";
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $message_text = trim($_POST['message'] ?? '');
     $subject = trim($_POST['subject'] ?? 'PawLix Support');
 
-    // Handle Image Upload
     $uploaded_image = "";
     if (!empty($_FILES['image']['name'])) {
         $upload_folder = "uploads/";
@@ -94,10 +88,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-/* ================= MARK ADMIN MESSAGES AS READ ================= */
 @mysqli_query($conn, "UPDATE messages SET is_read = 1 WHERE user_id = $user_id AND sender_type = 'admin'");
 
-/* ================= GET CONVERSATION ================= */
 $messages = mysqli_query($conn, "
     SELECT message_id, user_id, admin_id, sender_type, subject, message, image, is_read, created_at
     FROM messages
@@ -105,7 +97,6 @@ $messages = mysqli_query($conn, "
     ORDER BY created_at ASC, message_id ASC
 ");
 
-/* ================= COUNT UNREAD NOTIFICATIONS ================= */
 $r1 = @mysqli_query($conn, "SELECT COUNT(*) AS total FROM report_dogs WHERE user_id = $user_id AND status != 'Pending'");
 $r2 = @mysqli_query($conn, "SELECT COUNT(*) AS total FROM adoption_application WHERE user_id = $user_id AND status != 'Pending'");
 $r3 = @mysqli_query($conn, "SELECT COUNT(*) AS total FROM messages WHERE user_id = $user_id AND sender_type = 'admin' AND is_read = 0");
@@ -149,7 +140,6 @@ body {
     flex-direction: column;
 }
 
-/* User Menu Header Dropdown */
 .user-menu-wrapper {
     position: relative;
     display: inline-block;
@@ -222,7 +212,6 @@ body {
 
 .logout-link { color: var(--maroon) !important; }
 
-/* LOGOUT MODAL OVERLAY */
 .logout-modal-overlay {
   display: none;
   position: fixed;
@@ -271,7 +260,6 @@ body {
 .logout-confirm { background: #b3261e; color: #ffffff; border: none; box-shadow: 0 4px 12px rgba(179, 38, 30, 0.3); }
 .logout-confirm:hover { background: #961e17; }
 
-/* MESSAGES PAGE WRAPPER */
 .messages-wrapper {
     flex: 1;
     padding: 30px 20px 40px;
@@ -294,7 +282,6 @@ body {
     flex-direction: column;
 }
 
-/* CHAT HEADER */
 .chat-header {
     background: var(--cream);
     padding: 16px 24px;
@@ -376,7 +363,6 @@ body {
     border: 1px solid #dfcfb0;
 }
 
-/* CHAT BODY */
 .chat-body {
     flex: 1;
     padding: 24px 28px;
@@ -390,7 +376,6 @@ body {
 .chat-body::-webkit-scrollbar { width: 6px; }
 .chat-body::-webkit-scrollbar-thumb { background: #d2c2a2; border-radius: 10px; }
 
-/* EMPTY CHAT STATE */
 .empty-chat {
     margin: auto;
     text-align: center;
@@ -402,7 +387,6 @@ body {
 .empty-chat h3 { margin: 0 0 6px; color: var(--dark-brown); font-size: 19px; font-weight: 700; }
 .empty-chat p { font-size: 13.5px; line-height: 1.6; color: #6b5544; }
 
-/* MESSAGE ROW & BUBBLES */
 .message-row {
     display: flex;
     align-items: flex-end;
@@ -474,7 +458,6 @@ body {
     word-break: break-word;
 }
 
-/* CHAT ATTACHED IMAGE STYLING */
 .message-img-container { margin-top: 8px; }
 .message-img {
     max-width: 250px;
@@ -508,7 +491,6 @@ body {
     margin-top: 4px;
 }
 
-/* COMPOSER BAR */
 .chat-composer {
     padding: 14px 20px;
     background: var(--cream);
@@ -625,7 +607,6 @@ body {
 
 <body>
 
-<!-- HEADER -->
 <header class="header">
     <div class="logo">
         <a href="index.php">
@@ -667,11 +648,9 @@ body {
 
 <hr style="background-color:white;height:1px;border:none;">
 
-<!-- MAIN CHAT SECTION -->
 <main class="messages-wrapper">
     <div class="chat-card">
 
-        <!-- CHAT HEADER -->
         <div class="chat-header">
             <div class="header-left">
                 <div class="avatar-wrapper">
@@ -690,7 +669,6 @@ body {
             </div>
         </div>
 
-        <!-- CHAT BODY -->
         <div class="chat-body" id="chatBody">
             <?php if (!$messages || mysqli_num_rows($messages) === 0): ?>
                 <div class="empty-chat">
@@ -746,7 +724,6 @@ body {
             <?php endif; ?>
         </div>
 
-        <!-- COMPOSER BAR -->
         <div class="chat-composer">
             <?php if ($message_error): ?>
                 <div class="chat-alert"><?php echo htmlspecialchars($message_error); ?></div>
@@ -783,7 +760,6 @@ body {
     </div>
 </main>
 
-<!-- LOGOUT CONFIRMATION MODAL -->
 <div class="logout-modal-overlay" id="logoutModal">
   <div class="logout-modal" role="dialog" aria-modal="true" aria-labelledby="logoutTitle">
     <h2 id="logoutTitle">Log Out?</h2>
@@ -795,7 +771,6 @@ body {
   </div>
 </div>
 
-<!-- FOOTER -->
 <?php
 if (file_exists('includes/footer.php')) {
     include 'includes/footer.php';
@@ -836,7 +811,6 @@ if (file_exists('includes/footer.php')) {
 </footer>
 <?php } ?>
 
-<!-- JAVASCRIPT -->
 <script>
 function toggleUserDropdown() {
     const menu = document.getElementById("userDropdownMenu");
@@ -852,13 +826,11 @@ window.addEventListener("click", function(e) {
 });
 
 document.addEventListener("DOMContentLoaded", function() {
-    // Auto scroll to latest message
     const chatBody = document.getElementById("chatBody");
     if (chatBody) {
         chatBody.scrollTop = chatBody.scrollHeight;
     }
 
-    // Logout Modal
     const logoutModal = document.getElementById("logoutModal");
     const cancelLogout = document.getElementById("cancelLogout");
     const logoutTrigger = document.querySelector(".logout-trigger");
@@ -890,7 +862,6 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 
-    // Enter Key to Submit Form
     const messageInput = document.getElementById("messageInput");
     const chatForm = document.getElementById("chatForm");
 

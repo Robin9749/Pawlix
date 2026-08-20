@@ -10,7 +10,6 @@ require_once "config/config.php";
 
 $user_id = intval($_SESSION['user_id']);
 
-/* ================= FETCH STRAY / RESCUE REPORTS ================= */
 $reports = mysqli_query(
     $conn,
     "SELECT * FROM report_dogs 
@@ -18,7 +17,6 @@ $reports = mysqli_query(
      ORDER BY created_at DESC"
 );
 
-/* ================= FETCH ADOPTION APPLICATIONS ================= */
 $adoptions = mysqli_query(
     $conn,
     "SELECT adoption_application.*, dog.name AS dog_name 
@@ -28,7 +26,6 @@ $adoptions = mysqli_query(
      ORDER BY application_date DESC"
 );
 
-/* ================= FETCH ADMIN DIRECT MESSAGES ================= */
 @mysqli_query($conn, "CREATE TABLE IF NOT EXISTS messages (
     message_id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
@@ -48,7 +45,6 @@ $user_messages = mysqli_query(
      ORDER BY created_at DESC"
 );
 
-/* ================= CALCULATE UNREAD NOTIFICATION BADGE ================= */
 $unreadCount = 0;
 
 $r1 = @mysqli_query(
@@ -120,9 +116,6 @@ body {
   padding: 0;
 }
 
-
-/* ================= USER MENU ================= */
-
 .user-menu-wrapper {
   position: relative;
   display: inline-block;
@@ -192,9 +185,6 @@ body {
   color: #b3261e !important;
 }
 
-
-/* ================= PAGE & PANEL ================= */
-
 .page-container {
   max-width: 860px;
   margin: 45px auto 65px;
@@ -221,9 +211,6 @@ body {
   border-bottom: 2px solid var(--border-color);
   padding-bottom: 16px;
 }
-
-
-/* ================= NOTIFICATION ITEM ================= */
 
 .notif-item {
   background: var(--pale-yellow);
@@ -261,9 +248,6 @@ body {
 .notif-desc strong {
   color: var(--dark-brown);
 }
-
-
-/* ================= STATUS BADGES ================= */
 
 .status-badge {
   padding: 6px 16px;
@@ -305,9 +289,6 @@ body {
   border-radius: 14px;
   border: 1px dashed var(--border-color);
 }
-
-
-/* ================= LOGOUT CONFIRMATION MODAL ================= */
 
 .logout-modal-overlay {
   display: none;
@@ -405,9 +386,6 @@ body {
   background: #961e17;
 }
 
-
-/* ================= RESPONSIVE ================= */
-
 @media (max-width: 600px) {
 
   .panel-card {
@@ -432,8 +410,6 @@ body {
 
 <body>
 
-
-<!-- HEADER -->
 <header class="header">
 
   <div class="logo">
@@ -498,8 +474,6 @@ body {
 
 <hr style="background-color: white; height: 1px; border: none;">
 
-
-<!-- MAIN NOTIFICATIONS PANEL -->
 <div class="page-container">
 
   <div class="panel-card">
@@ -511,7 +485,6 @@ body {
     <?php
     $hasNotif = false;
 
-    /* ================= 1. ADMIN DIRECT MESSAGES NOTIFICATIONS ================= */
     if ($user_messages && mysqli_num_rows($user_messages) > 0) {
       while ($m = mysqli_fetch_assoc($user_messages)) {
         $hasNotif = true;
@@ -540,7 +513,6 @@ body {
       }
     }
 
-    /* ================= 2. RESCUE REPORT NOTIFICATIONS ================= */
     if ($reports && mysqli_num_rows($reports) > 0) {
       while ($r = mysqli_fetch_assoc($reports)) {
         if ($r['status'] != 'Pending') {
@@ -572,7 +544,6 @@ body {
       }
     }
 
-    /* ================= 3. ADOPTION APPLICATION NOTIFICATIONS ================= */
     if ($adoptions && mysqli_num_rows($adoptions) > 0) {
       while ($a = mysqli_fetch_assoc($adoptions)) {
         if ($a['status'] != 'Pending') {
@@ -604,7 +575,6 @@ body {
       }
     }
 
-    /* ================= NO NOTIFICATIONS ================= */
     if (!$hasNotif) {
       echo "
         <div class='no-notif-msg'>
@@ -619,8 +589,6 @@ body {
 
 </div>
 
-
-<!-- LOGOUT CONFIRMATION MODAL -->
 <div class="logout-modal-overlay" id="logoutModal">
   <div class="logout-modal">
     <h2>Log Out?</h2>
@@ -632,8 +600,6 @@ body {
   </div>
 </div>
 
-
-<!-- FOOTER -->
 <?php
 if (file_exists('includes/footer.php')) {
     include 'includes/footer.php';
@@ -684,8 +650,6 @@ if (file_exists('includes/footer.php')) {
 </footer>
 <?php } ?>
 
-
-<!-- JAVASCRIPT -->
 <script>
 function toggleUserDropdown() {
   var menu = document.getElementById("userDropdownMenu");

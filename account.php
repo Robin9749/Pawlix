@@ -32,13 +32,11 @@ $c2 = ($r2) ? mysqli_fetch_assoc($r2)['total'] : 0;
 
 $unreadCount = $c1 + $c2;
 
-// User information
 $first_name = htmlspecialchars($user['first_name'] ?? 'User');
 $last_name  = htmlspecialchars($user['last_name'] ?? '');
 $email      = htmlspecialchars($user['email'] ?? 'Not Provided');
 $phone      = htmlspecialchars($user['phone'] ?? 'Not Provided');
 
-// User initials
 $initials = strtoupper(
     substr($first_name, 0, 1) . substr($last_name, 0, 1)
 );
@@ -84,8 +82,6 @@ body {
     margin: 0;
     padding: 0;
 }
-
-/* ================= USER MENU ================= */
 
 .user-menu-wrapper {
     position: relative;
@@ -175,9 +171,6 @@ body {
     background-color: #f8d7da;
 }
 
-
-/* ================= LOGOUT MODAL ================= */
-
 .logout-modal-overlay {
     display: none;
     position: fixed;
@@ -187,7 +180,6 @@ body {
 
     background: rgba(0, 0, 0, 0.50);
 
-    /* Blur the actual current page */
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
 
@@ -297,9 +289,6 @@ body {
     background: #961e17;
 }
 
-
-/* ================= ACCOUNT ================= */
-
 .account-wrapper {
     min-height: calc(100vh - 250px);
 
@@ -327,9 +316,6 @@ body {
 
     border: 1px solid var(--border-color);
 }
-
-
-/* Profile Header */
 
 .profile-header-banner {
     display: flex;
@@ -413,9 +399,6 @@ body {
     border-radius: 50%;
 }
 
-
-/* Info Box */
-
 .info-box {
     background: var(--pale-yellow);
 
@@ -487,9 +470,6 @@ body {
     font-size: 15.5px;
 }
 
-
-/* Action Buttons */
-
 .account-actions {
     margin-top: 30px;
 
@@ -556,9 +536,6 @@ body {
     box-shadow: 0 6px 18px rgba(255,127,17,0.45);
 }
 
-
-/* ================= RESPONSIVE ================= */
-
 @media (max-width: 600px) {
 
     .account-card {
@@ -591,8 +568,6 @@ body {
 </head>
 
 <body>
-
-<!-- ================= HEADER ================= -->
 
 <header class="header">
 
@@ -687,7 +662,6 @@ body {
 
                 <div class="divider"></div>
 
-                <!-- IMPORTANT: This does NOT navigate to logout.php -->
                 <a
                     href="#"
                     class="logout-trigger logout-link">
@@ -718,8 +692,6 @@ body {
 
 <hr style="background-color: white; height: 1px; border: none;">
 
-
-<!-- ================= MAIN CONTENT ================= -->
 
 <main class="account-wrapper">
 
@@ -866,8 +838,6 @@ body {
 </main>
 
 
-<!-- ================= LOGOUT CONFIRMATION MODAL ================= -->
-
 <div
     class="logout-modal-overlay"
     id="logoutModal">
@@ -912,8 +882,6 @@ body {
 
 </div>
 
-
-<!-- ================= FOOTER ================= -->
 
 <?php
 
@@ -1051,8 +1019,6 @@ if (file_exists('includes/footer.php')) {
 <?php } ?>
 
 
-<!-- ================= JAVASCRIPT ================= -->
-
 <script>
 
 function toggleUserDropdown() {
@@ -1068,8 +1034,6 @@ function toggleUserDropdown() {
 
 }
 
-
-/* Close user dropdown when clicking outside */
 
 window.addEventListener("click", function(e) {
 
@@ -1093,8 +1057,6 @@ window.addEventListener("click", function(e) {
 });
 
 
-/* ================= LOGOUT MODAL ================= */
-
 document.addEventListener("DOMContentLoaded", function() {
 
     const logoutModal =
@@ -1107,8 +1069,6 @@ document.addEventListener("DOMContentLoaded", function() {
         document.querySelector(".logout-trigger");
 
 
-    /* Open logout modal */
-
     if (logoutTrigger) {
 
         logoutTrigger.addEventListener("click", function(e) {
@@ -1117,9 +1077,6 @@ document.addEventListener("DOMContentLoaded", function() {
 
             logoutModal.classList.add("show");
 
-            /*
-             * Close the user dropdown behind the modal.
-             */
             const dropdown =
                 document.getElementById("userDropdownMenu");
 
@@ -1134,8 +1091,6 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
 
-    /* Cancel logout */
-
     if (cancelLogout) {
 
         cancelLogout.addEventListener("click", function() {
@@ -1146,8 +1101,6 @@ document.addEventListener("DOMContentLoaded", function() {
 
     }
 
-
-    /* Click outside modal to close */
 
     if (logoutModal) {
 
@@ -1163,8 +1116,6 @@ document.addEventListener("DOMContentLoaded", function() {
 
     }
 
-
-    /* ESC key closes modal */
 
     document.addEventListener("keydown", function(e) {
 

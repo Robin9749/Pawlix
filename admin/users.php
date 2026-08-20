@@ -8,7 +8,7 @@ if (!isset($_SESSION['admin_id'])) {
 
 include("../config/config.php");
 
-/* ================= FETCH ALL USERS WITH ACTIVITY STATS ================= */
+
 $users_query = "
 SELECT 
     u.*,
@@ -256,7 +256,7 @@ tbody td {
 
 .view-btn:hover { background: #1656aa; transform: translateY(-1px); }
 
-/* ================= VIEW USER MODAL OVERLAY ================= */
+
 .modal-overlay {
   display: none;
   position: fixed;
@@ -564,7 +564,7 @@ tbody td {
 
 </div>
 
-<!-- VIEW USER DETAILS MODAL -->
+
 <div class="modal-overlay" id="viewUserModal">
   <div class="modal-card">
     <div class="modal-header">

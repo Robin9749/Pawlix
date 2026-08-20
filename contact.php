@@ -2,7 +2,6 @@
 session_start();
 require_once "config/config.php";
 
-/* ================= SAFE HELPER TO ENSURE TABLE COLUMNS EXIST ================= */
 if (!function_exists('safeAddColumnContact')) {
     function safeAddColumnContact($conn, $table, $column, $definition) {
         try {
@@ -14,7 +13,6 @@ if (!function_exists('safeAddColumnContact')) {
     }
 }
 
-/* AUTO-CREATE OR ALTER TABLES IF MISSING COLUMNS */
 @mysqli_query($conn, "CREATE TABLE IF NOT EXISTS contact_message (
     id INT AUTO_INCREMENT PRIMARY KEY,
     full_name VARCHAR(255) NOT NULL,
@@ -39,7 +37,6 @@ safeAddColumnContact($conn, 'contact_message', 'subject', "VARCHAR(255) DEFAULT 
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )");
 
-/* ================= UNREAD NOTIFICATIONS COUNT ================= */
 $unreadCount = 0;
 if (isset($_SESSION['user_id'])) {
     $uid = intval($_SESSION['user_id']);
@@ -83,17 +80,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
         $sb_clean = mysqli_real_escape_string($conn, $subject);
         $ms_clean = mysqli_real_escape_string($conn, $message);
 
-        // 1. SAVE TO contact_message TABLE SAFELY
         try {
             @mysqli_query($conn, "INSERT INTO contact_message (full_name, email, phone, subject, message) 
                 VALUES ('$fn_clean', '$em_clean', '$ph_clean', '$sb_clean', '$ms_clean')");
         } catch (Throwable $t) {
-            // Fallback if phone column isn't accessible
             @mysqli_query($conn, "INSERT INTO contact_message (full_name, email, subject, message) 
                 VALUES ('$fn_clean', '$em_clean', '$sb_clean', '$ms_clean')");
         }
 
-        // 2. CHECK IF USER IS LOGGED IN OR REGISTERED BY EMAIL
         $target_user_id = 0;
         if (isset($_SESSION['user_id'])) {
             $target_user_id = intval($_SESSION['user_id']);
@@ -105,7 +99,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
             }
         }
 
-        // 3. IF USER ACCOUNT EXISTS -> INSERT INTO LIVE CHAT MESSAGES TABLE
         if ($target_user_id > 0) {
             try {
                 @mysqli_query($conn, "INSERT INTO messages (user_id, admin_id, sender_type, subject, message, is_read) 
@@ -131,11 +124,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
     <title>PawLix - Contact Us</title>
     <link rel="stylesheet" href="assets/css/contact.css">
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+
         .form-alert{ padding:14px 18px; border-radius:10px; font-size:14px; font-weight:600; margin-bottom:20px; }
         .form-alert-error{ background:#fdeaea; border:1px solid #f3c6c6; color:#b3261e; }
         .form-alert-success{ background:#e5f6e8; border:1px solid #bfe3c4; color:#1e6e2e; }
 
-        /* Header Menu Icon Dropdown Styles */
         .user-menu-wrapper {
           position: relative;
           display: inline-block;
@@ -203,6 +197,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
           background-color: #ddceac;
         }
 
+        .user-dropdown-menu a .icon {
+          font-size: 16px;
+          width: 20px;
+          text-align: center;
+        }
+
         .dropdown-divider {
           height: 1px;
           background-color: #ddccae;
@@ -213,6 +213,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
           color: #b3261e !important;
         }
 
+        .logout-link:hover {
+          background-color: #f8d7da !important;
+        }
+
         .badge-sub {
           margin-left: auto;
           background: #e63946;
@@ -220,6 +224,102 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
           font-size: 11px;
           padding: 2px 6px;
           border-radius: 10px;
+        }
+
+        .logout-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.50);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            z-index: 99999;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .logout-modal-overlay.show {
+            display: flex;
+        }
+
+        .logout-modal {
+            width: 100%;
+            max-width: 400px;
+            background: #ede1c6;
+            border-radius: 16px;
+            padding: 32px 28px;
+            text-align: center;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.30);
+            border: 1px solid rgba(255,255,255,0.6);
+            animation: logoutPopup 0.25s ease-out;
+        }
+
+        @keyframes logoutPopup {
+            from {
+                transform: scale(0.85);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .logout-modal h2 {
+            font-size: 22px;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 8px;
+        }
+
+        .logout-modal p {
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 26px;
+            line-height: 1.5;
+        }
+
+        .logout-modal-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .logout-cancel,
+        .logout-confirm {
+            flex: 1;
+            padding: 13px;
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .logout-cancel {
+            background: #ffffff;
+            color: #2b2b2b;
+            border: 1px solid #ddccae;
+        }
+
+        .logout-cancel:hover {
+            background: #f5ecda;
+        }
+
+        .logout-confirm {
+            background: #b3261e;
+            color: #ffffff;
+            border: none;
+            box-shadow: 0 4px 12px rgba(179,38,30,0.3);
+        }
+
+        .logout-confirm:hover {
+            background: #961e17;
         }
     </style>
 </head>
@@ -237,11 +337,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
             <a href="report.php">Report a Dog</a>
         </nav>
 
-        <!-- Header Action Buttons -->
         <div class="header-buttons">
           <?php if (isset($_SESSION['user_id'])): ?>
             
-            <!-- LOGGED IN: MENU ICON DROPDOWN -->
             <div class="user-menu-wrapper">
               <button class="menu-icon-btn" id="userMenuBtn" onclick="toggleUserDropdown()" aria-label="User Menu">
                 <span>👤</span> ▾ <?php if ($unreadCount > 0): ?><span class="badge-count"><?php echo $unreadCount; ?></span><?php endif; ?>
@@ -254,13 +352,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
                 <a href="history.php"><span class="icon">📜</span> History</a>
                 <a href="settings.php"><span class="icon">⚙️</span> Setting</a>
                 <div class="dropdown-divider"></div>
-                <a href="logout.php" class="logout-link"><span class="icon">🚪</span> Logout</a>
+                <a href="#" class="logout-trigger logout-link"><span class="icon">🚪</span> Logout</a>
               </div>
             </div>
 
           <?php else: ?>
 
-            <!-- LOGGED OUT: LOGIN & SIGNUP -->
             <a href="signup.php" class="btn btn-outline" style="text-decoration:none;">Sign Up</a>
             <a href="login.php" class="btn btn-dark" style="text-decoration:none;">Login</a>
 
@@ -272,7 +369,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
 
     <hr style="background-color: white; height: 1px; border: none;">
 
-    <!-- Contact Hero Banner -->
     <section class="contact-hero">
         <div class="contact-hero-content">
             <div class="contact-hero-text">
@@ -290,11 +386,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
         </div>
     </section>
 
-    <!-- Main Contact Section -->
     <main class="contact-main">
         <div class="contact-grid">
             
-            <!-- Left Info Card -->
             <aside class="contact-info-card">
                 <h2>Get In Touch</h2>
                 <p class="info-subtitle">We'd love to hear from you. Whether you have questions about available dogs, the adoption process, or your application status, our team is always ready to assist.</p>
@@ -326,7 +420,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
                 </div>
             </aside>
 
-            <!-- Right Form Card -->
             <section class="contact-form-card" id="contactForm">
                 <h2>Send Us a Message</h2>
 
@@ -373,6 +466,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
 
         </div>
     </main>
+
+<div class="logout-modal-overlay" id="logoutModal">
+    <div class="logout-modal" role="dialog" aria-modal="true" aria-labelledby="logoutTitle">
+        <h2 id="logoutTitle">Log Out?</h2>
+        <p>Are you sure you want to log out?</p>
+        <div class="logout-modal-actions">
+            <button type="button" class="logout-cancel" id="cancelLogout">Cancel</button>
+            <a href="logout.php?confirm=true" class="logout-confirm">Log Out</a>
+        </div>
+    </div>
+</div>
 
     <footer class="footer">
         <div class="footer-container">
@@ -452,6 +556,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             });
         }
+
+        const logoutModal = document.getElementById("logoutModal");
+        const cancelLogout = document.getElementById("cancelLogout");
+        const logoutTrigger = document.querySelector(".logout-trigger");
+
+        if (logoutTrigger) {
+            logoutTrigger.addEventListener("click", function(e) {
+                e.preventDefault();
+                logoutModal.classList.add("show");
+                const dropdown = document.getElementById("userDropdownMenu");
+                if (dropdown) {
+                    dropdown.classList.remove("show");
+                }
+            });
+        }
+
+        if (cancelLogout) {
+            cancelLogout.addEventListener("click", function() {
+                logoutModal.classList.remove("show");
+            });
+        }
+
+        if (logoutModal) {
+            logoutModal.addEventListener("click", function(e) {
+                if (e.target === logoutModal) {
+                    logoutModal.classList.remove("show");
+                }
+            });
+        }
+
+        document.addEventListener("keydown", function(e) {
+            if (e.key === "Escape" && logoutModal && logoutModal.classList.contains("show")) {
+                logoutModal.classList.remove("show");
+            }
+        });
     });
     </script>
     <script src="assets/js/script.js"></script>

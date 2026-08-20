@@ -10,7 +10,6 @@ include("../config/config.php");
 
 $admin_id = intval($_SESSION['admin_id']);
 
-/* SAFE HELPER TO ADD COLUMNS WITHOUT DUPLICATE COLUMN EXCEPTION IN PHP 8.1+ */
 function safeAddColumn($conn, $table, $column, $definition) {
     try {
         $check = mysqli_query($conn, "SHOW COLUMNS FROM `$table` LIKE '$column'");
@@ -18,7 +17,6 @@ function safeAddColumn($conn, $table, $column, $definition) {
             mysqli_query($conn, "ALTER TABLE `$table` ADD COLUMN `$column` $definition");
         }
     } catch (Throwable $e) {
-        // Column already exists or error ignored safely
     }
 }
 
@@ -27,7 +25,6 @@ safeAddColumn($conn, 'adoption_application', 'current_pets', "VARCHAR(100) DEFAU
 safeAddColumn($conn, 'adoption_application', 'adoption_reason', "VARCHAR(255) DEFAULT ''");
 safeAddColumn($conn, 'adoption_application', 'why_this_dog', "TEXT");
 
-/* ================= UPDATE APPLICATION STATUS ================= */
 $success_msg = "";
 $error_msg = "";
 
@@ -40,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status'])) {
         $update_sql = "UPDATE adoption_application SET status = '$new_status' WHERE application_id = $app_id";
         
         if (mysqli_query($conn, $update_sql)) {
-            // Fetch applicant user_id and dog details to send notification
+
             $app_info = mysqli_query($conn, "
                 SELECT a.user_id, d.name AS dog_name 
                 FROM adoption_application a
@@ -53,7 +50,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status'])) {
                 $target_user_id = intval($info['user_id']);
                 $dog_name = htmlspecialchars($info['dog_name'] ?? 'Dog');
                 
-                // Send direct message notification if admin provided feedback note
                 if (!empty($admin_note)) {
                     $note_db = mysqli_real_escape_string($conn, $admin_note);
                     $subject_db = mysqli_real_escape_string($conn, "Adoption Update: $dog_name");
@@ -80,7 +76,6 @@ if (isset($_GET['msg']) && $_GET['msg'] === 'updated') {
     $success_msg = "Adoption request updated successfully! User notification sent.";
 }
 
-/* ================= FILTER & FETCH REQUESTS ================= */
 $filter = isset($_GET['status']) ? $_GET['status'] : 'All';
 
 $where_clause = "";
@@ -111,7 +106,6 @@ $query = "
 
 $requests = mysqli_query($conn, $query);
 
-/* ================= COUNTS ================= */
 $result = mysqli_query($conn, "SELECT status, COUNT(*) total FROM adoption_application GROUP BY status");
 $counts = array("Pending" => 0, "Approved" => 0, "Rejected" => 0);
 while ($row = mysqli_fetch_assoc($result)) {
@@ -121,7 +115,6 @@ while ($row = mysqli_fetch_assoc($result)) {
 $totalResult = mysqli_query($conn, "SELECT COUNT(*) AS total FROM adoption_application");
 $total = mysqli_fetch_assoc($totalResult)['total'];
 
-/* HELPER FUNCTION TO FORMAT ADOPTION REASON CODE */
 function formatReasonLabel($code) {
     switch(strtolower(trim($code))) {
         case 'companion': return 'Family Companion / Pet';
@@ -173,7 +166,6 @@ html, body {
 
 body { display: flex; flex-direction: column; }
 
-/* TOPBAR */
 .topbar {
   background: var(--bg-topbar);
   padding: 20px 45px;
@@ -345,7 +337,6 @@ tbody td { padding: 13px 10px; font-size: 13px; vertical-align: middle; }
 
 .btn-view:hover { background: #1656aa; transform: translateY(-1px); }
 
-/* ================= PERFECT SCROLLABLE MODAL OVERLAY ================= */
 .modal-overlay {
   display: none;
   position: fixed;
@@ -406,7 +397,6 @@ tbody td { padding: 13px 10px; font-size: 13px; vertical-align: middle; }
 
 .close-btn:hover { color: #000; }
 
-/* MODAL SCROLLABLE BODY */
 .modal-body {
   flex: 1;
   padding: 24px 28px;
@@ -643,7 +633,6 @@ tbody td { padding: 13px 10px; font-size: 13px; vertical-align: middle; }
 
 </div>
 
-<!-- SCROLLABLE DETAIL & EDIT MODAL POPUP -->
 <div class="modal-overlay" id="detailModal">
   <div class="modal-card">
     <div class="modal-header">
@@ -656,7 +645,6 @@ tbody td { padding: 13px 10px; font-size: 13px; vertical-align: middle; }
         <input type="hidden" name="update_status" value="1">
         <input type="hidden" name="application_id" id="modalAppId" value="">
 
-        <!-- Step 1: Applicant Info -->
         <div class="section-head">👤 Applicant Information</div>
         <div class="info-grid">
           <div class="info-item"><label>Full Name</label><span id="mApplicantName">-</span></div>
@@ -665,7 +653,6 @@ tbody td { padding: 13px 10px; font-size: 13px; vertical-align: middle; }
           <div class="info-item"><label>Residential Address</label><span id="mApplicantAddress">-</span></div>
         </div>
 
-        <!-- Step 2: Selected Dog -->
         <div class="section-head">🐾 Selected Dog</div>
         <div class="info-grid">
           <div class="info-item"><label>Dog Name</label><span id="mDogName">-</span></div>
@@ -674,7 +661,6 @@ tbody td { padding: 13px 10px; font-size: 13px; vertical-align: middle; }
           <div class="info-item"><label>Gender</label><span id="mDogGender">-</span></div>
         </div>
 
-        <!-- Step 3 & 4: Household & Adoption Info -->
         <div class="section-head">🏠 Household & Adoption Details</div>
         <div class="info-grid">
           <div class="info-item"><label>Housing Type</label><span id="mHousingType">-</span></div>
@@ -688,7 +674,6 @@ tbody td { padding: 13px 10px; font-size: 13px; vertical-align: middle; }
           <div id="mWhyThisDog" style="background:#f5ecd7; padding:14px; border-radius:10px; font-size:13.5px; color:#4a3c31; border:1px solid #dfcfb0; white-space:pre-wrap; line-height:1.5;">-</div>
         </div>
 
-        <!-- Step 5: Admin Action & Feedback -->
         <div class="section-head">✍️ Admin Decision & Response</div>
         <div class="form-group">
           <label for="modalStatusSelect">Update Status</label>
@@ -745,7 +730,6 @@ function openDetailModal(id, name, email, phone, address, dogName, dogBreed, dog
     const modal = document.getElementById("detailModal");
     modal.classList.add("show");
     
-    // Auto scroll modal body to top when opened
     const modalBody = modal.querySelector(".modal-body");
     if (modalBody) { modalBody.scrollTop = 0; }
 }

@@ -1,8 +1,6 @@
 <?php
 session_start();
 
-/* ================= LOGIN CHECK ================= */
-
 if (!isset($_SESSION['user_id'])) {
     header("Location: login.php");
     exit();
@@ -11,8 +9,6 @@ if (!isset($_SESSION['user_id'])) {
 require_once "config/config.php";
 
 $user_id = intval($_SESSION['user_id']);
-
-/* ================= GET USER ================= */
 
 $user_res = mysqli_query(
     $conn,
@@ -23,8 +19,6 @@ $user = ($user_res) ? mysqli_fetch_assoc($user_res) : [];
 
 $success = "";
 $error = "";
-
-/* ================= UPDATE PROFILE ================= */
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
 
@@ -75,8 +69,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
         }
     }
 }
-
-/* ================= NOTIFICATION COUNT ================= */
 
 $unreadCount = 0;
 
@@ -150,8 +142,6 @@ body {
     padding: 0;
 }
 
-/* ================= USER MENU ================= */
-
 .user-menu-wrapper {
     position: relative;
     display: inline-block;
@@ -221,8 +211,6 @@ body {
 .logout-link {
     color: #b3261e !important;
 }
-
-/* ================= LOGOUT MODAL ================= */
 
 .logout-modal-overlay {
   display: none;
@@ -320,8 +308,6 @@ body {
   background: #961e17;
 }
 
-/* ================= PAGE ================= */
-
 .page-container {
     max-width: 740px;
     margin: 45px auto 65px;
@@ -348,8 +334,6 @@ body {
     border-bottom: 2px solid var(--border-color);
     padding-bottom: 16px;
 }
-
-/* ================= FORM ================= */
 
 .form-grid {
     display: grid;
@@ -393,8 +377,6 @@ body {
     box-shadow: 0 0 0 4px rgba(255,127,17,0.15);
 }
 
-/* ================= BUTTON ================= */
-
 .btn-primary {
     background: var(--orange);
     color: white;
@@ -416,8 +398,6 @@ body {
     box-shadow: 0 6px 18px rgba(255,127,17,0.45);
 }
 
-/* ================= ALERT ================= */
-
 .alert-msg {
     padding: 14px 20px;
     border-radius: 12px;
@@ -437,8 +417,6 @@ body {
     color: #991b1b;
     border: 1px solid #fca5a5;
 }
-
-/* ================= RESPONSIVE ================= */
 
 @media (max-width: 600px) {
 
@@ -460,8 +438,6 @@ body {
 </head>
 
 <body>
-
-<!-- ================= HEADER ================= -->
 
 <header class="header">
 
@@ -542,7 +518,6 @@ body {
                     "
                 ></div>
 
-                <!-- LOGOUT TRIGGER -->
                 <a
                     href="#"
                     class="logout-link logout-trigger"
@@ -570,8 +545,6 @@ body {
 </header>
 
 <hr style="background-color:white;height:1px;border:none;">
-
-<!-- ================= MAIN ================= -->
 
 <div class="page-container">
 
@@ -686,8 +659,6 @@ body {
 
 </div>
 
-<!-- ================= LOGOUT CONFIRMATION MODAL ================= -->
-
 <div
   class="logout-modal-overlay"
   id="logoutModal">
@@ -730,8 +701,6 @@ body {
   </div>
 
 </div>
-
-<!-- ================= FOOTER ================= -->
 
 <?php
 
@@ -868,13 +837,7 @@ if (file_exists('includes/footer.php')) {
 
 <?php } ?>
 
-<!-- ================= JAVASCRIPT ================= -->
-
 <script>
-
-/*
-    USER DROPDOWN
-*/
 
 const userMenuBtn = document.getElementById("userMenuBtn");
 const userDropdownMenu = document.getElementById("userDropdownMenu");
@@ -893,11 +856,6 @@ if (userMenuBtn && userDropdownMenu) {
 
 }
 
-
-/*
-    CLOSE DROPDOWN WHEN CLICKING OUTSIDE
-*/
-
 document.addEventListener("click", function(event) {
 
     if (
@@ -912,11 +870,6 @@ document.addEventListener("click", function(event) {
     }
 
 });
-
-
-/*
-    LOGOUT MODAL
-*/
 
 document.addEventListener("DOMContentLoaded", function() {
 

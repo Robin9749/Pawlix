@@ -10,7 +10,7 @@ include("../config/config.php");
 
 $admin_id = intval($_SESSION['admin_id']);
 
-/* SAFE HELPER TO CREATE TABLE & ADD IMAGE COLUMN */
+/* SAFE TABLE AND COLUMN INITIALIZATION */
 if (!function_exists('safeAddColumnMessages')) {
     function safeAddColumnMessages($conn, $table, $column, $definition) {
         try {
@@ -46,21 +46,17 @@ safeAddColumnMessages($conn, 'messages', 'image', "TEXT DEFAULT NULL");
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )");
 
-/* ================= GET ADMIN DETAILS ================= */
 $admin_query = mysqli_query($conn, "SELECT * FROM admin WHERE admin_id = $admin_id");
 $admin = $admin_query ? mysqli_fetch_assoc($admin_query) : [];
 
-/* ================= SELECT CONVERSATION ================= */
 $selected_user_id = intval($_GET['user_id'] ?? 0);
 
-/* ================= SEND ADMIN MESSAGE WITH OPTIONAL IMAGE ================= */
 $error = "";
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $recipient_user_id = intval($_POST['recipient_user_id'] ?? 0);
     $message_text = trim($_POST['message'] ?? '');
     $subject = trim($_POST['subject'] ?? 'PawLix Support Response');
 
-    // Handle Image Upload
     $uploaded_image = "";
     if (!empty($_FILES['image']['name'])) {
         $upload_folder = "../uploads/";
@@ -107,7 +103,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-/* ================= GET ALL CONVERSATIONS ================= */
 $conversations = mysqli_query($conn, "
     SELECT 
         u.user_id, 
@@ -152,12 +147,10 @@ $conversations = mysqli_query($conn, "
     ORDER BY last_message_time DESC, u.user_id DESC
 ");
 
-/* ================= MARK USER MESSAGES AS READ WHEN SELECTED ================= */
 if ($selected_user_id > 0) {
     @mysqli_query($conn, "UPDATE messages SET is_read = 1 WHERE user_id = $selected_user_id AND sender_type = 'user'");
 }
 
-/* ================= SELECTED USER DETAILS ================= */
 $selected_user = null;
 if ($selected_user_id > 0) {
     $selected_query = mysqli_query($conn, "SELECT user_id, first_name, last_name, email, phone FROM user WHERE user_id = $selected_user_id LIMIT 1");
@@ -166,13 +159,11 @@ if ($selected_user_id > 0) {
     }
 }
 
-/* ================= SELECTED CHAT MESSAGES ================= */
 $chat_messages = null;
 if ($selected_user_id > 0) {
     $chat_messages = mysqli_query($conn, "SELECT * FROM messages WHERE user_id = $selected_user_id ORDER BY created_at ASC, message_id ASC");
 }
 
-/* ================= TOTAL UNREAD MESSAGES FOR ADMIN ================= */
 $unread_result = mysqli_query($conn, "SELECT COUNT(*) AS total FROM messages WHERE sender_type = 'user' AND is_read = 0");
 $totalUnread = 0;
 if ($unread_result) {
@@ -180,8 +171,8 @@ if ($unread_result) {
     $totalUnread = intval($row['total']);
 }
 
-/* ================= PUBLIC CONTACT INQUIRIES ================= */
-$public_inquiries = mysqli_query($conn, "SELECT * FROM contact_message ORDER BY created_at DESC LIMIT 15");
+$public_inquiries = mysqli_query($conn, "SELECT * FROM contact_message ORDER BY created_at DESC LIMIT 20");
+$inquiries_count = $public_inquiries ? mysqli_num_rows($public_inquiries) : 0;
 ?>
 
 <!DOCTYPE html>
@@ -201,6 +192,7 @@ $public_inquiries = mysqli_query($conn, "SELECT * FROM contact_message ORDER BY 
     --bg-sidebar: #e8dcc0;
     --bg-sidebar-hover: #ddceac;
     --primary-orange: #f2932b;
+    --primary-orange-hover: #e07f18;
     --primary-blue: #1f6fd6;
     --text-dark: #2b2b2b;
     --text-muted: #665444;
@@ -217,6 +209,7 @@ html, body { height: 100%; font-family: var(--font-family); background: var(--bg
 
 body { display: flex; flex-direction: column; min-height: 100vh; }
 
+/* TOPBAR */
 .topbar{
   background: #f2e6c9;
   height: 75px;
@@ -243,11 +236,12 @@ body { display: flex; flex-direction: column; min-height: 100vh; }
   padding-top: 20px;
 }
 
-.topbar .logout { color: var(--primary-blue); text-decoration: none; font-weight: 600; font-size: 14px; }
-.topbar .logout:hover { text-decoration: underline; }
+.topbar .logout { color: var(--primary-blue); text-decoration: none; font-weight: 600; font-size: 14px; transition: color 0.2s; }
+.topbar .logout:hover { text-decoration: underline; color: #1652a0; }
 
 .layout { display: flex; flex: 1; height: calc(100vh - 75px); }
 
+/* SIDEBAR */
 .sidebar {
     width: 240px;
     background: var(--bg-sidebar);
@@ -274,6 +268,7 @@ body { display: flex; flex-direction: column; min-height: 100vh; }
 .sidebar a.active { background: var(--primary-orange); color: white; box-shadow: 0 4px 12px rgba(242,147,43,0.35); }
 .sidebar .icon { width: 20px; text-align: center; font-size: 16px; }
 
+/* MAIN CONTENT */
 .main {
     flex: 1;
     padding: 24px 32px;
@@ -289,7 +284,7 @@ body { display: flex; flex-direction: column; min-height: 100vh; }
     margin-bottom: 16px;
 }
 
-.page-title h1 { margin: 0; font-size: 24px; font-weight: 700; color: #1a1a1a; }
+.page-title h1 { margin: 0; font-size: 24px; font-weight: 700; color: #1a1a1a; letter-spacing: -0.3px; }
 
 .unread-pill {
     background: var(--primary-orange);
@@ -323,12 +318,66 @@ body { display: flex; flex-direction: column; min-height: 100vh; }
 }
 
 .conversation-header {
-    padding: 16px 18px;
+    padding: 16px 18px 14px;
     border-bottom: 1px solid var(--border-color);
     background: #ebdcb8;
 }
 
-.conversation-header h3 { margin: 0 0 10px 0; font-size: 16px; font-weight: 700; color: var(--text-dark); }
+.conversation-header h3 { margin: 0 0 12px 0; font-size: 16px; font-weight: 700; color: var(--text-dark); letter-spacing: -0.2px; }
+
+/* SEGMENTED TAB PILLS */
+.tab-pills {
+    display: flex;
+    background: #dfcfb0;
+    padding: 3px;
+    border-radius: 24px;
+    border: 1px solid #d5c39e;
+    margin-bottom: 12px;
+}
+
+.tab-pill {
+    flex: 1;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 20px;
+    background: transparent;
+    color: #4a3223;
+    font-weight: 700;
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.tab-pill:hover {
+    color: #1a1a1a;
+}
+
+.tab-pill.active {
+    background: var(--primary-orange);
+    color: white;
+    box-shadow: 0 3px 10px rgba(242,147,43,0.35);
+}
+
+.pill-badge {
+    background: #e63946;
+    color: white;
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 12px;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.tab-pill.active .pill-badge {
+    background: #ffffff;
+    color: #e63946;
+}
 
 .search-box-wrapper { position: relative; }
 .search-box-wrapper input {
@@ -341,7 +390,7 @@ body { display: flex; flex-direction: column; min-height: 100vh; }
     font-size: 13px;
     outline: none;
     box-sizing: border-box;
-    transition: all 0.2s;
+    transition: all 0.2s ease;
 }
 
 .search-box-wrapper input:focus { background: #ffffff; border-color: var(--primary-orange); box-shadow: 0 0 0 3px rgba(242,147,43,0.15); }
@@ -356,17 +405,8 @@ body { display: flex; flex-direction: column; min-height: 100vh; }
 .conversations-scroll::-webkit-scrollbar { width: 5px; }
 .conversations-scroll::-webkit-scrollbar-thumb { background: #cbb997; border-radius: 10px; }
 
-.inquiry-section-title {
-    padding: 10px 18px;
-    font-size: 11px;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.6px;
-    background: #dcc9a3;
-    color: #4a3223;
-    border-bottom: 1px solid var(--border-color);
-    border-top: 1px solid var(--border-color);
-}
+.tab-content { display: none; }
+.tab-content.active { display: block; }
 
 .conversation {
     display: block;
@@ -374,7 +414,7 @@ body { display: flex; flex-direction: column; min-height: 100vh; }
     text-decoration: none;
     color: var(--text-dark);
     border-bottom: 1px solid rgba(221,204,174,0.6);
-    transition: background 0.2s;
+    transition: background 0.2s ease;
 }
 
 .conversation:hover { background: #ddceac; }
@@ -402,26 +442,30 @@ body { display: flex; flex-direction: column; min-height: 100vh; }
 
 .conversation-info { min-width: 0; flex: 1; }
 .conversation-name { font-size: 13.5px; font-weight: 700; line-height: 1.2; }
-.conversation-preview { font-size: 12px; opacity: 0.8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 3px; }
+.conversation-preview { font-size: 12px; opacity: 0.82; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 3px; }
 
 .conversation-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
 .conversation-time { font-size: 10.5px; opacity: 0.8; white-space: nowrap; }
 .unread-badge { background: #e63946; color: white; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 10.5px; font-weight: 700; }
 
-.inquiry-item {
+/* INQUIRY CARDS */
+.inquiry-card {
     padding: 14px 18px;
     border-bottom: 1px solid rgba(221,204,174,0.6);
-    font-size: 12px;
     background: #f4eaaf;
-    transition: background 0.2s;
+    transition: background 0.2s ease;
 }
 
-.inquiry-item:hover { background: #ebdca0; }
-.inquiry-item strong { color: #1a1a1a; font-size: 12.5px; }
-.inquiry-item p { margin: 4px 0 4px; color: #443427; line-height: 1.45; word-break: break-word; }
-.inquiry-item .date { font-size: 10px; color: #7a6350; font-weight: 600; display: block; margin-top: 4px; }
+.inquiry-card:hover { background: #ebdca0; }
+.inquiry-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
+.inquiry-name { font-size: 13px; font-weight: 700; color: #2b2b2b; }
+.inquiry-email { font-size: 11.5px; color: #5c4320; margin-bottom: 6px; display: block; word-break: break-all; }
+.inquiry-subject { font-size: 12px; font-weight: 700; color: #1a1a1a; margin-bottom: 4px; background: #e8d99c; padding: 3px 8px; border-radius: 6px; display: inline-block; }
+.inquiry-message { font-size: 12px; color: #443427; line-height: 1.45; word-break: break-word; margin-top: 4px; }
+.inquiry-date { font-size: 10.5px; color: #7a6350; font-weight: 600; display: block; margin-top: 8px; text-align: right; }
 
-.empty-list { padding: 24px 18px; text-align: center; color: #806d5c; font-size: 12.5px; }
+.empty-list { padding: 36px 20px; text-align: center; color: #806d5c; font-size: 13px; font-weight: 500; }
+.empty-list-icon { font-size: 32px; margin-bottom: 8px; opacity: 0.8; }
 
 /* CHAT WINDOW (RIGHT PANEL) */
 .chat-window { flex: 1; display: flex; flex-direction: column; min-width: 0; background: #f5ecd7; }
@@ -441,7 +485,6 @@ body { display: flex; flex-direction: column; min-height: 100vh; }
 .chat-header-info h3 { margin: 0; font-size: 16px; font-weight: 700; color: var(--text-dark); }
 .chat-header-info p { margin: 1px 0 0; font-size: 11.5px; color: var(--online-green); font-weight: 600; }
 
-/* CHAT BODY SCROLL */
 .chat-body {
     flex: 1;
     overflow-y: auto;
@@ -487,7 +530,6 @@ body { display: flex; flex-direction: column; min-height: 100vh; }
 
 .message-text { margin: 0; white-space: pre-wrap; word-break: break-word; }
 
-/* CHAT ATTACHED IMAGE STYLING */
 .message-img-container { margin-top: 8px; }
 .message-img {
     max-width: 250px;
@@ -514,7 +556,6 @@ body { display: flex; flex-direction: column; min-height: 100vh; }
 .message-row.admin .message-subject { border-bottom-color: rgba(255,255,255,0.35); }
 .message-time { display: block; text-align: right; font-size: 10px; opacity: 0.75; margin-top: 4px; }
 
-/* COMPOSER */
 .composer {
     padding: 14px 22px;
     background: var(--bg-topbar);
@@ -608,7 +649,7 @@ body { display: flex; flex-direction: column; min-height: 100vh; }
 
 .no-conversation-icon { font-size: 52px; margin-bottom: 12px; }
 .no-conversation h2 { color: #4a3223; margin: 0 0 6px 0; font-size: 20px; font-weight: 700; }
-.no-conversation p { font-size: 13.5px; margin: 0; }
+.no-conversation p { font-size: 13.5px; margin: 0; max-width: 320px; line-height: 1.5; }
 </style>
 </head>
 
@@ -650,72 +691,103 @@ body { display: flex; flex-direction: column; min-height: 100vh; }
             <!-- LEFT PANEL: CONVERSATIONS & INQUIRIES -->
             <div class="conversation-list">
                 <div class="conversation-header">
-                    <h3>Conversations & Inquiries</h3>
+                    <h3>Inbox & Inquiries</h3>
+                    
+                    <!-- TAB PILLS -->
+                    <div class="tab-pills" role="tablist">
+                        <button type="button" class="tab-pill active" id="pill-chats" onclick="switchTab('chats')" role="tab">
+                            💬 User Chats
+                            <?php if ($totalUnread > 0): ?>
+                                <span class="pill-badge"><?php echo $totalUnread; ?></span>
+                            <?php endif; ?>
+                        </button>
+                        <button type="button" class="tab-pill" id="pill-inquiries" onclick="switchTab('inquiries')" role="tab">
+                            📩 Inquiries
+                            <?php if ($inquiries_count > 0): ?>
+                                <span class="pill-badge" style="background:#4a3223; color:#fff;"><?php echo $inquiries_count; ?></span>
+                            <?php endif; ?>
+                        </button>
+                    </div>
+
                     <div class="search-box-wrapper">
                         <span class="search-icon">🔍</span>
-                        <input type="text" id="searchContacts" placeholder="Search contacts by name..." onkeyup="filterContacts()">
+                        <input type="text" id="searchContacts" placeholder="Search by name, email..." onkeyup="filterContacts()">
                     </div>
                 </div>
 
                 <div class="conversations-scroll" id="conversationsContainer">
-                    <div class="inquiry-section-title">💬 Live User Chats</div>
-                    <?php if (!$conversations || mysqli_num_rows($conversations) === 0): ?>
-                        <div class="empty-list">No user chat threads yet.</div>
-                    <?php else: ?>
-                        <?php while ($conv = mysqli_fetch_assoc($conversations)): ?>
-                            <?php 
-                                $conv_user_id = intval($conv['user_id']);
-                                $conv_name = trim(($conv['first_name'] ?? '') . ' ' . ($conv['last_name'] ?? ''));
-                                if (empty($conv_name)) { $conv_name = $conv['email']; }
-                                $initial = strtoupper(substr($conv_name, 0, 1));
-                                $active = ($selected_user_id === $conv_user_id);
-                                $unread_cnt = intval($conv['unread_count'] ?? 0);
-                                $preview_text = !empty($conv['last_message']) ? $conv['last_message'] : (!empty($conv['last_message_image']) ? '📷 [Image attachment]' : 'No messages yet');
-                            ?>
-                            <a class="conversation <?php echo $active ? 'active' : ''; ?>" href="messages.php?user_id=<?php echo $conv_user_id; ?>" data-name="<?php echo htmlspecialchars(strtolower($conv_name)); ?>">
-                                <div class="conversation-top">
-                                    <div class="avatar-container">
-                                        <div class="avatar"><?php echo htmlspecialchars($initial); ?></div>
-                                        <span class="status-dot"></span>
-                                    </div>
-
-                                    <div class="conversation-info">
-                                        <div class="conversation-name"><?php echo htmlspecialchars($conv_name); ?></div>
-                                        <div class="conversation-preview"><?php echo htmlspecialchars($preview_text); ?></div>
-                                    </div>
-
-                                    <div class="conversation-meta">
-                                        <?php if (!empty($conv['last_message_time'])): ?>
-                                            <div class="conversation-time"><?php echo date('M d', strtotime($conv['last_message_time'])); ?></div>
-                                        <?php endif; ?>
-
-                                        <?php if ($unread_cnt > 0): ?>
-                                            <span class="unread-badge"><?php echo $unread_cnt; ?></span>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-                            </a>
-                        <?php endwhile; ?>
-                    <?php endif; ?>
-
-                    <div class="inquiry-section-title">📩 Public Contact Inquiries</div>
-                    <?php if ($public_inquiries && mysqli_num_rows($public_inquiries) > 0): ?>
-                        <?php while ($inq = mysqli_fetch_assoc($public_inquiries)): ?>
-                            <div class="inquiry-item">
-                                <strong><?php echo htmlspecialchars($inq['full_name']); ?></strong> 
-                                <span style="font-size:11px; color:#665444;">(<?php echo htmlspecialchars($inq['email']); ?>)</span>
-                                <p><strong>Subject:</strong> <?php echo htmlspecialchars($inq['subject']); ?></p>
-                                <p><?php echo htmlspecialchars($inq['message']); ?></p>
-                                <span class="date">📅 <?php echo date('M d, Y g:i A', strtotime($inq['created_at'])); ?></span>
+                    
+                    <!-- TAB 1: USER CHATS -->
+                    <div class="tab-content active" id="chatsTab">
+                        <?php if (!$conversations || mysqli_num_rows($conversations) === 0): ?>
+                            <div class="empty-list">
+                                <div class="empty-list-icon">💬</div>
+                                No user chat threads yet.
                             </div>
-                        <?php endwhile; ?>
-                    <?php else: ?>
-                        <div class="empty-list">No guest contact form submissions yet.</div>
-                    <?php endif; ?>
+                        <?php else: ?>
+                            <?php while ($conv = mysqli_fetch_assoc($conversations)): ?>
+                                <?php 
+                                    $conv_user_id = intval($conv['user_id']);
+                                    $conv_name = trim(($conv['first_name'] ?? '') . ' ' . ($conv['last_name'] ?? ''));
+                                    if (empty($conv_name)) { $conv_name = $conv['email']; }
+                                    $initial = strtoupper(substr($conv_name, 0, 1));
+                                    $active = ($selected_user_id === $conv_user_id);
+                                    $unread_cnt = intval($conv['unread_count'] ?? 0);
+                                    $preview_text = !empty($conv['last_message']) ? $conv['last_message'] : (!empty($conv['last_message_image']) ? '📷 [Image attachment]' : 'No messages yet');
+                                ?>
+                                <a class="conversation <?php echo $active ? 'active' : ''; ?>" href="messages.php?user_id=<?php echo $conv_user_id; ?>" data-name="<?php echo htmlspecialchars(strtolower($conv_name . ' ' . $conv['email'])); ?>">
+                                    <div class="conversation-top">
+                                        <div class="avatar-container">
+                                            <div class="avatar"><?php echo htmlspecialchars($initial); ?></div>
+                                            <span class="status-dot"></span>
+                                        </div>
+
+                                        <div class="conversation-info">
+                                            <div class="conversation-name"><?php echo htmlspecialchars($conv_name); ?></div>
+                                            <div class="conversation-preview"><?php echo htmlspecialchars($preview_text); ?></div>
+                                        </div>
+
+                                        <div class="conversation-meta">
+                                            <?php if (!empty($conv['last_message_time'])): ?>
+                                                <div class="conversation-time"><?php echo date('M d', strtotime($conv['last_message_time'])); ?></div>
+                                            <?php endif; ?>
+
+                                            <?php if ($unread_cnt > 0): ?>
+                                                <span class="unread-badge"><?php echo $unread_cnt; ?></span>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                </a>
+                            <?php endwhile; ?>
+                        <?php endif; ?>
+                    </div>
+
+                    <!-- TAB 2: GUEST INQUIRIES -->
+                    <div class="tab-content" id="inquiriesTab">
+                        <?php if ($public_inquiries && mysqli_num_rows($public_inquiries) > 0): ?>
+                            <?php while ($inq = mysqli_fetch_assoc($public_inquiries)): ?>
+                                <div class="inquiry-card">
+                                    <div class="inquiry-header">
+                                        <span class="inquiry-name">👤 <?php echo htmlspecialchars($inq['full_name']); ?></span>
+                                    </div>
+                                    <span class="inquiry-email">✉️ <?php echo htmlspecialchars($inq['email']); ?> <?php echo !empty($inq['phone']) ? '• 📞 ' . htmlspecialchars($inq['phone']) : ''; ?></span>
+                                    <div class="inquiry-subject">📌 <?php echo htmlspecialchars($inq['subject']); ?></div>
+                                    <p class="inquiry-message"><?php echo htmlspecialchars($inq['message']); ?></p>
+                                    <span class="inquiry-date">📅 <?php echo date('M d, Y g:i A', strtotime($inq['created_at'])); ?></span>
+                                </div>
+                            <?php endwhile; ?>
+                        <?php else: ?>
+                            <div class="empty-list">
+                                <div class="empty-list-icon">📩</div>
+                                No guest contact submissions yet.
+                            </div>
+                        <?php endif; ?>
+                    </div>
+
                 </div>
             </div>
 
-            <!-- RIGHT PANEL: ACTIVE CHAT WINDOW -->
+            <!-- RIGHT PANEL: CHAT WINDOW -->
             <?php if ($selected_user): ?>
                 <div class="chat-window">
                     <div class="chat-header">
@@ -814,7 +886,7 @@ body { display: flex; flex-direction: column; min-height: 100vh; }
                         <div>
                             <div class="no-conversation-icon">✉️</div>
                             <h2>Select a Conversation</h2>
-                            <p>Choose a user chat thread from the left list to view their live conversation or review guest inquiries.</p>
+                            <p>Choose a user chat thread from the left list to view their live conversation or switch to Inquiries to review guest contact submissions.</p>
                         </div>
                     </div>
                 </div>
@@ -844,6 +916,28 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 });
 
+function switchTab(tabName) {
+    const chatsTab = document.getElementById("chatsTab");
+    const inquiriesTab = document.getElementById("inquiriesTab");
+    const pillChats = document.getElementById("pill-chats");
+    const pillInquiries = document.getElementById("pill-inquiries");
+
+    if (tabName === 'chats') {
+        chatsTab.classList.add("active");
+        inquiriesTab.classList.remove("active");
+        pillChats.classList.add("active");
+        pillInquiries.classList.remove("active");
+    } else {
+        inquiriesTab.classList.add("active");
+        chatsTab.classList.remove("active");
+        pillInquiries.classList.add("active");
+        pillChats.classList.remove("active");
+    }
+
+    // Re-run filter in newly active tab
+    filterContacts();
+}
+
 function handleImageSelection(input) {
     if (input.files && input.files[0]) {
         const reader = new FileReader();
@@ -864,11 +958,13 @@ function clearSelectedImage() {
 
 function filterContacts() {
     const query = document.getElementById("searchContacts").value.toLowerCase();
-    const items = document.querySelectorAll("#conversationsContainer .conversation");
+    const activeTab = document.querySelector(".tab-content.active");
+    if (!activeTab) return;
     
+    const items = activeTab.querySelectorAll(".conversation, .inquiry-card");
     items.forEach(function(item) {
-        const name = item.getAttribute("data-name") || "";
-        if (name.includes(query)) {
+        const text = (item.getAttribute("data-name") || item.innerText).toLowerCase();
+        if (text.includes(query)) {
             item.style.display = "block";
         } else {
             item.style.display = "none";

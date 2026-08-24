@@ -2,38 +2,52 @@
 session_start();
 include("../config/config.php");
 
-$success = "";
-$error = "";
-
-if (isset($_GET['reset']) && $_GET['reset'] === 'success') {
-    $success = "Password reset successfully! You can now log in with your new password.";
+/* SAFE HELPER TO PREVENT DUPLICATE COLUMN EXCEPTION IN PHP 8.1+ FOR ADMIN TABLE */
+if (!function_exists('safeAddColumnForgotAdmin')) {
+    function safeAddColumnForgotAdmin($conn, $table, $column, $definition) {
+        try {
+            $check = mysqli_query($conn, "SHOW COLUMNS FROM `$table` LIKE '$column'");
+            if ($check && mysqli_num_rows($check) == 0) {
+                mysqli_query($conn, "ALTER TABLE `$table` ADD COLUMN `$column` $definition");
+            }
+        } catch (Throwable $e) {}
+    }
 }
 
-if (isset($_POST['login'])) {
-    $email = trim($_POST['email'] ?? '');
-    $password = trim($_POST['password'] ?? '');
+safeAddColumnForgotAdmin($conn, 'admin', 'reset_token', "VARCHAR(255) DEFAULT NULL");
+safeAddColumnForgotAdmin($conn, 'admin', 'reset_token_expiry', "DATETIME DEFAULT NULL");
 
-    if ($email === '' || $password === '') {
-        $error = "Please enter both email and password.";
+$error = "";
+
+if (isset($_POST['request_reset'])) {
+    $email = trim($_POST['email'] ?? '');
+
+    if ($email === '') {
+        $error = "Please enter your admin email address.";
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = "Please enter a valid email address.";
     } else {
         $email_esc = mysqli_real_escape_string($conn, $email);
-        $sql = "SELECT * FROM admin WHERE email='$email_esc' LIMIT 1";
-        $result = mysqli_query($conn, $sql);
+        $admin_query = mysqli_query($conn, "SELECT admin_id, email FROM admin WHERE email = '$email_esc' LIMIT 1");
 
-        if ($result && mysqli_num_rows($result) == 1) {
-            $admin = mysqli_fetch_assoc($result);
+        if ($admin_query && mysqli_num_rows($admin_query) === 1) {
+            $a = mysqli_fetch_assoc($admin_query);
+            $token = bin2hex(random_bytes(16));
 
-            if ($password == $admin['password'] || password_verify($password, $admin['password'])) {
-                $_SESSION['admin_id'] = $admin['admin_id'];
-                $_SESSION['admin_name'] = $admin['name'] ?? $admin['first_name'] ?? 'Admin';
-
-                header("Location: dashboard.php");
+            $update_sql = "UPDATE admin SET reset_token = '$token', reset_token_expiry = DATE_ADD(NOW(), INTERVAL 2 HOUR) WHERE admin_id = " . intval($a['admin_id']);
+            
+            if (mysqli_query($conn, $update_sql)) {
+                $_SESSION['reset_admin_id'] = $a['admin_id'];
+                $_SESSION['reset_admin_email'] = $a['email'];
+                $_SESSION['reset_admin_token'] = $token;
+                
+                header("Location: reset_password.php?token=" . urlencode($token));
                 exit();
             } else {
-                $error = "Incorrect Password!";
+                $error = "Unable to process request. Please try again.";
             }
         } else {
-            $error = "Username/Email not found!";
+            $error = "No admin account was found with that email address.";
         }
     }
 }
@@ -43,10 +57,9 @@ if (isset($_POST['login'])) {
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Admin Login | PawLix</title>
+<title>Forgot Password | Admin PawLix</title>
 
 <style>
-
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
 *{
@@ -128,18 +141,6 @@ body{
   color: white;
 }
 
-.eye {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    user-select: none;
-    color: #4a3223;
-}
-.eye:hover {
-    color: #7c7a7a;
-}
-
 .wrapper{
     display:flex;
     flex: 1;
@@ -207,17 +208,6 @@ hr{
   text-align: left;
 }
 
-.success{
-  color: #1e6e2e;
-  background: #e5f6e8;
-  border: 1px solid #bfe3c4;
-  padding: 10px 14px;
-  border-radius: 8px;
-  margin-bottom: 16px;
-  font-size: 14px;
-  text-align: left;
-}
-
 .input-wrap{
   position: relative;
   width: 100%;
@@ -232,12 +222,6 @@ hr{
   color: #8a8a8a;
   font-size: 14px;
   line-height: 1;
-}
-
-.input-wrap span.eye{
-  left: auto;
-  right: 16px;
-  cursor: pointer;
 }
 
 .input-wrap input{
@@ -259,34 +243,6 @@ hr{
 
 .input-wrap input::placeholder{
   color: #9a9a9a;
-}
-
-.remember-row{
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom:18px;
-  font-size: 12.5px;
-  text-align: left;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.remember-row label{
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #2b2b2b;
-}
-
-.remember-row a{
-  color: #1f6fd6;
-  text-decoration: none;
-  font-weight: 500;
-}
-
-.remember-row a:hover{
-  text-decoration: underline;
 }
 
 button.login-btn{
@@ -339,9 +295,9 @@ button.login-btn:hover{
 <body>
 
 <div class="navbar">
-   <div class="logo">
-      <a href="../index.php"><img src="../assets/images/logo.png" alt="PawLix logo"></a>
-    </div>
+  <div class="logo">
+    <a href="../index.php"><img src="../assets/images/logo.png" alt="PawLix logo"></a>
+  </div>
   <div class="links">
     <a href="../index.php">Home</a>
     <a href="../browse.php">Browse Dogs</a>
@@ -365,74 +321,29 @@ button.login-btn:hover{
   <div class="right">
     <div class="form-box">
 
-      <h2>Welcome Back!</h2>
-      <p>Please Log in to your admin account</p>
+      <h2>Forgot Password?</h2>
+      <p>Enter your admin account email address to reset your password</p>
       <hr>
-
-      <?php if ($success != "") { ?>
-        <div class="success"><?php echo $success; ?></div>
-      <?php } ?>
 
       <?php if ($error != "") { ?>
         <div class="error"><?php echo $error; ?></div>
       <?php } ?>
 
-      <form method="POST">
-
+      <form method="POST" action="forgot_password.php">
         <div class="input-wrap">
           <span>✉️</span>
-          <input type="email" name="email" placeholder="Email Address" required>
+          <input type="email" name="email" placeholder="Admin Email Address" required>
         </div>
 
-        <div class="input-wrap">
-          <span>🔒</span>
-          <input type="password" name="password" id="pwd" placeholder="Password" required>
-          <span class="eye" id="eye-pwd" onclick="togglePwd('pwd')">
-            <svg class="eye-icon eye-open" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-               <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
-            </svg>
-            <svg class="eye-icon eye-closed" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display:none;">
-                <path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.44-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.17c0-1.66-1.34-3-3-3l-.17.02z"/>
-            </svg>
-          </span>
-        </div>
-
-        <div class="remember-row">
-          <label><input type="checkbox" name="remember"> Remember Me</label>
-          <a href="forgot_password.php">Forget Password?</a>
-        </div>
-
-        <button type="submit" name="login" class="login-btn">Log In</button>
-
+        <button type="submit" name="request_reset" class="login-btn">Continue ➔</button>
       </form>
 
-      <p class="bottom-text">Don't have an account ? <a href="../signup.php">Signup</a></p>
+      <p class="bottom-text">Remember your password ? <a href="login.php">Log In</a></p>
 
     </div>
   </div>
 
 </div>
-
-<script>
-function togglePwd(id) {
-    const input = document.getElementById(id);
-    const eyeBtn = document.getElementById('eye-' + id);
-    if (!input || !eyeBtn) return;
-
-    const openIcon = eyeBtn.querySelector('.eye-open');
-    const closedIcon = eyeBtn.querySelector('.eye-closed');
-
-    if (input.type === 'password') {
-        input.type = 'text';
-        if (openIcon) openIcon.style.display = 'none';
-        if (closedIcon) closedIcon.style.display = 'inline-block';
-    } else {
-        input.type = 'password';
-        if (openIcon) openIcon.style.display = 'inline-block';
-        if (closedIcon) closedIcon.style.display = 'none';
-    }
-}
-</script>
 
 </body>
 </html>

@@ -6,20 +6,31 @@ $error = "";
 $success = "";
 
 if (isset($_POST['signup'])) {
-    $name = trim($_POST['name']);
-    $email = trim($_POST['email']);
-    $password = trim($_POST['password']);
-    $confirm_password = trim($_POST['confirm_password']);
+    $name = trim($_POST['name'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    $password = trim($_POST['password'] ?? '');
+    $confirm_password = trim($_POST['confirm_password'] ?? '');
 
-    if ($password != $confirm_password) {
+    if (empty($name) || empty($email) || empty($password)) {
+        $error = "Please fill in all required fields.";
+    } elseif ($password !== $confirm_password) {
         $error = "Passwords do not match!";
     } else {
-        $sql = "INSERT INTO Admin (name, email, password) VALUES ('$name', '$email', '$password')";
+        $name_esc = mysqli_real_escape_string($conn, $name);
+        $email_esc = mysqli_real_escape_string($conn, $email);
+        $pwd_esc = mysqli_real_escape_string($conn, $password);
 
-        if (mysqli_query($conn, $sql)) {
-            $success = "Account created successfully! You can now log in.";
+        $check_email = mysqli_query($conn, "SELECT admin_id FROM admin WHERE email = '$email_esc' LIMIT 1");
+        if ($check_email && mysqli_num_rows($check_email) > 0) {
+            $error = "An account with this email address already exists.";
         } else {
-            $error = "Something went wrong: " . mysqli_error($conn);
+            $sql = "INSERT INTO admin (name, email, password) VALUES ('$name_esc', '$email_esc', '$pwd_esc')";
+
+            if (mysqli_query($conn, $sql)) {
+                $success = "Account created successfully! You can now log in.";
+            } else {
+                $error = "Something went wrong: " . mysqli_error($conn);
+            }
         }
     }
 }
@@ -28,7 +39,8 @@ if (isset($_POST['signup'])) {
 <!DOCTYPE html>
 <html>
 <head>
-<title>Sign Up</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin Sign Up | PawLix</title>
 
 <style>
 
@@ -84,7 +96,7 @@ body{
   font-size: 15px;
 }
 
-.navbar .buttons button{
+.navbar .buttons button, .navbar .buttons a{
   padding: 9px 24px;
   border-radius: 30px;
   border: none;
@@ -93,10 +105,12 @@ body{
   font-weight: 600;
   font-size: 14px;
   font-family: inherit;
+  text-decoration: none;
+  display: inline-block;
   transition: opacity 0.2s ease;
 }
 
-.navbar .buttons button:hover{
+.navbar .buttons button:hover, .navbar .buttons a:hover{
   opacity: 0.85;
 }
 
@@ -134,7 +148,7 @@ body{
 .left{
     flex: 1;
     overflow: hidden;
-        display: flex;
+    display: flex;
 }
 
 .left img{
@@ -150,7 +164,7 @@ body{
     display: flex;
     justify-content: center;
     align-items: flex-start;
-    padding-top: 90px;  
+    padding-top: 70px;  
 }
 
 .form-box{
@@ -158,7 +172,6 @@ body{
   max-width: 430px;
   text-align: center;
 }
-
 
 .form-box h2{
   color: #1f6fd6;
@@ -176,13 +189,24 @@ body{
 hr{
   border: none;
   border-top: 1px solid #ddccae;
-  margin: 15px 0 28px;
+  margin: 15px 0 24px;
 }
 
 .error{
   color: #b3261e;
   background: #fdeaea;
   border: 1px solid #f3c6c6;
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  text-align: left;
+}
+
+.success{
+  color: #1e6e2e;
+  background: #e5f6e8;
+  border: 1px solid #bfe3c4;
   padding: 10px 14px;
   border-radius: 8px;
   margin-bottom: 16px;
@@ -277,9 +301,9 @@ button.signup-btn:hover{
 }
 
 .bottom-text{
-  font-size: 12px;
+  font-size: 13px;
   color: #333;
-  padding-top: 8px;
+  padding-top: 10px;
 }
 
 .bottom-text a{
@@ -288,6 +312,17 @@ button.signup-btn:hover{
   text-decoration: underline;
 }
 
+@media (max-width: 768px){
+  .left{
+    display: none;
+  }
+  .navbar .links{
+    display: none;
+  }
+  .right{
+    padding: 40px 20px;
+  }
+}
 </style>
 </head>
 
@@ -295,18 +330,18 @@ button.signup-btn:hover{
 
 <div class="navbar">
    <div class="logo">
-      <img src="../assets/images/logo.png" alt="PawLix logo">
+      <a href="../index.php"><img src="../assets/images/logo.png" alt="PawLix logo"></a>
     </div>
   <div class="links">
-    <a href="#">Home</a>
-    <a href="#">Browse Dogs</a>
-    <a href="#">About</a>
-    <a href="#">Contact</a>
-    <a href="#">Report a Dog</a>
+    <a href="../index.php">Home</a>
+    <a href="../browse.php">Browse Dogs</a>
+    <a href="../about.php">About</a>
+    <a href="../contact.php">Contact</a>
+    <a href="../report.php">Report a Dog</a>
   </div>
   <div class="buttons">
-    <button class="btn-signup">Sign Up</button>
-    <button class="btn-login">Login</button>
+    <a href="signup.php" class="btn-signup">Sign Up</a>
+    <a href="../login.php" class="btn-login">Login</a>
   </div>
 </div>
 
@@ -342,34 +377,35 @@ button.signup-btn:hover{
           <span>✉️</span>
           <input type="email" name="email" placeholder="Email Address" required>
         </div>
-          <div class="input-wrap">
+        
+        <div class="input-wrap">
             <span>🔒</span>
-              <input type="password" name="password" id="pwd" placeholder="Create Password" required>
-  <span class="eye" id="eye-pwd" onclick="togglePwd('pwd')">
-    <svg class="eye-icon eye-open" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
-    </svg>
+            <input type="password" name="password" id="pwd" placeholder="Create Password" required>
+            <span class="eye" id="eye-pwd" onclick="togglePwd('pwd')">
+                <svg class="eye-icon eye-open" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                </svg>
 
-    <svg class="eye-icon eye-closed" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display:none;">
-      <path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.44-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.17c0-1.66-1.34-3-3-3l-.17.02z"/>
-    </svg>
-  </span>
-</div>
+                <svg class="eye-icon eye-closed" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display:none;">
+                  <path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.44-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.17c0-1.66-1.34-3-3-3l-.17.02z"/>
+                </svg>
+            </span>
+        </div>
 
-<div class="input-wrap">
-  <span>🔒</span>
-  <input type="password" name="confirm_password" id="cpwd" placeholder="Confirm Password" required>
-  <span class="eye" id="eye-cpwd" onclick="togglePwd('cpwd')">
+        <div class="input-wrap">
+          <span>🔒</span>
+          <input type="password" name="confirm_password" id="cpwd" placeholder="Confirm Password" required>
+          <span class="eye" id="eye-cpwd" onclick="togglePwd('cpwd')">
+            <svg class="eye-icon eye-open" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+            </svg>
 
-    <svg class="eye-icon eye-open" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
-    </svg>
+            <svg class="eye-icon eye-closed" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display:none;">
+              <path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.44-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.17c0-1.66-1.34-3-3-3l-.17.02z"/>
+            </svg>
+          </span>
+        </div>
 
-    <svg class="eye-icon eye-closed" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display:none;">
-      <path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.44-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.17c0-1.66-1.34-3-3-3l-.17.02z"/>
-    </svg>
-  </span>
-</div>
         <div class="terms-row">
           <input type="checkbox" required>
           <span>I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></span>

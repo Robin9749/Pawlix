@@ -6,8 +6,8 @@ if (!isset($_SESSION['admin_id'])) {
 }
 include("../config/config.php");
 
-$admin_id = $_SESSION['admin_id'];
-$stmt = mysqli_prepare($conn, "SELECT name, password FROM Admin WHERE admin_id = ?");
+$admin_id = intval($_SESSION['admin_id']);
+$stmt = mysqli_prepare($conn, "SELECT email, password FROM admin WHERE admin_id = ?");
 mysqli_stmt_bind_param($stmt, "i", $admin_id);
 mysqli_stmt_execute($stmt);
 $result = mysqli_stmt_get_result($stmt);
@@ -17,39 +17,40 @@ mysqli_stmt_close($stmt);
 $success_msg = "";
 $error_msg = "";
 
-if (isset($_POST['update_name'])) {
-    $name = trim($_POST['name']);
-    if (!empty($name)) {
-        $stmt = mysqli_prepare($conn, "UPDATE Admin SET name = ? WHERE admin_id = ?"); 
-        mysqli_stmt_bind_param($stmt, "si", $name, $admin_id);
+if (isset($_POST['update_email'])) {
+    $email = trim($_POST['email'] ?? '');
+    if (!empty($email) && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $stmt = mysqli_prepare($conn, "UPDATE admin SET email = ? WHERE admin_id = ?"); 
+        mysqli_stmt_bind_param($stmt, "si", $email, $admin_id);
         if (mysqli_stmt_execute($stmt)) {
-            $success_msg = "Name updated successfully!";
-            $admin['name'] = $name; 
+            $success_msg = "Email address updated successfully!";
+            $admin['email'] = $email; 
         } else {
             $error_msg = "Something went wrong. Please try again.";
         }
         mysqli_stmt_close($stmt);
     } else {
-        $error_msg = "Name cannot be empty.";
+        $error_msg = "Please enter a valid email address.";
     }
 }
 
 if (isset($_POST['update_password'])) {
-    $current_password = $_POST['current_password'];
-    $new_password     = $_POST['new_password'];
-    $confirm_password = $_POST['confirm_password'];
+    $current_password = $_POST['current_password'] ?? '';
+    $new_password     = $_POST['new_password'] ?? '';
+    $confirm_password = $_POST['confirm_password'] ?? '';
 
     if (empty($current_password) || empty($new_password) || empty($confirm_password)) {
         $error_msg = "Please fill in all password fields.";
     } elseif ($new_password !== $confirm_password) {
         $error_msg = "New password and Confirm password do not match.";
-    } elseif ($current_password !== $admin['password']) {
+    } elseif ($current_password !== $admin['password'] && !password_verify($current_password, $admin['password'])) {
         $error_msg = "Current password is incorrect.";
     } else {
-        $stmt = mysqli_prepare($conn, "UPDATE Admin SET password = ? WHERE admin_id = ?");
+        $stmt = mysqli_prepare($conn, "UPDATE admin SET password = ? WHERE admin_id = ?");
         mysqli_stmt_bind_param($stmt, "si", $new_password, $admin_id);
         if (mysqli_stmt_execute($stmt)) {
             $success_msg = "Password updated successfully!";
+            $admin['password'] = $new_password;
         } else {
             $error_msg = "Something went wrong. Please try again.";
         }
@@ -62,7 +63,7 @@ if (isset($_POST['update_password'])) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Settings - PawLix</title>
+<title>Settings - PawLix Admin</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
@@ -337,7 +338,7 @@ body{
   <div class="sidebar">
     <a href="dashboard.php"><span class="icon">🏠</span> Dashboard</a>
     <a href="dogs.php"><span class="icon">🐾</span> Dogs</a>
-        <a href="reported_dogs.php"><span class="icon">🚨</span> Report Dogs</a>
+    <a href="reported_dogs.php"><span class="icon">🚨</span> Report Dogs</a>
     <a href="adoption_requests.php"><span class="icon">📋</span> Adoption Request</a>
     <a href="messages.php"><span class="icon">✉️</span> Messages</a>
     <a href="users.php"><span class="icon">👤</span> Users</a>
@@ -361,10 +362,10 @@ body{
         <h2>Profile Information</h2>
         <form method="post" action="">
           <div class="form-group">
-            <label>Admin Name</label>
-            <input type="text" name="name" value="<?php echo htmlspecialchars($admin['name'] ?? 'Admin'); ?>" required>
+            <label>Email Address</label>
+            <input type="email" name="email" value="<?php echo htmlspecialchars($admin['email'] ?? ''); ?>" placeholder="Enter admin email address" required>
           </div>
-          <button type="submit" name="update_name" class="btn-save">Update Name</button>
+          <button type="submit" name="update_email" class="btn-save">Update Email Address</button>
         </form>
       </div>
 

@@ -22,7 +22,7 @@ $dogs_sql = "SELECT dog_id, name, breed, description, image
              LIMIT 6";
 $dogs_result = mysqli_query($conn, $dogs_sql);
 
-function pawlix_short_text($text, $limit = 140) {
+function pawlix_short_text($text, $limit = 130) {
     $text = trim((string) $text);
     if (mb_strlen($text) <= $limit) {
         return $text;
@@ -148,23 +148,30 @@ function pawlix_short_text($text, $limit = 140) {
   border-radius: 10px;
 }
 
-/* DOG CARD STYLING WITH FLOATING WISHLIST HEART */
-.dog-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 28px;
-    margin-top: 30px;
+.explore {
+    padding: 60px 40px;
+    text-align: center;
 }
 
-@media (max-width: 900px) {
+.dog-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 390px));
+    justify-content: center;
+    gap: 48px;
+    margin-top: 35px;
+}
+
+@media (max-width: 1024px) {
     .dog-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(2, minmax(0, 390px));
+        gap: 32px;
     }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 650px) {
     .dog-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 100%);
+        gap: 24px;
     }
 }
 
@@ -178,6 +185,8 @@ function pawlix_short_text($text, $limit = 140) {
     display: flex;
     flex-direction: column;
     position: relative;
+    text-align: left;
+    width: 100%;
 }
 
 .dog-card:hover {
@@ -188,7 +197,7 @@ function pawlix_short_text($text, $limit = 140) {
 .dog-card-image-wrap {
     position: relative;
     width: 100%;
-    height: 230px;
+    height: 195px;
     overflow: hidden;
     background: #e2d3b4;
 }
@@ -204,13 +213,12 @@ function pawlix_short_text($text, $limit = 140) {
     transform: scale(1.05);
 }
 
-/* WISHLIST HEART BUTTON */
 .wishlist-btn {
     position: absolute;
     top: 14px;
     right: 14px;
-    width: 40px;
-    height: 40px;
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.88);
     backdrop-filter: blur(6px);
@@ -220,7 +228,7 @@ function pawlix_short_text($text, $limit = 140) {
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.14);
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 10;
     outline: none;
@@ -229,12 +237,12 @@ function pawlix_short_text($text, $limit = 140) {
 .wishlist-btn:hover {
     transform: scale(1.12);
     background: #ffffff;
-    box-shadow: 0 6px 18px rgba(230, 57, 70, 0.25);
+    box-shadow: 0 5px 16px rgba(230, 57, 70, 0.25);
 }
 
 .wishlist-btn svg {
-    width: 21px;
-    height: 21px;
+    width: 20px;
+    height: 20px;
     fill: transparent;
     stroke: #e63946;
     stroke-width: 2.2;
@@ -254,24 +262,24 @@ function pawlix_short_text($text, $limit = 140) {
 }
 
 .dog-info {
-    padding: 20px 22px 22px;
+    padding: 18px 22px 22px;
     display: flex;
     flex-direction: column;
     flex: 1;
 }
 
 .dog-info h3 {
-    font-size: 20px;
+    font-size: 19px;
     font-weight: 700;
     color: #2b2b2b;
     margin-bottom: 4px;
 }
 
 .dog-info .breed {
-    font-size: 13px;
+    font-size: 12.5px;
     font-weight: 600;
     color: var(--maroon);
-    margin-bottom: 10px;
+    margin-bottom: 9px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
@@ -279,8 +287,8 @@ function pawlix_short_text($text, $limit = 140) {
 .dog-info .desc {
     font-size: 13.5px;
     color: #555;
-    line-height: 1.5;
-    margin-bottom: 18px;
+    line-height: 1.48;
+    margin-bottom: 16px;
     flex: 1;
 }
 
@@ -288,7 +296,7 @@ function pawlix_short_text($text, $limit = 140) {
     display: inline-block;
     text-align: center;
     width: 100%;
-    padding: 11px;
+    padding: 10.5px;
     background: var(--orange);
     color: #fff;
     font-weight: 700;
@@ -296,14 +304,13 @@ function pawlix_short_text($text, $limit = 140) {
     border-radius: 10px;
     text-decoration: none;
     transition: background 0.2s ease, transform 0.1s ease;
-    box-shadow: 0 4px 12px rgba(255, 127, 17, 0.25);
+    box-shadow: 0 4px 10px rgba(255, 127, 17, 0.25);
 }
 
 .btn-adopt-card:hover {
     background: #e06600;
 }
 
-/* LOGOUT MODAL OVERLAY */
 .logout-modal-overlay {
     display: none;
     position: fixed;
@@ -518,7 +525,7 @@ function pawlix_short_text($text, $limit = 140) {
     </div>
 
     <div class="view-all-container">
-      <a href="browse.php" class="btn-view-all">View all Pets</a>
+      <a href="browse.php" class="btn-view-all">View all Dogs</a>
     </div>
     <p class="no-results" id="noResults" style="display:none;">No dogs found matching your search.</p>
   </section>
@@ -600,7 +607,6 @@ window.addEventListener('click', function(e) {
   }
 });
 
-// WISHLIST HEART TOGGLE FUNCTIONALITY
 function initWishlist() {
     let wishlist = [];
     try {

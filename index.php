@@ -148,6 +148,162 @@ function pawlix_short_text($text, $limit = 140) {
   border-radius: 10px;
 }
 
+/* DOG CARD STYLING WITH FLOATING WISHLIST HEART */
+.dog-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+    margin-top: 30px;
+}
+
+@media (max-width: 900px) {
+    .dog-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 600px) {
+    .dog-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.dog-card {
+    background: #f8ebd3;
+    border-radius: 18px;
+    overflow: hidden;
+    border: 1px solid #e6d3b3;
+    box-shadow: 0 8px 24px rgba(74, 50, 35, 0.06);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+.dog-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 14px 32px rgba(74, 50, 35, 0.12);
+}
+
+.dog-card-image-wrap {
+    position: relative;
+    width: 100%;
+    height: 230px;
+    overflow: hidden;
+    background: #e2d3b4;
+}
+
+.dog-card-image-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+}
+
+.dog-card:hover .dog-card-image-wrap img {
+    transform: scale(1.05);
+}
+
+/* WISHLIST HEART BUTTON */
+.wishlist-btn {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 10;
+    outline: none;
+}
+
+.wishlist-btn:hover {
+    transform: scale(1.12);
+    background: #ffffff;
+    box-shadow: 0 6px 18px rgba(230, 57, 70, 0.25);
+}
+
+.wishlist-btn svg {
+    width: 21px;
+    height: 21px;
+    fill: transparent;
+    stroke: #e63946;
+    stroke-width: 2.2;
+    transition: fill 0.25s ease, stroke 0.25s ease, transform 0.2s ease;
+}
+
+.wishlist-btn.active svg {
+    fill: #e63946;
+    stroke: #e63946;
+    animation: heartPulse 0.35s ease-out;
+}
+
+@keyframes heartPulse {
+    0% { transform: scale(0.7); }
+    50% { transform: scale(1.3); }
+    100% { transform: scale(1); }
+}
+
+.dog-info {
+    padding: 20px 22px 22px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.dog-info h3 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #2b2b2b;
+    margin-bottom: 4px;
+}
+
+.dog-info .breed {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--maroon);
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.dog-info .desc {
+    font-size: 13.5px;
+    color: #555;
+    line-height: 1.5;
+    margin-bottom: 18px;
+    flex: 1;
+}
+
+.btn-adopt-card {
+    display: inline-block;
+    text-align: center;
+    width: 100%;
+    padding: 11px;
+    background: var(--orange);
+    color: #fff;
+    font-weight: 700;
+    font-size: 14px;
+    border-radius: 10px;
+    text-decoration: none;
+    transition: background 0.2s ease, transform 0.1s ease;
+    box-shadow: 0 4px 12px rgba(255, 127, 17, 0.25);
+}
+
+.btn-adopt-card:hover {
+    background: #e06600;
+}
+
+/* LOGOUT MODAL OVERLAY */
 .logout-modal-overlay {
     display: none;
     position: fixed;
@@ -333,20 +489,26 @@ function pawlix_short_text($text, $limit = 140) {
             $images = explode(",", (string) $dog['image']);
             $first_image = !empty($images[0]) ? trim($images[0]) : '';
             $image_src = $first_image ? "uploads/" . $first_image : "assets/images/dog grid 1.jpg";
-            $slug = strtolower(preg_replace('/[^a-z0-9]+/', '-', trim($dog['name'])));
+            $dog_id = intval($dog['dog_id']);
         ?>
-        <div class="dog-card" data-name="<?php echo htmlspecialchars($dog['name']); ?>">
-          <img src="<?php echo htmlspecialchars($image_src); ?>"
-               alt="<?php echo htmlspecialchars($dog['name']); ?>"
-               onerror="this.onerror=null;this.src='assets/images/dog grid 1.jpg';">
+        <div class="dog-card">
+          <div class="dog-card-image-wrap">
+            <img src="<?php echo htmlspecialchars($image_src); ?>"
+                 alt="<?php echo htmlspecialchars($dog['name']); ?>"
+                 onerror="this.onerror=null;this.src='assets/images/dog grid 1.jpg';">
+            
+            <button type="button" class="wishlist-btn" data-dog-id="<?php echo $dog_id; ?>" onclick="toggleWishlist(event, <?php echo $dog_id; ?>)" aria-label="Add <?php echo htmlspecialchars($dog['name']); ?> to Wishlist" title="Save to Favorites">
+              <svg viewBox="0 0 24 24">
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+              </svg>
+            </button>
+          </div>
+
           <div class="dog-info">
             <h3><?php echo htmlspecialchars($dog['name']); ?></h3>
             <p class="breed"><?php echo htmlspecialchars($dog['breed']); ?></p>
             <p class="desc"><?php echo htmlspecialchars(pawlix_short_text($dog['description'])); ?></p>
-            <div class="vote" data-dog="<?php echo htmlspecialchars($slug); ?>">
-              <button class="vote-btn like-btn" aria-label="Like <?php echo htmlspecialchars($dog['name']); ?>">👍 <span class="count like-count">0</span></button>
-              <button class="vote-btn dislike-btn" aria-label="Dislike <?php echo htmlspecialchars($dog['name']); ?>">👎 <span class="count dislike-count">0</span></button>
-            </div>
+            <a href="dogDetails.php?id=<?php echo $dog_id; ?>" class="btn-adopt-card">Meet <?php echo htmlspecialchars($dog['name']); ?> 🐾</a>
           </div>
         </div>
         <?php endwhile; ?>
@@ -438,7 +600,46 @@ window.addEventListener('click', function(e) {
   }
 });
 
+// WISHLIST HEART TOGGLE FUNCTIONALITY
+function initWishlist() {
+    let wishlist = [];
+    try {
+        wishlist = JSON.parse(localStorage.getItem('pawlix_wishlist') || '[]');
+    } catch(e) { wishlist = []; }
+
+    document.querySelectorAll('.wishlist-btn').forEach(function(btn) {
+        const dogId = btn.getAttribute('data-dog-id');
+        if (wishlist.includes(String(dogId))) {
+            btn.classList.add('active');
+        }
+    });
+}
+
+function toggleWishlist(e, dogId) {
+    if (e) { e.stopPropagation(); e.preventDefault(); }
+    
+    let wishlist = [];
+    try {
+        wishlist = JSON.parse(localStorage.getItem('pawlix_wishlist') || '[]');
+    } catch(e) { wishlist = []; }
+
+    const strId = String(dogId);
+    const btn = document.querySelector(`.wishlist-btn[data-dog-id="${dogId}"]`);
+
+    if (wishlist.includes(strId)) {
+        wishlist = wishlist.filter(id => id !== strId);
+        if (btn) btn.classList.remove('active');
+    } else {
+        wishlist.push(strId);
+        if (btn) btn.classList.add('active');
+    }
+
+    localStorage.setItem('pawlix_wishlist', JSON.stringify(wishlist));
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+    initWishlist();
+
     const btn = document.getElementById('scrollTopBtn');
     if (btn) {
         btn.addEventListener('click', function() {

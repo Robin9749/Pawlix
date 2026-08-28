@@ -6,46 +6,42 @@ $error = "";
 $success = "";
 
 if (isset($_POST['signup'])) {
-    $full_name        = trim($_POST['name']);
-    $email            = trim($_POST['email']);
-    $password         = trim($_POST['password']);
-    $confirm_password = trim($_POST['confirm_password']);
+    $full_name = trim($_POST['name'] ?? '');
+    $email     = trim($_POST['email'] ?? '');
+    $password  = trim($_POST['password'] ?? '');
+    $confirm_p = trim($_POST['confirm_password'] ?? '');
 
-  
-    $name_parts = preg_split('/\s+/', $full_name, 2);
-    $first_name = $name_parts[0] ?? '';
-    $last_name  = $name_parts[1] ?? '';
-
-    if (empty($first_name) || empty($email) || empty($password)) {
+    if (empty($full_name) || empty($email) || empty($password)) {
         $error = "Please fill in all required fields.";
-    } elseif ($password != $confirm_password) {
+    } elseif (strlen($password) < 8) {
+        $error = "Password must be at least 8 characters long!";
+    } elseif ($password !== $confirm_p) {
         $error = "Passwords do not match!";
     } else {
-        $first_name_esc = mysqli_real_escape_string($conn, $first_name);
-        $last_name_esc  = mysqli_real_escape_string($conn, $last_name);
-        $email_esc      = mysqli_real_escape_string($conn, $email);
-
+        $email_esc = mysqli_real_escape_string($conn, $email);
         
-        $check = mysqli_query($conn, "SELECT user_id FROM user WHERE email = '$email_esc'");
+        $check_sql = "SELECT user_id FROM user WHERE email = '$email_esc' LIMIT 1";
+        $check_res = mysqli_query($conn, $check_sql);
 
-        if ($check && mysqli_num_rows($check) > 0) {
-            $error = "An account with this email already exists. Please log in instead.";
+        if ($check_res && mysqli_num_rows($check_res) > 0) {
+            $error = "An account with this email address already exists. Please log in instead.";
         } else {
-            $password_hash = password_hash($password, PASSWORD_DEFAULT);
+            $parts = explode(" ", $full_name, 2);
+            $first_name = mysqli_real_escape_string($conn, $parts[0]);
+            $last_name  = mysqli_real_escape_string($conn, $parts[1] ?? '');
+            $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
-            $sql = "INSERT INTO user (first_name, last_name, email, password)
-                    VALUES ('$first_name_esc', '$last_name_esc', '$email_esc', '$password_hash')";
+            $insert_sql = "INSERT INTO user (first_name, last_name, email, password) VALUES ('$first_name', '$last_name', '$email_esc', '$hashed_password')";
 
             try {
-                if (mysqli_query($conn, $sql)) {
+                if (mysqli_query($conn, $insert_sql)) {
                     $success = "Account created successfully! You can now log in.";
                 } else {
                     $error = "Something went wrong: " . mysqli_error($conn);
                 }
             } catch (mysqli_sql_exception $e) {
-          
                 if ($e->getCode() == 1062) {
-                    $error = "An account with this email already exists. Please log in instead.";
+                    $error = "An account with this email address already exists. Please log in instead.";
                 } else {
                     $error = "Something went wrong: " . $e->getMessage();
                 }
@@ -56,12 +52,13 @@ if (isset($_POST['signup'])) {
 ?>
 
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>Sign Up</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign Up | PawLix</title>
 
 <style>
-
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
 *{
@@ -79,6 +76,7 @@ body{
     flex-direction: column;
     color: #2b2b2b;
 }
+
 .navbar{
   background: #f2e6c9;
   height: 75px;
@@ -89,6 +87,8 @@ body{
   border-bottom: 2px solid #ffffff;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
   box-sizing: border-box;
+  position: relative;
+  z-index: 1000;
 }
 
 .navbar .logo{
@@ -113,7 +113,7 @@ body{
   font-size: 15px;
 }
 
-.navbar .buttons button{
+.navbar .buttons button, .navbar .buttons a{
   padding: 9px 24px;
   border-radius: 30px;
   border: none;
@@ -122,10 +122,12 @@ body{
   font-weight: 600;
   font-size: 14px;
   font-family: inherit;
+  text-decoration: none;
+  display: inline-block;
   transition: opacity 0.2s ease;
 }
 
-.navbar .buttons button:hover{
+.navbar .buttons button:hover, .navbar .buttons a:hover{
   opacity: 0.85;
 }
 
@@ -140,24 +142,38 @@ body{
   color: white;
 }
 
+.eye {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    user-select: none;
+    color: #4a3223;
+}
+.eye:hover {
+    color: #7c7a7a;
+}
+
 .wrapper{
     display:flex;
     flex: 1;
-    min-height: calc(100vh - 65px);
+    min-height: calc(100vh - 75px);
     width: 100%;
     padding:0px;
     margin:0;
+    position: relative;
+    z-index: 1;
 }
 
 .left{
     flex: 1;
     overflow: hidden;
-        display: flex;
+    display: flex;
 }
 
 .left img{
     width: 100%;
-    height: 80%;
+    height: 100%;
     object-fit: cover;
     display: block;
 }
@@ -168,7 +184,7 @@ body{
     display: flex;
     justify-content: center;
     align-items: flex-start;
-    padding-top: 90px;  
+    padding-top: 50px;  
 }
 
 .form-box{
@@ -176,7 +192,6 @@ body{
   max-width: 430px;
   text-align: center;
 }
-
 
 .form-box h2{
   color: #1f6fd6;
@@ -194,7 +209,7 @@ body{
 hr{
   border: none;
   border-top: 1px solid #ddccae;
-  margin: 15px 0 28px;
+  margin: 15px 0 24px;
 }
 
 .error{
@@ -306,9 +321,9 @@ button.signup-btn:hover{
 }
 
 .bottom-text{
-  font-size: 12px;
+  font-size: 13px;
   color: #333;
-  padding-top: 8px;
+  padding-top: 10px;
 }
 
 .bottom-text a{
@@ -317,14 +332,25 @@ button.signup-btn:hover{
   text-decoration: underline;
 }
 
+@media (max-width: 768px){
+  .left{
+    display: none;
+  }
+  .navbar .links{
+    display: none;
+  }
+  .right{
+    padding: 40px 20px;
+  }
+}
 </style>
 </head>
 
 <body>
 
 <div class="navbar">
-  <div class="logo">
-      <img src="assets/images/logo.png" alt="PawLix logo">
+   <div class="logo">
+      <a href="index.php"><img src="assets/images/logo.png" alt="PawLix logo"></a>
     </div>
   <div class="links">
     <a href="index.php">Home</a>
@@ -334,8 +360,8 @@ button.signup-btn:hover{
     <a href="report.php">Report a Dog</a>
   </div>
   <div class="buttons">
-    <button class="btn-signup">Sign Up</button>
-    <button class="btn-login">Login</button>
+    <a href="signup.php" class="btn-signup">Sign Up</a>
+    <a href="login.php" class="btn-login">Login</a>
   </div>
 </div>
 
@@ -353,14 +379,14 @@ button.signup-btn:hover{
       <hr>
 
       <?php if ($error != "") { ?>
-        <div class="error"><?php echo $error; ?></div>
+        <div class="error"><?php echo htmlspecialchars($error); ?></div>
       <?php } ?>
 
       <?php if ($success != "") { ?>
-        <div class="success"><?php echo $success; ?></div>
+        <div class="success"><?php echo htmlspecialchars($success); ?></div>
       <?php } ?>
 
-      <form method="POST">
+      <form method="POST" action="signup.php">
 
         <div class="input-wrap">
           <span>👤</span>
@@ -371,35 +397,33 @@ button.signup-btn:hover{
           <span>✉️</span>
           <input type="email" name="email" placeholder="Email Address" required>
         </div>
-
+        
         <div class="input-wrap">
-          <span>🔒</span>
-          <input type="password" name="password" id="pwd" placeholder="Create Password" required>
-          <span class="eye" id="eye-pwd" onclick="togglePwd('pwd')">
-    <svg class="eye-icon eye-open" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
-    </svg>
+            <span>🔒</span>
+            <input type="password" name="password" id="pwd" placeholder="Create Password (min. 8 characters)" minlength="8" required>
+            <span class="eye" id="eye-pwd" onclick="togglePwd('pwd')">
+                <svg class="eye-icon eye-open" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                </svg>
 
-    <svg class="eye-icon eye-closed" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display:none;">
-      <path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.44-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.17c0-1.66-1.34-3-3-3l-.17.02z"/>
-    </svg>
-  </span>
+                <svg class="eye-icon eye-closed" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display:none;">
+                  <path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.44-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.17c0-1.66-1.34-3-3-3l-.17.02z"/>
+                </svg>
+            </span>
         </div>
 
         <div class="input-wrap">
           <span>🔒</span>
-          <input type="password" name="confirm_password" id="cpwd" placeholder="Confirm Password" required>
-         <span class="eye" id="eye-cpwd" onclick="togglePwd('cpwd')">
+          <input type="password" name="confirm_password" id="cpwd" placeholder="Confirm Password" minlength="8" required>
+          <span class="eye" id="eye-cpwd" onclick="togglePwd('cpwd')">
+            <svg class="eye-icon eye-open" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+            </svg>
 
-    <svg class="eye-icon eye-open" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
-    </svg>
-
-    <svg class="eye-icon eye-closed" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display:none;">
-      <path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.44-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.17c0-1.66-1.34-3-3-3l-.17.02z"/>
-    </svg>
-  </span>
-  </span>
+            <svg class="eye-icon eye-closed" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display:none;">
+              <path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.44-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.17c0-1.66-1.34-3-3-3l-.17.02z"/>
+            </svg>
+          </span>
         </div>
 
         <div class="terms-row">

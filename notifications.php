@@ -90,6 +90,7 @@ $unreadCount = $c1 + $c2 + $c3;
 <title>Notifications - PawLix</title>
 
 <link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
 
@@ -146,6 +147,7 @@ body {
   font-weight: 700;
   padding: 2px 6px;
   border-radius: 10px;
+  margin-left: 2px;
 }
 
 .user-dropdown-menu {
@@ -154,7 +156,7 @@ body {
   right: 0;
   top: 48px;
   background-color: #ede1c6;
-  min-width: 190px;
+  min-width: 200px;
   box-shadow: 0px 8px 20px rgba(0,0,0,0.18);
   border-radius: 12px;
   overflow: hidden;
@@ -175,14 +177,42 @@ body {
   gap: 10px;
   font-size: 14px;
   font-weight: 600;
+  transition: background 0.2s;
 }
 
 .user-dropdown-menu a:hover {
   background-color: #ddceac;
 }
 
+.user-dropdown-menu a .icon {
+  font-size: 16px;
+  width: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background-color: #ddccae;
+  margin: 4px 0;
+}
+
 .logout-link {
   color: #b3261e !important;
+}
+
+.logout-link:hover {
+  background-color: #f8d7da !important;
+}
+
+.badge-sub {
+  margin-left: auto;
+  background: #e63946;
+  color: white;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 10px;
 }
 
 .page-container {
@@ -387,7 +417,6 @@ body {
 }
 
 @media (max-width: 600px) {
-
   .panel-card {
     padding: 25px 20px;
   }
@@ -401,7 +430,6 @@ body {
   .status-badge {
     align-self: flex-start;
   }
-
 }
 
 </style>
@@ -420,55 +448,50 @@ body {
 
   <nav class="nav">
     <a href="index.php">Home</a>
-    <a href="browse.php">Browse Dogs ▾</a>
+    <a href="browse.php">Browse Dogs <i class="fa-solid fa-chevron-down" style="font-size: 10px; margin-left: 2px;"></i></a>
     <a href="about.php">About</a>
     <a href="contact.php">Contact</a>
     <a href="report.php">Report a Dog</a>
   </nav>
 
   <div class="header-buttons">
-    <div class="user-menu-wrapper">
-      <button
-        class="menu-icon-btn"
-        id="userMenuBtn"
-        onclick="toggleUserDropdown()"
-        aria-label="User Menu"
-      >
-        <span>👤</span> ▾
-        <?php if ($unreadCount > 0): ?>
-          <span class="badge-count">
-            <?php echo $unreadCount; ?>
-          </span>
-        <?php endif; ?>
-      </button>
+    <?php if (isset($_SESSION['user_id'])): ?>
+      <div class="user-menu-wrapper">
+        <button class="menu-icon-btn" id="userMenuBtn" onclick="toggleUserDropdown()" aria-label="User Menu">
+          <i class="fa-solid fa-user"></i>
+          <i class="fa-solid fa-chevron-down" style="font-size: 10px;"></i>
+          <?php if ($unreadCount > 0): ?><span class="badge-count"><?php echo $unreadCount; ?></span><?php endif; ?>
+        </button>
 
-      <div class="user-dropdown-menu" id="userDropdownMenu">
-        <a href="account.php">
-          <span class="icon">👤</span> Account
-        </a>
-        <a href="messages.php">
-          <span class="icon">✉️</span> Messages
-        </a>
-        <a href="notifications.php">
-          <span class="icon">🔔</span> Notification
-        </a>
-        <a href="history.php">
-          <span class="icon">📜</span> History
-        </a>
-        <a href="settings.php">
-          <span class="icon">⚙️</span> Setting
-        </a>
-        <div style="height: 1px; background-color: #ddccae; margin: 4px 0;"></div>
-        <a href="#" class="logout-link logout-trigger">
-          <span class="icon">🚪</span> Logout
-        </a>
+        <div class="user-dropdown-menu" id="userDropdownMenu">
+          <a href="account.php">
+            <span class="icon"><i class="fa-solid fa-user"></i></span> Account
+          </a>
+          <a href="messages.php">
+            <span class="icon"><i class="fa-solid fa-envelope"></i></span> Messages
+          </a>
+          <a href="notifications.php">
+            <span class="icon"><i class="fa-solid fa-bell"></i></span> Notification <?php if ($unreadCount > 0): ?><span class="badge-sub"><?php echo $unreadCount; ?></span><?php endif; ?>
+          </a>
+          <a href="history.php">
+            <span class="icon"><i class="fa-solid fa-clock-rotate-left"></i></span> History
+          </a>
+          <a href="settings.php">
+            <span class="icon"><i class="fa-solid fa-gear"></i></span> Setting
+          </a>
+          <div class="dropdown-divider"></div>
+          <a href="#" class="logout-trigger logout-link">
+            <span class="icon"><i class="fa-solid fa-right-from-bracket"></i></span> Logout
+          </a>
+        </div>
       </div>
-    </div>
+    <?php else: ?>
+      <a href="signup.php" class="btn btn-outline" style="text-decoration:none;">Sign Up</a>
+      <a href="login.php" class="btn btn-dark" style="text-decoration:none;">Login</a>
+    <?php endif; ?>
   </div>
 
-  <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">
-    ☰
-  </button>
+  <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu"><i class="fa-solid fa-bars"></i></button>
 
 </header>
 

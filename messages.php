@@ -112,7 +112,7 @@ $unreadCount = $c1 + $c2 + $c3;
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Messages & Support | PawLix</title>
 <link rel="stylesheet" href="assets/css/style.css">
-
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
 
@@ -164,10 +164,10 @@ body {
 .badge-count {
     background: #e63946;
     color: white;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 700;
-    padding: 2px 7px;
-    border-radius: 12px;
+    padding: 2px 6px;
+    border-radius: 10px;
     margin-left: 2px;
 }
 
@@ -175,42 +175,57 @@ body {
     display: none;
     position: absolute;
     right: 0;
-    top: 50px;
-    background-color: var(--cream);
-    min-width: 210px;
-    box-shadow: 0 10px 25px rgba(0,0,0,.15);
-    border-radius: 14px;
+    top: 48px;
+    background-color: #ede1c6;
+    min-width: 200px;
+    box-shadow: 0px 8px 20px rgba(0,0,0,0.18);
+    border-radius: 12px;
     overflow: hidden;
     z-index: 1000;
-    border: 1px solid var(--border-color);
+    border: 1px solid #ddccae;
 }
 
 .user-dropdown-menu.show { display: block; }
 
 .user-dropdown-menu a {
-    color: var(--dark-brown);
-    padding: 12px 18px;
+    color: #2b2b2b;
+    padding: 12px 16px;
     text-decoration: none;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     font-size: 14px;
     font-weight: 600;
-    transition: background 0.2s, color 0.2s;
+    transition: background 0.2s;
 }
 
-.user-dropdown-menu a:hover {
-    background: #dfcfb0;
-    color: var(--maroon);
+.user-dropdown-menu a:hover { background-color: #ddceac; }
+
+.user-dropdown-menu a .icon {
+    font-size: 16px;
+    width: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.user-dropdown-menu .divider {
+.dropdown-divider {
     height: 1px;
-    background: var(--border-color);
+    background-color: #ddccae;
     margin: 4px 0;
 }
 
-.logout-link { color: var(--maroon) !important; }
+.logout-link { color: #b3261e !important; }
+.logout-link:hover { background-color: #f8d7da !important; }
+
+.badge-sub {
+    margin-left: auto;
+    background: #e63946;
+    color: white;
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 10px;
+}
 
 .logout-modal-overlay {
   display: none;
@@ -616,34 +631,50 @@ body {
 
     <nav class="nav">
         <a href="index.php">Home</a>
-        <a href="browse.php">Browse Dogs ▾</a>
+        <a href="browse.php">Browse Dogs <i class="fa-solid fa-chevron-down" style="font-size: 10px; margin-left: 2px;"></i></a>
         <a href="about.php">About</a>
         <a href="contact.php">Contact</a>
         <a href="report.php">Report a Dog</a>
     </nav>
 
     <div class="header-buttons">
+      <?php if (isset($_SESSION['user_id'])): ?>
         <div class="user-menu-wrapper">
-            <button class="menu-icon-btn" id="userMenuBtn" onclick="toggleUserDropdown()" type="button" aria-label="User Menu">
-                <span>👤</span> ▾
-                <?php if ($unreadCount > 0): ?>
-                    <span class="badge-count"><?php echo $unreadCount; ?></span>
-                <?php endif; ?>
-            </button>
+          <button class="menu-icon-btn" id="userMenuBtn" onclick="toggleUserDropdown()" type="button" aria-label="User Menu">
+            <i class="fa-solid fa-user"></i>
+            <i class="fa-solid fa-chevron-down" style="font-size: 10px;"></i>
+            <?php if ($unreadCount > 0): ?><span class="badge-count"><?php echo $unreadCount; ?></span><?php endif; ?>
+          </button>
 
-            <div class="user-dropdown-menu" id="userDropdownMenu">
-                <a href="account.php"><span class="icon">👤</span> Account Profile</a>
-                <a href="messages.php"><span class="icon">✉️</span> Messages <?php if ($unreadCount > 0): ?><span class="badge-count"><?php echo $unreadCount; ?></span><?php endif; ?></a>
-                <a href="notifications.php"><span class="icon">🔔</span> Notifications</a>
-                <a href="history.php"><span class="icon">📜</span> Adoption History</a>
-                <a href="settings.php"><span class="icon">⚙️</span> Settings</a>
-                <div class="divider"></div>
-                <a href="#" class="logout-link logout-trigger"><span class="icon">🚪</span> Logout</a>
-            </div>
+          <div class="user-dropdown-menu" id="userDropdownMenu">
+            <a href="account.php">
+              <span class="icon"><i class="fa-solid fa-user"></i></span> Account
+            </a>
+            <a href="messages.php">
+              <span class="icon"><i class="fa-solid fa-envelope"></i></span> Messages
+            </a>
+            <a href="notifications.php">
+              <span class="icon"><i class="fa-solid fa-bell"></i></span> Notification <?php if ($unreadCount > 0): ?><span class="badge-sub"><?php echo $unreadCount; ?></span><?php endif; ?>
+            </a>
+            <a href="history.php">
+              <span class="icon"><i class="fa-solid fa-clock-rotate-left"></i></span> History
+            </a>
+            <a href="settings.php">
+              <span class="icon"><i class="fa-solid fa-gear"></i></span> Setting
+            </a>
+            <div class="dropdown-divider"></div>
+            <a href="#" class="logout-trigger logout-link">
+              <span class="icon"><i class="fa-solid fa-right-from-bracket"></i></span> Logout
+            </a>
+          </div>
         </div>
+      <?php else: ?>
+        <a href="signup.php" class="btn btn-outline" style="text-decoration:none;">Sign Up</a>
+        <a href="login.php" class="btn btn-dark" style="text-decoration:none;">Login</a>
+      <?php endif; ?>
     </div>
 
-    <button class="menu-toggle" id="menuToggle" type="button" aria-label="Toggle menu">☰</button>
+    <button class="menu-toggle" id="menuToggle" type="button" aria-label="Toggle menu"><i class="fa-solid fa-bars"></i></button>
 </header>
 
 <hr style="background-color:white;height:1px;border:none;">

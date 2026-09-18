@@ -123,6 +123,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PawLix - Contact Us</title>
     <link rel="stylesheet" href="assets/css/contact.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
 
@@ -200,7 +202,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
         .user-dropdown-menu a .icon {
           font-size: 16px;
           width: 20px;
-          text-align: center;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
         }
 
         .dropdown-divider {
@@ -321,6 +325,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
         .logout-confirm:hover {
             background: #961e17;
         }
+
+        .socials a {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .col-contact .icon,
+        .info-item .info-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
     </style>
 </head>
 <body>
@@ -331,7 +348,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
         </div>
         <nav class="nav">
             <a href="index.php">Home</a>
-            <a href="browse.php">Browse Dogs ▾</a>
+            <a href="browse.php">Browse Dogs <i class="fa-solid fa-chevron-down" style="font-size: 10px; margin-left: 2px;"></i></a>
             <a href="about.php">About</a>
             <a href="contact.php" class="active">Contact</a>
             <a href="report.php">Report a Dog</a>
@@ -342,17 +359,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
             
             <div class="user-menu-wrapper">
               <button class="menu-icon-btn" id="userMenuBtn" onclick="toggleUserDropdown()" aria-label="User Menu">
-                <span>👤</span> ▾ <?php if ($unreadCount > 0): ?><span class="badge-count"><?php echo $unreadCount; ?></span><?php endif; ?>
+                <i class="fa-solid fa-user"></i>
+                <i class="fa-solid fa-chevron-down" style="font-size: 10px;"></i>
+                <?php if ($unreadCount > 0): ?><span class="badge-count"><?php echo $unreadCount; ?></span><?php endif; ?>
               </button>
 
               <div class="user-dropdown-menu" id="userDropdownMenu">
-                <a href="account.php"><span class="icon">👤</span> Account</a>
-                <a href="messages.php"><span class="icon">✉️</span> Messages <?php if ($unreadCount > 0): ?><span class="badge-sub"><?php echo $unreadCount; ?></span><?php endif; ?></a>
-                <a href="notifications.php"><span class="icon">🔔</span> Notification</a>
-                <a href="history.php"><span class="icon">📜</span> History</a>
-                <a href="settings.php"><span class="icon">⚙️</span> Setting</a>
+                <a href="account.php">
+                  <span class="icon"><i class="fa-solid fa-user"></i></span> Account
+                </a>
+                <a href="messages.php">
+                  <span class="icon"><i class="fa-solid fa-envelope"></i></span> Messages <?php if ($unreadCount > 0): ?><span class="badge-sub"><?php echo $unreadCount; ?></span><?php endif; ?>
+                </a>
+                <a href="notifications.php">
+                  <span class="icon"><i class="fa-solid fa-bell"></i></span> Notification
+                </a>
+                <a href="history.php">
+                  <span class="icon"><i class="fa-solid fa-clock-rotate-left"></i></span> History
+                </a>
+                <a href="settings.php">
+                  <span class="icon"><i class="fa-solid fa-gear"></i></span> Setting
+                </a>
                 <div class="dropdown-divider"></div>
-                <a href="#" class="logout-trigger logout-link"><span class="icon">🚪</span> Logout</a>
+                <a href="#" class="logout-trigger logout-link">
+                  <span class="icon"><i class="fa-solid fa-right-from-bracket"></i></span> Logout
+                </a>
               </div>
             </div>
 
@@ -364,7 +395,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
           <?php endif; ?>
         </div>
 
-        <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">☰</button>
+        <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu"><i class="fa-solid fa-bars"></i></button>
     </header>
 
     <hr style="background-color: white; height: 1px; border: none;">
@@ -376,8 +407,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
                 <h1>We're Here for You and <span>Your Future Friend</span></h1>
                 <p>Have questions about dog adoption or need assistance? Whether you're looking for information about a dog, your adoption request, or using our platform, our team is here to help every step of the way.</p>
                 <div class="contact-hero-buttons">
-                    <a href="#contactForm" class="btn-hero-send">✉ Send Message</a>
-                    <a href="browse.php" class="btn-hero-browse-paw">🐾 Browse Dogs</a>
+                    <a href="#contactForm" class="btn-hero-send"><i class="fa-solid fa-envelope"></i> Send Message</a>
+                    <a href="browse.php" class="btn-hero-browse-paw"><i class="fa-solid fa-paw"></i> Browse Dogs</a>
                 </div>
             </div>
             <div class="contact-hero-image">
@@ -395,7 +426,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
 
                 <div class="info-items">
                     <div class="info-item">
-                        <div class="info-icon">📍</div>
+                        <div class="info-icon"><i class="fa-solid fa-location-dot"></i></div>
                         <div class="info-details">
                             <h4>Address</h4>
                             <p>Asian College of Higher Studies<br>Kathmandu, Nepal</p>
@@ -403,7 +434,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
                     </div>
 
                     <div class="info-item">
-                        <div class="info-icon">📞</div>
+                        <div class="info-icon"><i class="fa-solid fa-phone"></i></div>
                         <div class="info-details">
                             <h4>Phone</h4>
                             <p>+977-98XXXXXXXX</p>
@@ -411,7 +442,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
                     </div>
 
                     <div class="info-item">
-                        <div class="info-icon">✉</div>
+                        <div class="info-icon"><i class="fa-solid fa-envelope"></i></div>
                         <div class="info-details">
                             <h4>Email</h4>
                             <p>support@pawlix.org</p>
@@ -505,10 +536,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
 
                 <div class="footer-col col-contact">
                     <h4 class="col-title">CONTACT</h4>
-                    <p><span class="icon">📍</span> Kathmandu, Nepal</p>
-                    <p><span class="icon">✉</span> support@pawlix.org</p>
-                    <p><span class="icon">📞</span> +977 9800000000</p>
-                    <p><span class="icon">🐾</span> Emergency 24/7 Support</p>
+                    <p><span class="icon"><i class="fa-solid fa-location-dot"></i></span> Kathmandu, Nepal</p>
+                    <p><span class="icon"><i class="fa-solid fa-envelope"></i></span> support@pawlix.org</p>
+                    <p><span class="icon"><i class="fa-solid fa-phone"></i></span> +977 9800000000</p>
+                    <p><span class="icon"><i class="fa-solid fa-paw"></i></span> Emergency 24/7 Support</p>
                 </div>
             </div>
 
@@ -519,14 +550,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
 
                 <div class="footer-bottom-right">
                     <div class="socials">
-                        <a href="#" aria-label="Facebook"><span>f</span></a>
-                        <a href="#" aria-label="X"><span>𝕏</span></a>
-                        <a href="#" aria-label="Instagram"><span>◎</span></a>
-                        <a href="#" aria-label="YouTube"><span>▶</span></a>
+                        <a href="#" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+                        <a href="#" aria-label="X"><i class="fa-brands fa-x-twitter"></i></a>
+                        <a href="#" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                        <a href="#" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
                     </div>
 
                     <button class="scroll-top-btn" id="scrollTopBtn" type="button" aria-label="Back to top">
-                        <span>↑</span> Back to Top
+                        <i class="fa-solid fa-arrow-up"></i> Back to Top
                     </button>
                 </div>
             </div>

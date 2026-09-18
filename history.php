@@ -26,6 +26,7 @@ $unreadCount = $c1 + $c2;
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Activity History - PawLix</title>
 <link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
@@ -81,6 +82,7 @@ body {
   font-weight: 700;
   padding: 2px 6px;
   border-radius: 10px;
+  margin-left: 2px;
 }
 
 .user-dropdown-menu {
@@ -89,7 +91,7 @@ body {
   right: 0;
   top: 48px;
   background-color: #ede1c6;
-  min-width: 190px;
+  min-width: 200px;
   box-shadow: 0px 8px 20px rgba(0,0,0,0.18);
   border-radius: 12px;
   overflow: hidden;
@@ -110,14 +112,42 @@ body {
   gap: 10px;
   font-size: 14px;
   font-weight: 600;
+  transition: background 0.2s;
 }
 
 .user-dropdown-menu a:hover {
   background-color: #ddceac;
 }
 
+.user-dropdown-menu a .icon {
+  font-size: 16px;
+  width: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background-color: #ddccae;
+  margin: 4px 0;
+}
+
 .logout-link {
   color: #b3261e !important;
+}
+
+.logout-link:hover {
+  background-color: #f8d7da !important;
+}
+
+.badge-sub {
+  margin-left: auto;
+  background: #e63946;
+  color: white;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 10px;
 }
 
 .page-container {
@@ -234,13 +264,10 @@ body {
   inset: 0;
   width: 100%;
   height: 100%;
-
   background: rgba(0, 0, 0, 0.50);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
-
   z-index: 99999;
-
   justify-content: center;
   align-items: center;
   padding: 20px;
@@ -253,17 +280,12 @@ body {
 .logout-modal {
   width: 100%;
   max-width: 400px;
-
   background: #ede1c6;
   border-radius: 16px;
   padding: 32px 28px;
-
   text-align: center;
-
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.30);
-
   border: 1px solid rgba(255, 255, 255, 0.6);
-
   animation: logoutPopup 0.25s ease-out;
 }
 
@@ -272,7 +294,6 @@ body {
     transform: scale(0.85);
     opacity: 0;
   }
-
   to {
     transform: scale(1);
     opacity: 1;
@@ -302,16 +323,12 @@ body {
 .logout-confirm {
   flex: 1;
   padding: 13px;
-
   border-radius: 10px;
-
   font-family: inherit;
   font-size: 14px;
   font-weight: 600;
-
   cursor: pointer;
   text-decoration: none;
-
   display: inline-block;
   text-align: center;
 }
@@ -330,7 +347,6 @@ body {
   background: #b3261e;
   color: #ffffff;
   border: none;
-
   box-shadow: 0 4px 12px rgba(179, 38, 30, 0.3);
 }
 
@@ -339,7 +355,6 @@ body {
 }
 
 @media (max-width: 600px) {
-
   .panel-card {
     padding: 25px 20px;
   }
@@ -364,7 +379,6 @@ body {
 <body>
 
 <header class="header">
-
   <div class="logo">
     <a href="index.php">
       <img src="assets/images/logo.png" alt="PawLix logo">
@@ -373,82 +387,56 @@ body {
 
   <nav class="nav">
     <a href="index.php">Home</a>
-    <a href="browse.php">Browse Dogs ▾</a>
+    <a href="browse.php">Browse Dogs <i class="fa-solid fa-chevron-down" style="font-size: 10px; margin-left: 2px;"></i></a>
     <a href="about.php">About</a>
     <a href="contact.php">Contact</a>
     <a href="report.php">Report a Dog</a>
   </nav>
 
   <div class="header-buttons">
+    <?php if (isset($_SESSION['user_id'])): ?>
+      <div class="user-menu-wrapper">
+        <button class="menu-icon-btn" id="userMenuBtn" onclick="toggleUserDropdown()" aria-label="User Menu">
+          <i class="fa-solid fa-user"></i>
+          <i class="fa-solid fa-chevron-down" style="font-size: 10px;"></i>
+          <?php if ($unreadCount > 0): ?><span class="badge-count"><?php echo $unreadCount; ?></span><?php endif; ?>
+        </button>
 
-    <div class="user-menu-wrapper">
-
-      <button
-        class="menu-icon-btn"
-        id="userMenuBtn"
-        onclick="toggleUserDropdown()"
-        aria-label="User Menu"
-      >
-        <span>👤</span> ▾
-
-        <?php if ($unreadCount > 0): ?>
-          <span class="badge-count">
-            <?php echo $unreadCount; ?>
-          </span>
-        <?php endif; ?>
-
-      </button>
-
-      <div class="user-dropdown-menu" id="userDropdownMenu">
-
-        <a href="account.php">
-          <span class="icon">👤</span> Account
-        </a>
-
-        <a href="messages.php">
-          <span class="icon">✉️</span> Messages
-        </a>
-
-        <a href="notifications.php">
-          <span class="icon">🔔</span> Notification
-        </a>
-
-        <a href="history.php">
-          <span class="icon">📜</span> History
-        </a>
-
-        <a href="settings.php">
-          <span class="icon">⚙️</span> Setting
-        </a>
-
-        <div style="height: 1px; background-color: #ddccae; margin: 4px 0;"></div>
-
-        <a href="#" class="logout-link logout-trigger">
-          <span class="icon">🚪</span> Logout
-        </a>
-
+        <div class="user-dropdown-menu" id="userDropdownMenu">
+          <a href="account.php">
+            <span class="icon"><i class="fa-solid fa-user"></i></span> Account
+          </a>
+          <a href="messages.php">
+            <span class="icon"><i class="fa-solid fa-envelope"></i></span> Messages
+          </a>
+          <a href="notifications.php">
+            <span class="icon"><i class="fa-solid fa-bell"></i></span> Notification <?php if ($unreadCount > 0): ?><span class="badge-sub"><?php echo $unreadCount; ?></span><?php endif; ?>
+          </a>
+          <a href="history.php">
+            <span class="icon"><i class="fa-solid fa-clock-rotate-left"></i></span> History
+          </a>
+          <a href="settings.php">
+            <span class="icon"><i class="fa-solid fa-gear"></i></span> Setting
+          </a>
+          <div class="dropdown-divider"></div>
+          <a href="#" class="logout-trigger logout-link">
+            <span class="icon"><i class="fa-solid fa-right-from-bracket"></i></span> Logout
+          </a>
+        </div>
       </div>
-
-    </div>
-
+    <?php else: ?>
+      <a href="signup.php" class="btn btn-outline" style="text-decoration:none;">Sign Up</a>
+      <a href="login.php" class="btn btn-dark" style="text-decoration:none;">Login</a>
+    <?php endif; ?>
   </div>
 
-  <button
-    class="menu-toggle"
-    id="menuToggle"
-    aria-label="Toggle menu"
-  >
-    ☰
-  </button>
-
+  <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu"><i class="fa-solid fa-bars"></i></button>
 </header>
 
 <hr style="background-color: white; height: 1px; border: none;">
 
 <div class="page-container">
-
   <div class="panel-card">
-
     <h2>📜 Activity History</h2>
 
     <div class="section-subtitle">
@@ -456,41 +444,29 @@ body {
     </div>
 
     <?php if ($adoptions && mysqli_num_rows($adoptions) > 0) { ?>
-
       <?php while($a = mysqli_fetch_assoc($adoptions)) { ?>
-
         <div class="hist-item">
-
           <div>
-
             <h4>
               Adoption Request:
               <?php echo htmlspecialchars($a['dog_name']); ?>
-
               (<?php echo htmlspecialchars($a['breed']); ?>)
             </h4>
-
             <p>
               Application Date:
               <?php echo date("M d, Y", strtotime($a['application_date'])); ?>
             </p>
-
           </div>
 
           <span class="status-badge badge-<?php echo htmlspecialchars($a['status']); ?>">
             <?php echo htmlspecialchars($a['status']); ?>
           </span>
-
         </div>
-
       <?php } ?>
-
     <?php } else {
-
       echo "<div class='empty-history-msg'>
               No adoption applications submitted yet.
             </div>";
-
     } ?>
 
     <div class="section-subtitle" style="margin-top:35px;">
@@ -498,273 +474,151 @@ body {
     </div>
 
     <?php if ($reports && mysqli_num_rows($reports) > 0) { ?>
-
       <?php while($r = mysqli_fetch_assoc($reports)) { ?>
-
         <div class="hist-item">
-
           <div>
-
             <h4>
               <?php echo htmlspecialchars($r['report_type']); ?>
               Dog Alert —
               <?php echo htmlspecialchars($r['location_area']); ?>
             </h4>
-
             <p>
               Landmark:
               <?php echo htmlspecialchars($r['landmark']); ?>
-
               • Reported on:
               <?php echo date("M d, Y", strtotime($r['created_at'])); ?>
             </p>
-
           </div>
 
           <span class="status-badge badge-<?php echo htmlspecialchars($r['status']); ?>">
             <?php echo htmlspecialchars($r['status']); ?>
           </span>
-
         </div>
-
       <?php } ?>
-
     <?php } else {
-
       echo "<div class='empty-history-msg'>
               No street dogs reported yet.
             </div>";
-
     } ?>
 
   </div>
-
 </div>
 
 <div class="logout-modal-overlay" id="logoutModal">
-
   <div class="logout-modal">
-
     <h2>Log Out?</h2>
-
-    <p>
-      Are you sure you want to log out?
-    </p>
-
+    <p>Are you sure you want to log out?</p>
     <div class="logout-modal-actions">
-
-      <button
-        type="button"
-        class="logout-cancel"
-        id="cancelLogout"
-      >
-        Cancel
-      </button>
-
-      <a
-        href="logout.php?confirm=true"
-        class="logout-confirm"
-      >
-        Log Out
-      </a>
-
+      <button type="button" class="logout-cancel" id="cancelLogout">Cancel</button>
+      <a href="logout.php?confirm=true" class="logout-confirm">Log Out</a>
     </div>
-
   </div>
-
 </div>
 
 <?php
-
 if (file_exists('includes/footer.php')) {
-
     include 'includes/footer.php';
-
 } else {
-
 ?>
-
 <footer class="footer">
-
   <div class="footer-container">
-
     <div class="footer-columns">
-
       <div class="footer-col col-brand">
-
         <h4 class="col-title">PAWLIX</h4>
-
         <p class="brand-text">
-          Connecting dogs waiting for rescue with loving,
-          permanent families across Nepal through a simple
-          and secure platform.
+          Connecting dogs waiting for rescue with loving, permanent families across Nepal through a simple and secure platform.
         </p>
-
       </div>
 
       <div class="footer-col">
-
         <h4 class="col-title">SERVICES</h4>
-
         <p><a href="browse.php">Browse Dogs</a></p>
-
         <p><a href="adopt.php">Apply for Adoption</a></p>
-
         <p><a href="report.php">Report Stray / Injured</a></p>
-
         <p><a href="contact.php">Support</a></p>
-
       </div>
 
       <div class="footer-col">
-
         <h4 class="col-title">USEFUL LINKS</h4>
-
         <p><a href="index.php">Home</a></p>
-
         <p><a href="about.php">About Us</a></p>
-
         <p><a href="contact.php">Contact Us</a></p>
-
       </div>
 
       <div class="footer-col col-contact">
-
         <h4 class="col-title">CONTACT</h4>
-
-        <p>
-          <span class="icon">📍</span>
-          Kathmandu, Nepal
-        </p>
-
-        <p>
-          <span class="icon">✉</span>
-          support@pawlix.org
-        </p>
-
-        <p>
-          <span class="icon">📞</span>
-          +977 9800000000
-        </p>
-
-        <p>
-          <span class="icon">🐾</span>
-          Emergency 24/7 Support
-        </p>
-
+        <p><span class="icon">📍</span> Kathmandu, Nepal</p>
+        <p><span class="icon">✉</span> support@pawlix.org</p>
+        <p><span class="icon">📞</span> +977 9800000000</p>
+        <p><span class="icon">🐾</span> Emergency 24/7 Support</p>
       </div>
-
     </div>
 
     <hr class="footer-hr">
 
     <div class="footer-bottom">
-
       <p class="copyright">
-        © <?php echo date('Y'); ?> PawLix.
-        All rights reserved.
+        © <?php echo date('Y'); ?> PawLix. All rights reserved.
       </p>
-
     </div>
-
   </div>
-
 </footer>
-
 <?php } ?>
 
 <script>
-
 function toggleUserDropdown() {
-
   var menu = document.getElementById("userDropdownMenu");
-
   if (menu) {
     menu.classList.toggle("show");
   }
-
 }
 
 window.addEventListener('click', function(e) {
-
   var btn = document.getElementById('userMenuBtn');
-
   var menu = document.getElementById('userDropdownMenu');
-
-  if (
-    menu &&
-    btn &&
-    !btn.contains(e.target) &&
-    !menu.contains(e.target)
-  ) {
-
+  if (menu && btn && !btn.contains(e.target) && !menu.contains(e.target)) {
     menu.classList.remove('show');
-
   }
-
 });
 
 document.addEventListener("DOMContentLoaded", function () {
-
-  const logoutModal =
-    document.getElementById("logoutModal");
-
-  const cancelLogout =
-    document.getElementById("cancelLogout");
-
-  const logoutTriggers =
-    document.querySelectorAll(".logout-trigger");
+  const logoutModal = document.getElementById("logoutModal");
+  const cancelLogout = document.getElementById("cancelLogout");
+  const logoutTriggers = document.querySelectorAll(".logout-trigger");
 
   logoutTriggers.forEach(function (button) {
-
     button.addEventListener("click", function (e) {
-
       e.preventDefault();
-
-      const dropdown =
-        document.getElementById("userDropdownMenu");
-
+      const dropdown = document.getElementById("userDropdownMenu");
       if (dropdown) {
         dropdown.classList.remove("show");
       }
-
       logoutModal.classList.add("show");
-
     });
-
   });
 
-  cancelLogout.addEventListener("click", function () {
-
-    logoutModal.classList.remove("show");
-
-  });
-
-  logoutModal.addEventListener("click", function (e) {
-
-    if (e.target === logoutModal) {
-
+  if (cancelLogout) {
+    cancelLogout.addEventListener("click", function () {
       logoutModal.classList.remove("show");
+    });
+  }
 
-    }
-
-  });
+  if (logoutModal) {
+    logoutModal.addEventListener("click", function (e) {
+      if (e.target === logoutModal) {
+        logoutModal.classList.remove("show");
+      }
+    });
+  }
 
   document.addEventListener("keydown", function (e) {
-
-    if (e.key === "Escape") {
-
+    if (e.key === "Escape" && logoutModal) {
       logoutModal.classList.remove("show");
-
     }
-
   });
-
 });
-
 </script>
 
 <script src="assets/js/script.js"></script>
-
 </body>
 </html>

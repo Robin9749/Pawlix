@@ -37,6 +37,7 @@ function pawlix_short_text($text, $limit = 130) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PawLix - Find a Friend, Give a Home</title>
 <link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
@@ -122,7 +123,9 @@ function pawlix_short_text($text, $limit = 130) {
 .user-dropdown-menu a .icon {
   font-size: 16px;
   width: 20px;
-  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .dropdown-divider {
@@ -406,6 +409,19 @@ function pawlix_short_text($text, $limit = 130) {
 .logout-confirm:hover {
     background: #961e17;
 }
+
+.socials a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.col-contact .icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+}
 </style>
 </head>
 <body>
@@ -416,7 +432,7 @@ function pawlix_short_text($text, $limit = 130) {
     </div>
     <nav class="nav">
       <a href="index.php" class="active">Home</a>
-      <a href="browse.php">Browse Dogs ▾</a>
+      <a href="browse.php">Browse Dogs <i class="fa-solid fa-chevron-down" style="font-size: 10px; margin-left: 2px;"></i></a>
       <a href="about.php">About</a>
       <a href="contact.php">Contact</a>
       <a href="report.php">Report a Dog</a>
@@ -427,17 +443,31 @@ function pawlix_short_text($text, $limit = 130) {
         
         <div class="user-menu-wrapper">
           <button class="menu-icon-btn" id="userMenuBtn" onclick="toggleUserDropdown()" aria-label="User Menu">
-            <span>👤</span> ▾ <?php if ($unreadCount > 0): ?><span class="badge-count"><?php echo $unreadCount; ?></span><?php endif; ?>
+            <i class="fa-solid fa-user"></i>
+            <i class="fa-solid fa-chevron-down" style="font-size: 10px;"></i>
+            <?php if ($unreadCount > 0): ?><span class="badge-count"><?php echo $unreadCount; ?></span><?php endif; ?>
           </button>
 
           <div class="user-dropdown-menu" id="userDropdownMenu">
-            <a href="account.php"><span class="icon">👤</span> Account</a>
-            <a href="messages.php"><span class="icon">✉️</span> Messages</a>
-            <a href="notifications.php"><span class="icon">🔔</span> Notification <?php if ($unreadCount > 0): ?><span class="badge-sub"><?php echo $unreadCount; ?></span><?php endif; ?></a>
-            <a href="history.php"><span class="icon">📜</span> History</a>
-            <a href="settings.php"><span class="icon">⚙️</span> Setting</a>
+            <a href="account.php">
+              <span class="icon"><i class="fa-solid fa-user"></i></span> Account
+            </a>
+            <a href="messages.php">
+              <span class="icon"><i class="fa-solid fa-envelope"></i></span> Messages
+            </a>
+            <a href="notifications.php">
+              <span class="icon"><i class="fa-solid fa-bell"></i></span> Notification <?php if ($unreadCount > 0): ?><span class="badge-sub"><?php echo $unreadCount; ?></span><?php endif; ?>
+            </a>
+            <a href="history.php">
+              <span class="icon"><i class="fa-solid fa-clock-rotate-left"></i></span> History
+            </a>
+            <a href="settings.php">
+              <span class="icon"><i class="fa-solid fa-gear"></i></span> Setting
+            </a>
             <div class="dropdown-divider"></div>
-            <a href="#" class="logout-trigger logout-link"><span class="icon">🚪</span> Logout</a>
+            <a href="#" class="logout-trigger logout-link">
+              <span class="icon"><i class="fa-solid fa-right-from-bracket"></i></span> Logout
+            </a>
           </div>
         </div>
 
@@ -449,7 +479,7 @@ function pawlix_short_text($text, $limit = 130) {
       <?php endif; ?>
     </div>
 
-    <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">☰</button>
+    <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu"><i class="fa-solid fa-bars"></i></button>
   </header>
 
 <hr style="background-color: white; height: 1px; border: none;">
@@ -515,7 +545,7 @@ function pawlix_short_text($text, $limit = 130) {
             <h3><?php echo htmlspecialchars($dog['name']); ?></h3>
             <p class="breed"><?php echo htmlspecialchars($dog['breed']); ?></p>
             <p class="desc"><?php echo htmlspecialchars(pawlix_short_text($dog['description'])); ?></p>
-            <a href="dogDetails.php?id=<?php echo $dog_id; ?>" class="btn-adopt-card">Meet <?php echo htmlspecialchars($dog['name']); ?> 🐾</a>
+            <a href="dogDetails.php?id=<?php echo $dog_id; ?>" class="btn-adopt-card">Meet <?php echo htmlspecialchars($dog['name']); ?> <i class="fa-solid fa-paw"></i></a>
           </div>
         </div>
         <?php endwhile; ?>
@@ -565,10 +595,10 @@ function pawlix_short_text($text, $limit = 130) {
             </div>
             <div class="footer-col col-contact">
                 <h4 class="col-title">CONTACT</h4>
-                <p><span class="icon">📍</span> Kathmandu, Nepal</p>
-                <p><span class="icon">✉</span> support@pawlix.org</p>
-                <p><span class="icon">📞</span> +977 9800000000</p>
-                <p><span class="icon">🐾</span> Emergency 24/7 Support</p>
+                <p><span class="icon"><i class="fa-solid fa-location-dot"></i></span> Kathmandu, Nepal</p>
+                <p><span class="icon"><i class="fa-solid fa-envelope"></i></span> support@pawlix.org</p>
+                <p><span class="icon"><i class="fa-solid fa-phone"></i></span> +977 9800000000</p>
+                <p><span class="icon"><i class="fa-solid fa-paw"></i></span> Emergency 24/7 Support</p>
             </div>
         </div>
 
@@ -578,13 +608,13 @@ function pawlix_short_text($text, $limit = 130) {
             <p class="copyright">© <?php echo date('Y'); ?> PawLix. All rights reserved.</p>
             <div class="footer-bottom-right">
                 <div class="socials">
-                    <a href="#" aria-label="Facebook"><span>f</span></a>
-                    <a href="#" aria-label="X"><span>𝕏</span></a>
-                    <a href="#" aria-label="Instagram"><span>◎</span></a>
-                    <a href="#" aria-label="YouTube"><span>▶</span></a>
+                    <a href="#" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+                    <a href="#" aria-label="X"><i class="fa-brands fa-x-twitter"></i></a>
+                    <a href="#" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="#" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
                 </div>
                 <button class="scroll-top-btn" id="scrollTopBtn" type="button" aria-label="Back to top">
-                    <span>↑</span> Back to Top
+                    <i class="fa-solid fa-arrow-up"></i> Back to Top
                 </button>
             </div>
         </div>

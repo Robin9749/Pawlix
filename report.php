@@ -107,59 +107,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PawLix - Report a Dog</title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
 
-        :root{
-            --cream:#e9d9b8;
-            --tan-light:#ecdfc3;
-            --pale-yellow:#f3ecd5;
-            --tan-card:#dcb590;
-            --maroon:#7a1f1f;
-            --dark-brown:#4a3223;
-            --orange:#ff7f11;
-            --orange-dark:#e06600;
-            --navy:#0e1524;
-            --blue:#2f6bf0;
-            --blue-dark:#1f54d1;
+        img {
+            display: block;
         }
 
-        *{ margin:0; padding:0; box-sizing:border-box; }
-        body{ font-family:'Poppins',sans-serif; background:var(--pale-yellow); color:#222; overflow-x:hidden; }
-        a{ text-decoration:none; color:inherit; }
+        .header {
+            width: 100%;
+            height: 90px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 80px;
+            background: var(--cream);
+            position: relative;
+            z-index: 1000;
+            box-shadow: 0 5px 20px rgba(0,0,0,.05);
+        }
 
-        .header{ width:100%; height:90px; display:flex; justify-content:space-between; align-items:center; padding:0 80px; background:var(--cream); position:relative; z-index:1000; box-shadow:0 5px 20px rgba(0,0,0,.05); }
-        .logo img{ width:150px; position:relative; top:15px; left:-20px; }
-       .nav{
-    display:flex;
-    align-items:center;
-    gap:45px;
-}
-
-.nav a{
-    font-size:16px;
-    font-weight:500;
-    color:var(--dark-brown);
-    transition:.3s;
-    position:relative;
-}
-
-.nav .active{
-    color:var(--maroon);
-    font-weight: 610;
-}
-
-.nav a::after{
-    content:"";
-    position:absolute;
-    left:0;
-    bottom:-8px;
-    width:0%;
-    height:3px;
-    background:var(--maroon);
-    transition:.35s;
-    border-radius:20px;
-}
+        .logo img {
+            width: 150px;
+            position: relative;
+            top: 15px;
+            left: -20px;
+            display: block;
+        }
 
         .user-menu-wrapper {
           position: relative;
@@ -231,7 +206,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .user-dropdown-menu a .icon {
           font-size: 16px;
           width: 20px;
-          text-align: center;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
         }
 
         .dropdown-divider {
@@ -354,6 +331,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             background: #961e17;
         }
 
+        .socials a {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .col-contact .icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+        }
+
         .report-hero{ width:100%; background:var(--tan-light); padding:45px 80px 40px; text-align:center; }
         .report-hero-content{ max-width:720px; margin:0 auto; }
         .sub-kicker{ font-size:13px; font-weight:700; letter-spacing:1.5px; color:var(--maroon); display:inline-block; margin-bottom:8px; text-transform:uppercase; }
@@ -385,11 +375,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .form-actions{ display:flex; align-items:center; gap:16px; margin-top:10px; }
         .btn-submit-report{ flex:1; padding:15px; background:var(--orange); color:#fff; font-size:16px; font-weight:700; border-radius:10px; cursor:pointer; border:none; }
         .btn-cancel-report{ padding:15px 28px; background:#ecdcb8; color:var(--dark-brown); font-weight:700; font-size:14.5px; border-radius:10px; border:1px solid #d9c59d; text-decoration:none; }
-
-        .footer{ background:var(--navy); color:#fff; padding:70px 80px 30px; }
-        .footer-top{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:20px; margin-bottom:40px; }
-        .footer-columns{ display:grid; grid-template-columns:repeat(4,1fr); gap:40px; }
-        .footer-bottom{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:20px; }
     </style>
 </head>
 <body>
@@ -400,7 +385,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
         <nav class="nav">
             <a href="index.php">Home</a>
-            <a href="browse.php">Browse Dogs ▾</a>
+            <a href="browse.php">Browse Dogs <i class="fa-solid fa-chevron-down" style="font-size: 10px; margin-left: 2px;"></i></a>
             <a href="about.php">About</a>
             <a href="contact.php">Contact</a>
             <a href="report.php" class="active">Report a Dog</a>
@@ -411,17 +396,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             <div class="user-menu-wrapper">
               <button class="menu-icon-btn" id="userMenuBtn" onclick="toggleUserDropdown()" aria-label="User Menu">
-                <span>👤</span> ▾ <?php if ($unreadCount > 0): ?><span class="badge-count"><?php echo $unreadCount; ?></span><?php endif; ?>
+                <i class="fa-solid fa-user"></i>
+                <i class="fa-solid fa-chevron-down" style="font-size: 10px;"></i>
+                <?php if ($unreadCount > 0): ?><span class="badge-count"><?php echo $unreadCount; ?></span><?php endif; ?>
               </button>
 
               <div class="user-dropdown-menu" id="userDropdownMenu">
-                <a href="account.php"><span class="icon">👤</span> Account</a>
-                <a href="messages.php"><span class="icon">✉️</span> Messages</a>
-                <a href="notifications.php"><span class="icon">🔔</span> Notification <?php if ($unreadCount > 0): ?><span class="badge-sub"><?php echo $unreadCount; ?></span><?php endif; ?></a>
-                <a href="history.php"><span class="icon">📜</span> History</a>
-                <a href="settings.php"><span class="icon">⚙️</span> Setting</a>
+                <a href="account.php">
+                  <span class="icon"><i class="fa-solid fa-user"></i></span> Account
+                </a>
+                <a href="messages.php">
+                  <span class="icon"><i class="fa-solid fa-envelope"></i></span> Messages
+                </a>
+                <a href="notifications.php">
+                  <span class="icon"><i class="fa-solid fa-bell"></i></span> Notification <?php if ($unreadCount > 0): ?><span class="badge-sub"><?php echo $unreadCount; ?></span><?php endif; ?>
+                </a>
+                <a href="history.php">
+                  <span class="icon"><i class="fa-solid fa-clock-rotate-left"></i></span> History
+                </a>
+                <a href="settings.php">
+                  <span class="icon"><i class="fa-solid fa-gear"></i></span> Setting
+                </a>
                 <div class="dropdown-divider"></div>
-                <a href="#" class="logout-trigger logout-link"><span class="icon">🚪</span> Logout</a>
+                <a href="#" class="logout-trigger logout-link">
+                  <span class="icon"><i class="fa-solid fa-right-from-bracket"></i></span> Logout
+                </a>
               </div>
             </div>
 
@@ -433,7 +432,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           <?php endif; ?>
         </div>
 
-        <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">☰</button>
+        <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu"><i class="fa-solid fa-bars"></i></button>
     </header>
 
     <hr style="background-color: white; height: 1px; border: none;">
@@ -574,7 +573,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="form-group">
                         <label>Dog Photo *</label>
                         <div class="photo-upload-zone">
-                            <span style="font-size:32px;">📷</span>
+                            <i class="fa-solid fa-camera" style="font-size:32px; color:var(--maroon); display:block; margin-bottom:8px;"></i>
                             <h4>Upload Photo of the Dog</h4>
                             <div id="filePreviewName">Click to select photo</div>
                             <input type="file" id="dogPhoto" name="dogPhoto" accept="image/*" required onchange="const name=this.files[0]?.name; if(name) document.getElementById('filePreviewName').innerText = 'Selected: ' + name;">
@@ -646,10 +645,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <div class="footer-col col-contact">
                     <h4 class="col-title">CONTACT</h4>
-                    <p><span class="icon">📍</span> Kathmandu, Nepal</p>
-                    <p><span class="icon">✉</span> support@pawlix.org</p>
-                    <p><span class="icon">📞</span> +977 9800000000</p>
-                    <p><span class="icon">🐾</span> Emergency 24/7 Support</p>
+                    <p><span class="icon"><i class="fa-solid fa-location-dot"></i></span> Kathmandu, Nepal</p>
+                    <p><span class="icon"><i class="fa-solid fa-envelope"></i></span> support@pawlix.org</p>
+                    <p><span class="icon"><i class="fa-solid fa-phone"></i></span> +977 9800000000</p>
+                    <p><span class="icon"><i class="fa-solid fa-paw"></i></span> Emergency 24/7 Support</p>
                 </div>
 
             </div>
@@ -661,14 +660,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <div class="footer-bottom-right">
                     <div class="socials">
-                        <a href="#" aria-label="Facebook"><span>f</span></a>
-                        <a href="#" aria-label="X"><span>𝕏</span></a>
-                        <a href="#" aria-label="Instagram"><span>◎</span></a>
-                        <a href="#" aria-label="YouTube"><span>▶</span></a>
+                        <a href="#" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+                        <a href="#" aria-label="X"><i class="fa-brands fa-x-twitter"></i></a>
+                        <a href="#" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                        <a href="#" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
                     </div>
 
                     <button class="scroll-top-btn" id="scrollTopBtn" type="button" aria-label="Back to top">
-                        <span>↑</span> Back to Top
+                        <i class="fa-solid fa-arrow-up"></i> Back to Top
                     </button>
                 </div>
             </div>

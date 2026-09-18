@@ -149,6 +149,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PawLix - Apply for Adoption</title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
 
@@ -177,7 +178,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             width:100%; height:90px; display:flex; justify-content:space-between; align-items:center;
             padding:0 80px; background:var(--cream); position:relative; z-index:1000; box-shadow:0 5px 20px rgba(0,0,0,.05);
         }
-        .logo img{ width:150px; position:relative; top:15px; left:-20px; }
+        .logo img{ width:150px; position:relative; top:15px; left:-20px; display:block; }
         .nav{ display:flex; align-items:center; gap:45px; }
         .nav a{ font-size:16px; font-weight:500; color:var(--dark-brown); transition:.3s; position:relative; }
         .nav a:hover, .nav .active{ color:var(--maroon); }
@@ -250,8 +251,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         .user-dropdown-menu a:hover { background-color: #ddceac; }
+
+        .user-dropdown-menu a .icon {
+          font-size: 16px;
+          width: 20px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+        }
+
         .dropdown-divider { height: 1px; background-color: #ddccae; margin: 4px 0; }
         .logout-link { color: #b3261e !important; }
+        .logout-link:hover { background-color: #f8d7da !important; }
 
         .badge-sub {
           margin-left: auto;
@@ -260,6 +271,103 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           font-size: 11px;
           padding: 2px 6px;
           border-radius: 10px;
+        }
+
+        /* LOGOUT MODAL OVERLAY */
+        .logout-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.50);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            z-index: 99999;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .logout-modal-overlay.show {
+            display: flex;
+        }
+
+        .logout-modal {
+            width: 100%;
+            max-width: 400px;
+            background: #ede1c6;
+            border-radius: 16px;
+            padding: 32px 28px;
+            text-align: center;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.30);
+            border: 1px solid rgba(255,255,255,0.6);
+            animation: logoutPopup 0.25s ease-out;
+        }
+
+        @keyframes logoutPopup {
+            from {
+                transform: scale(0.85);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .logout-modal h2 {
+            font-size: 22px;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 8px;
+        }
+
+        .logout-modal p {
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 26px;
+            line-height: 1.5;
+        }
+
+        .logout-modal-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .logout-cancel,
+        .logout-confirm {
+            flex: 1;
+            padding: 13px;
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .logout-cancel {
+            background: #ffffff;
+            color: #2b2b2b;
+            border: 1px solid #ddccae;
+        }
+
+        .logout-cancel:hover {
+            background: #f5ecda;
+        }
+
+        .logout-confirm {
+            background: #b3261e;
+            color: #ffffff;
+            border: none;
+            box-shadow: 0 4px 12px rgba(179,38,30,0.3);
+        }
+
+        .logout-confirm:hover {
+            background: #961e17;
         }
 
         .adopt-hero{ width:100%; background:var(--tan-light); padding:45px 80px 40px; text-align:center; }
@@ -345,7 +453,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
         <nav class="nav">
             <a href="index.php">Home</a>
-            <a href="browse.php" class="active">Browse Dogs ▾</a>
+            <a href="browse.php" class="active">Browse Dogs <i class="fa-solid fa-chevron-down" style="font-size: 10px; margin-left: 2px;"></i></a>
             <a href="about.php">About</a>
             <a href="contact.php">Contact</a>
             <a href="report.php">Report a Dog</a>
@@ -353,28 +461,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <div class="header-buttons">
           <?php if (isset($_SESSION['user_id'])): ?>
+            
             <div class="user-menu-wrapper">
               <button class="menu-icon-btn" id="userMenuBtn" onclick="toggleUserDropdown()" aria-label="User Menu">
-                <span>👤</span> ▾ <?php if ($unreadCount > 0): ?><span class="badge-count"><?php echo $unreadCount; ?></span><?php endif; ?>
+                <i class="fa-solid fa-user"></i>
+                <i class="fa-solid fa-chevron-down" style="font-size: 10px;"></i>
+                <?php if ($unreadCount > 0): ?><span class="badge-count"><?php echo $unreadCount; ?></span><?php endif; ?>
               </button>
 
               <div class="user-dropdown-menu" id="userDropdownMenu">
-                <a href="account.php"><span class="icon">👤</span> Account</a>
-                <a href="messages.php"><span class="icon">✉️</span> Messages</a>
-                <a href="notifications.php"><span class="icon">🔔</span> Notification <?php if ($unreadCount > 0): ?><span class="badge-sub"><?php echo $unreadCount; ?></span><?php endif; ?></a>
-                <a href="history.php"><span class="icon">📜</span> History</a>
-                <a href="settings.php"><span class="icon">⚙️</span> Setting</a>
+                <a href="account.php">
+                  <span class="icon"><i class="fa-solid fa-user"></i></span> Account
+                </a>
+                <a href="messages.php">
+                  <span class="icon"><i class="fa-solid fa-envelope"></i></span> Messages
+                </a>
+                <a href="notifications.php">
+                  <span class="icon"><i class="fa-solid fa-bell"></i></span> Notification <?php if ($unreadCount > 0): ?><span class="badge-sub"><?php echo $unreadCount; ?></span><?php endif; ?>
+                </a>
+                <a href="history.php">
+                  <span class="icon"><i class="fa-solid fa-clock-rotate-left"></i></span> History
+                </a>
+                <a href="settings.php">
+                  <span class="icon"><i class="fa-solid fa-gear"></i></span> Setting
+                </a>
                 <div class="dropdown-divider"></div>
-                <a href="logout.php" class="logout-link"><span class="icon">🚪</span> Logout</a>
+                <a href="#" class="logout-trigger logout-link">
+                  <span class="icon"><i class="fa-solid fa-right-from-bracket"></i></span> Logout
+                </a>
               </div>
             </div>
+
           <?php else: ?>
+
             <a href="signup.php" class="btn btn-outline" style="text-decoration:none;">Sign Up</a>
             <a href="login.php" class="btn btn-dark" style="text-decoration:none;">Login</a>
+
           <?php endif; ?>
         </div>
 
-        <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">☰</button>
+        <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu"><i class="fa-solid fa-bars"></i></button>
     </header>
 
     <hr style="background-color: white; height: 1px; border: none;">
@@ -534,6 +660,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </main>
 
+<!-- LOGOUT CONFIRMATION MODAL -->
+<div class="logout-modal-overlay" id="logoutModal">
+    <div class="logout-modal" role="dialog" aria-modal="true" aria-labelledby="logoutTitle">
+        <h2 id="logoutTitle">Log Out?</h2>
+        <p>Are you sure you want to log out?</p>
+        <div class="logout-modal-actions">
+            <button type="button" class="logout-cancel" id="cancelLogout">Cancel</button>
+            <a href="logout.php?confirm=true" class="logout-confirm">Log Out</a>
+        </div>
+    </div>
+</div>
+
     <footer class="footer">
       <div class="footer-container">
         <div class="footer-columns">
@@ -556,10 +694,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             <div class="footer-col col-contact">
                 <h4 class="col-title">CONTACT</h4>
-                <p><span class="icon">📍</span> Kathmandu, Nepal</p>
-                <p><span class="icon">✉</span> support@pawlix.org</p>
-                <p><span class="icon">📞</span> +977 9800000000</p>
-                <p><span class="icon">🐾</span> Emergency 24/7 Support</p>
+                <p><span class="icon"><i class="fa-solid fa-location-dot"></i></span> Kathmandu, Nepal</p>
+                <p><span class="icon"><i class="fa-solid fa-envelope"></i></span> support@pawlix.org</p>
+                <p><span class="icon"><i class="fa-solid fa-phone"></i></span> +977 9800000000</p>
+                <p><span class="icon"><i class="fa-solid fa-paw"></i></span> Emergency 24/7 Support</p>
             </div>
         </div>
         <hr class="footer-hr">
@@ -572,7 +710,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <script>
     function toggleUserDropdown() {
       var menu = document.getElementById("userDropdownMenu");
-      if (menu) { menu.classList.toggle("show"); }
+      if (menu) {
+        menu.classList.toggle("show");
+      }
     }
 
     window.addEventListener('click', function(e) {
@@ -590,6 +730,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             });
         }
+
+        // LOGOUT MODAL HANDLERS
+        const logoutModal = document.getElementById("logoutModal");
+        const cancelLogout = document.getElementById("cancelLogout");
+        const logoutTrigger = document.querySelector(".logout-trigger");
+
+        if (logoutTrigger) {
+            logoutTrigger.addEventListener("click", function(e) {
+                e.preventDefault();
+                logoutModal.classList.add("show");
+                const dropdown = document.getElementById("userDropdownMenu");
+                if (dropdown) {
+                    dropdown.classList.remove("show");
+                }
+            });
+        }
+
+        if (cancelLogout) {
+            cancelLogout.addEventListener("click", function() {
+                logoutModal.classList.remove("show");
+            });
+        }
+
+        if (logoutModal) {
+            logoutModal.addEventListener("click", function(e) {
+                if (e.target === logoutModal) {
+                    logoutModal.classList.remove("show");
+                }
+            });
+        }
+
+        document.addEventListener("keydown", function(e) {
+            if (e.key === "Escape" && logoutModal && logoutModal.classList.contains("show")) {
+                logoutModal.classList.remove("show");
+            }
+        });
     });
     </script>
     <script src="assets/js/script.js"></script>

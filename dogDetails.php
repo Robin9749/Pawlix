@@ -75,6 +75,7 @@ $main_image = $images_list[0];
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PawLix - View Dog Details (<?php echo $dog_name; ?>)</title>
     <link rel="stylesheet" href="assets/css/dogDetail.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
@@ -149,7 +150,9 @@ $main_image = $images_list[0];
     .user-dropdown-menu a .icon {
       font-size: 16px;
       width: 20px;
-      text-align: center;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .dropdown-divider {
@@ -270,6 +273,17 @@ $main_image = $images_list[0];
     .logout-confirm:hover {
         background: #961e17;
     }
+
+    .gallery-arrow {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .spec-icon i {
+        font-size: 20px;
+        color: #4a3223;
+    }
     </style>
 </head>
 <body>
@@ -291,17 +305,31 @@ $main_image = $images_list[0];
             
             <div class="user-menu-wrapper">
               <button class="menu-icon-btn" id="userMenuBtn" onclick="toggleUserDropdown()" aria-label="User Menu">
-                <span>👤</span> ▾ <?php if ($unreadCount > 0): ?><span class="badge-count"><?php echo $unreadCount; ?></span><?php endif; ?>
+                <i class="fa-solid fa-user"></i>
+                <i class="fa-solid fa-chevron-down" style="font-size: 10px;"></i>
+                <?php if ($unreadCount > 0): ?><span class="badge-count"><?php echo $unreadCount; ?></span><?php endif; ?>
               </button>
 
               <div class="user-dropdown-menu" id="userDropdownMenu">
-                <a href="account.php"><span class="icon">👤</span> Account</a>
-                <a href="messages.php"><span class="icon">✉️</span> Messages</a>
-                <a href="notifications.php"><span class="icon">🔔</span> Notification <?php if ($unreadCount > 0): ?><span class="badge-sub"><?php echo $unreadCount; ?></span><?php endif; ?></a>
-                <a href="history.php"><span class="icon">📜</span> History</a>
-                <a href="settings.php"><span class="icon">⚙️</span> Setting</a>
+                <a href="account.php">
+                  <span class="icon"><i class="fa-solid fa-user"></i></span> Account
+                </a>
+                <a href="messages.php">
+                  <span class="icon"><i class="fa-solid fa-envelope"></i></span> Messages
+                </a>
+                <a href="notifications.php">
+                  <span class="icon"><i class="fa-solid fa-bell"></i></span> Notification <?php if ($unreadCount > 0): ?><span class="badge-sub"><?php echo $unreadCount; ?></span><?php endif; ?>
+                </a>
+                <a href="history.php">
+                  <span class="icon"><i class="fa-solid fa-clock-rotate-left"></i></span> History
+                </a>
+                <a href="settings.php">
+                  <span class="icon"><i class="fa-solid fa-gear"></i></span> Setting
+                </a>
                 <div class="dropdown-divider"></div>
-                <a href="#" class="logout-trigger logout-link"><span class="icon">🚪</span> Logout</a>
+                <a href="#" class="logout-trigger logout-link">
+                  <span class="icon"><i class="fa-solid fa-right-from-bracket"></i></span> Logout
+                </a>
               </div>
             </div>
 
@@ -326,8 +354,12 @@ $main_image = $images_list[0];
                     <img id="mainDogImage" src="<?php echo htmlspecialchars($main_image); ?>" alt="<?php echo $dog_name; ?> - <?php echo $breed; ?>">
                     
                     <?php if (count($images_list) > 1): ?>
-                        <button class="gallery-arrow arrow-prev" id="prevImgBtn" type="button" aria-label="Previous Image">&lt;</button>
-                        <button class="gallery-arrow arrow-next" id="nextImgBtn" type="button" aria-label="Next Image">&gt;</button>
+                        <button class="gallery-arrow arrow-prev" id="prevImgBtn" type="button" aria-label="Previous Image">
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </button>
+                        <button class="gallery-arrow arrow-next" id="nextImgBtn" type="button" aria-label="Next Image">
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </button>
                     <?php endif; ?>
                 </div>
 
@@ -343,11 +375,21 @@ $main_image = $images_list[0];
             <div class="dog-details-info">
                 <div class="dog-details-header">
                     <h1 class="dog-name"><?php echo $dog_name; ?></h1>
-                    <a href="browse.php" class="btn-back">← Back</a>
+                    <a href="browse.php" class="btn-back">
+                        <i class="fa-solid fa-arrow-left"></i> Back
+                    </a>
                 </div>
 
                 <div class="dog-meta-line">
-                    <span class="meta-item"><?php echo ($gender == 'Male') ? '♂ Male' : (($gender == 'Female') ? '♀ Female' : '❓ ' . $gender); ?></span>
+                    <span class="meta-item">
+                        <?php if ($gender == 'Male'): ?>
+                            <i class="fa-solid fa-mars"></i> Male
+                        <?php elseif ($gender == 'Female'): ?>
+                            <i class="fa-solid fa-venus"></i> Female
+                        <?php else: ?>
+                            <?php echo $gender; ?>
+                        <?php endif; ?>
+                    </span>
                     <span class="meta-separator">|</span>
                     <span class="meta-item"><?php echo $breed; ?></span>
                     <span class="meta-separator">|</span>
@@ -362,7 +404,7 @@ $main_image = $images_list[0];
                     
                     <div class="spec-card">
                         <div class="spec-icon">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM6.5 5C7.6 5 8.5 5.9 8.5 7C8.5 8.1 7.6 9 6.5 9C5.4 9 4.5 8.1 4.5 7C4.5 5.9 5.4 5 6.5 5ZM17.5 5C18.6 5 19.5 5.9 19.5 7C19.5 8.1 18.6 9 17.5 9C16.4 9 15.5 8.1 15.5 7C15.5 5.9 16.4 5 17.5 5ZM4 11C4.8 11 5.5 11.7 5.5 12.5C5.5 13.3 4.8 14 4 14C3.2 14 2.5 13.3 2.5 12.5C2.5 11.7 3.2 11 4 11ZM20 11C20.8 11 21.5 11.7 21.5 12.5C21.5 13.3 20.8 14 20 14C19.2 14 18.5 13.3 18.5 12.5C18.5 11.7 19.2 11 20 11ZM12 8.5C14.8 8.5 17.5 10.5 17.5 14C17.5 17.5 15.2 21 12 21C8.8 21 6.5 17.5 6.5 14C6.5 10.5 9.2 8.5 12 8.5Z"/></svg>
+                            <i class="fa-solid fa-paw"></i>
                         </div>
                         <div class="spec-text">
                             <span class="spec-label">Breed</span>
@@ -372,7 +414,7 @@ $main_image = $images_list[0];
 
                     <div class="spec-card">
                         <div class="spec-icon">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 12c-2.33 0-4.32-1.45-5.12-3.5h10.24c-.8 2.05-2.79 3.5-5.12 3.5z"/></svg>
+                            <i class="fa-solid fa-weight-scale"></i>
                         </div>
                         <div class="spec-text">
                             <span class="spec-label">Weight</span>
@@ -382,7 +424,7 @@ $main_image = $images_list[0];
 
                     <div class="spec-card">
                         <div class="spec-icon">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/></svg>
+                            <i class="fa-solid fa-calendar-days"></i>
                         </div>
                         <div class="spec-text">
                             <span class="spec-label">Age</span>
@@ -392,7 +434,7 @@ $main_image = $images_list[0];
 
                     <div class="spec-card">
                         <div class="spec-icon">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+                            <i class="fa-solid fa-syringe"></i>
                         </div>
                         <div class="spec-text">
                             <span class="spec-label">Vaccinated</span>
@@ -402,7 +444,7 @@ $main_image = $images_list[0];
 
                     <div class="spec-card">
                         <div class="spec-icon">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 8a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm1 3h-2v3H8v2h3v4h2v-4h3v-2h-3v-3z"/></svg>
+                            <i class="fa-solid fa-venus-mars"></i>
                         </div>
                         <div class="spec-text">
                             <span class="spec-label">Gender</span>
@@ -412,7 +454,7 @@ $main_image = $images_list[0];
 
                     <div class="spec-card">
                         <div class="spec-icon">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                            <i class="fa-solid fa-heart-pulse"></i>
                         </div>
                         <div class="spec-text">
                             <span class="spec-label">Health Status</span>
@@ -422,7 +464,7 @@ $main_image = $images_list[0];
 
                     <div class="spec-card">
                         <div class="spec-icon">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M15 3l2.3 2.3-2.89 2.87 1.42 1.42L18.7 6.7 21 9V3h-6zM3 9l2.3-2.3 2.87 2.89 1.42-1.42L6.7 5.3 9 3H3v6zm6 12l-2.3-2.3 2.89-2.87-1.42-1.42L5.3 17.3 3 15v6h6zm12-6l-2.3 2.3-2.87-2.89-1.42 1.42 2.89 2.87L15 21h6v-6z"/></svg>
+                            <i class="fa-solid fa-ruler-combined"></i>
                         </div>
                         <div class="spec-text">
                             <span class="spec-label">Size</span>
@@ -432,7 +474,7 @@ $main_image = $images_list[0];
 
                     <div class="spec-card">
                         <div class="spec-icon">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L4.35 18c-.46.46-.46 1.2 0 1.66.46.46 1.2.46 1.66 0l.64-.64C8.19 19.64 10.02 20 12 20c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-4 9c-.83 0-1.5-.67-1.5-1.5S7.17 9 8 9s1.5.67 1.5 1.5S8.83 12 8 12zm4-3c-.83 0-1.5-.67-1.5-1.5S11.17 6 12 6s1.5.67 1.5 1.5S12.83 9 12 9zm4 3c-.83 0-1.5-.67-1.5-1.5S15.17 9 16 9s1.5.67 1.5 1.5S16.83 12 16 12z"/></svg>
+                            <i class="fa-solid fa-palette"></i>
                         </div>
                         <div class="spec-text">
                             <span class="spec-label">Color</span>

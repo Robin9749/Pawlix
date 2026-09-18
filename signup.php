@@ -5,47 +5,112 @@ include("config/config.php");
 $error = "";
 $success = "";
 
+$full_name = "";
+$email     = "";
+$password  = "";
+$confirm_p = "";
+
 if (isset($_POST['signup'])) {
     $full_name = trim($_POST['name'] ?? '');
     $email     = trim($_POST['email'] ?? '');
-    $password  = trim($_POST['password'] ?? '');
-    $confirm_p = trim($_POST['confirm_password'] ?? '');
+    $password  = $_POST['password'] ?? '';
+    $confirm_p = $_POST['confirm_password'] ?? '';
 
-    if (empty($full_name) || empty($email) || empty($password)) {
+    if (empty($full_name) || empty($email) || empty($password) || empty($confirm_p)) {
         $error = "Please fill in all required fields.";
+
+    } elseif (!preg_match("/^[a-zA-Z\s]{2,50}$/", $full_name)) {
+        $error = "Name must contain only alphabets and spaces!";
+
+    } elseif (!preg_match("/^[A-Za-z0-9][A-Za-z0-9._%+-]*@gmail\.com$/", $email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = "Please enter a valid Gmail address ending with @gmail.com.";
+
     } elseif (strlen($password) < 8) {
         $error = "Password must be at least 8 characters long!";
+
+    } elseif (!preg_match("/[A-Z]/", $password)) {
+        $error = "Password must contain at least one uppercase letter (A-Z)!";
+
+    } elseif (!preg_match("/[a-z]/", $password)) {
+        $error = "Password must contain at least one lowercase letter (a-z)!";
+
+    } elseif (!preg_match("/[0-9]/", $password)) {
+        $error = "Password must contain at least one number (0-9)!";
+
+    } elseif (!preg_match("/[!@#$%^&*(),.?\":{}|<>_]/", $password)) {
+        $error = "Password must contain at least one special character (such as @, #, $, %, !)!";
+
     } elseif ($password !== $confirm_p) {
         $error = "Passwords do not match!";
+
     } else {
-        $email_esc = mysqli_real_escape_string($conn, $email);
-        
-        $check_sql = "SELECT user_id FROM user WHERE email = '$email_esc' LIMIT 1";
-        $check_res = mysqli_query($conn, $check_sql);
+        $check_stmt = mysqli_prepare(
+            $conn,
+            "SELECT user_id FROM user WHERE email = ? LIMIT 1"
+        );
 
-        if ($check_res && mysqli_num_rows($check_res) > 0) {
-            $error = "An account with this email address already exists. Please log in instead.";
-        } else {
-            $parts = explode(" ", $full_name, 2);
-            $first_name = mysqli_real_escape_string($conn, $parts[0]);
-            $last_name  = mysqli_real_escape_string($conn, $parts[1] ?? '');
-            $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+        if ($check_stmt) {
+            mysqli_stmt_bind_param($check_stmt, "s", $email);
+            mysqli_stmt_execute($check_stmt);
+            mysqli_stmt_store_result($check_stmt);
 
-            $insert_sql = "INSERT INTO user (first_name, last_name, email, password) VALUES ('$first_name', '$last_name', '$email_esc', '$hashed_password')";
+            if (mysqli_stmt_num_rows($check_stmt) > 0) {
+                $error = "An account with this email address already exists. Please log in instead.";
+                mysqli_stmt_close($check_stmt);
 
-            try {
-                if (mysqli_query($conn, $insert_sql)) {
-                    $success = "Account created successfully! You can now log in.";
+            } else {
+                mysqli_stmt_close($check_stmt);
+
+                $parts = explode(" ", $full_name, 2);
+                $first_name = $parts[0];
+                $last_name  = $parts[1] ?? '';
+
+                $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+
+                $insert_stmt = mysqli_prepare(
+                    $conn,
+                    "INSERT INTO user (first_name, last_name, email, password)
+                     VALUES (?, ?, ?, ?)"
+                );
+
+                if ($insert_stmt) {
+                    mysqli_stmt_bind_param(
+                        $insert_stmt,
+                        "ssss",
+                        $first_name,
+                        $last_name,
+                        $email,
+                        $hashed_password
+                    );
+
+                    try {
+                        if (mysqli_stmt_execute($insert_stmt)) {
+                            $success = "Account created successfully! You can now log in.";
+                            $full_name = "";
+                            $email = "";
+                            $password = "";
+                            $confirm_p = "";
+                        } else {
+                            $error = "Something went wrong: " . mysqli_error($conn);
+                        }
+
+                    } catch (mysqli_sql_exception $e) {
+                        if ($e->getCode() == 1062) {
+                            $error = "An account with this email address already exists. Please log in instead.";
+                        } else {
+                            $error = "Something went wrong: " . $e->getMessage();
+                        }
+                    }
+
+                    mysqli_stmt_close($insert_stmt);
+
                 } else {
-                    $error = "Something went wrong: " . mysqli_error($conn);
-                }
-            } catch (mysqli_sql_exception $e) {
-                if ($e->getCode() == 1062) {
-                    $error = "An account with this email address already exists. Please log in instead.";
-                } else {
-                    $error = "Something went wrong: " . $e->getMessage();
+                    $error = "Something went wrong. Please try again.";
                 }
             }
+
+        } else {
+            $error = "Database error. Please try again.";
         }
     }
 }
@@ -53,6 +118,7 @@ if (isset($_POST['signup'])) {
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -113,7 +179,8 @@ body{
   font-size: 15px;
 }
 
-.navbar .buttons button, .navbar .buttons a{
+.navbar .buttons button,
+.navbar .buttons a{
   padding: 9px 24px;
   border-radius: 30px;
   border: none;
@@ -127,7 +194,8 @@ body{
   transition: opacity 0.2s ease;
 }
 
-.navbar .buttons button:hover, .navbar .buttons a:hover{
+.navbar .buttons button:hover,
+.navbar .buttons a:hover{
   opacity: 0.85;
 }
 
@@ -150,6 +218,7 @@ body{
     user-select: none;
     color: #4a3223;
 }
+
 .eye:hover {
     color: #7c7a7a;
 }
@@ -184,7 +253,7 @@ body{
     display: flex;
     justify-content: center;
     align-items: flex-start;
-    padding-top: 50px;  
+    padding-top: 50px;
 }
 
 .form-box{
@@ -277,6 +346,26 @@ hr{
   color: #9a9a9a;
 }
 
+/* LIVE INPUT ERROR MESSAGES */
+.input-error-msg {
+    display: none;
+    font-size: 12.5px;
+    margin-top: -8px;
+    margin-bottom: 14px;
+    text-align: left;
+    font-weight: 500;
+}
+
+.input-error-msg.invalid {
+    display: block;
+    color: #b3261e;
+}
+
+.input-error-msg.valid {
+    display: block;
+    color: #1e6e2e;
+}
+
 .terms-row{
   display: flex;
   align-items: flex-start;
@@ -336,9 +425,11 @@ button.signup-btn:hover{
   .left{
     display: none;
   }
+
   .navbar .links{
     display: none;
   }
+
   .right{
     padding: 40px 20px;
   }
@@ -349,9 +440,13 @@ button.signup-btn:hover{
 <body>
 
 <div class="navbar">
+
    <div class="logo">
-      <a href="index.php"><img src="assets/images/logo.png" alt="PawLix logo"></a>
-    </div>
+      <a href="index.php">
+        <img src="assets/images/logo.png" alt="PawLix logo">
+      </a>
+   </div>
+
   <div class="links">
     <a href="index.php">Home</a>
     <a href="browse.php">Browse Dogs</a>
@@ -359,10 +454,12 @@ button.signup-btn:hover{
     <a href="contact.php">Contact</a>
     <a href="report.php">Report a Dog</a>
   </div>
+
   <div class="buttons">
     <a href="signup.php" class="btn-signup">Sign Up</a>
     <a href="login.php" class="btn-login">Login</a>
   </div>
+
 </div>
 
 <div class="wrapper">
@@ -372,95 +469,269 @@ button.signup-btn:hover{
   </div>
 
   <div class="right">
+
     <div class="form-box">
 
       <h2>Create Your Account</h2>
       <p>Join us and find your new best friend!</p>
+
       <hr>
 
       <?php if ($error != "") { ?>
-        <div class="error"><?php echo htmlspecialchars($error); ?></div>
+        <div class="error">
+          <?php echo htmlspecialchars($error); ?>
+        </div>
       <?php } ?>
 
       <?php if ($success != "") { ?>
-        <div class="success"><?php echo htmlspecialchars($success); ?></div>
+        <div class="success">
+          <?php echo htmlspecialchars($success); ?>
+        </div>
       <?php } ?>
 
-      <form method="POST" action="signup.php">
+      <form method="POST" action="signup.php" id="signupForm">
 
         <div class="input-wrap">
           <span>👤</span>
-          <input type="text" name="name" placeholder="Full Name" required>
+          <input
+            type="text"
+            name="name"
+            placeholder="Full Name"
+            value="<?php echo htmlspecialchars($full_name); ?>"
+            pattern="[A-Za-z\s]+"
+            title="Name must contain only alphabets and spaces"
+            required
+          >
         </div>
 
         <div class="input-wrap">
           <span>✉️</span>
-          <input type="email" name="email" placeholder="Email Address" required>
-        </div>
-        
-        <div class="input-wrap">
-            <span>🔒</span>
-            <input type="password" name="password" id="pwd" placeholder="Create Password (min. 8 characters)" minlength="8" required>
-            <span class="eye" id="eye-pwd" onclick="togglePwd('pwd')">
-                <svg class="eye-icon eye-open" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
-                </svg>
 
-                <svg class="eye-icon eye-closed" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display:none;">
-                  <path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.44-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.17c0-1.66-1.34-3-3-3l-.17.02z"/>
-                </svg>
-            </span>
+          <input
+            type="email"
+            name="email"
+            placeholder="Email Address"
+            value="<?php echo htmlspecialchars($email); ?>"
+            pattern="[A-Za-z0-9][A-Za-z0-9._%+-]*@gmail\.com"
+            title="Please enter a valid Gmail address ending with @gmail.com"
+            required
+          >
         </div>
 
         <div class="input-wrap">
           <span>🔒</span>
-          <input type="password" name="confirm_password" id="cpwd" placeholder="Confirm Password" minlength="8" required>
-          <span class="eye" id="eye-cpwd" onclick="togglePwd('cpwd')">
-            <svg class="eye-icon eye-open" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+
+          <input
+            type="password"
+            name="password"
+            id="pwd"
+            placeholder="Create Password"
+            value="<?php echo htmlspecialchars($password); ?>"
+            required
+          >
+
+          <span class="eye" id="eye-pwd" onclick="togglePwd('pwd')">
+
+            <svg class="eye-icon eye-open"
+                 width="20"
+                 height="20"
+                 viewBox="0 0 24 24"
+                 fill="currentColor">
+
               <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+
             </svg>
 
-            <svg class="eye-icon eye-closed" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display:none;">
+            <svg class="eye-icon eye-closed"
+                 width="20"
+                 height="20"
+                 viewBox="0 0 24 24"
+                 fill="currentColor"
+                 style="display:none;">
+
               <path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.44-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.17c0-1.66-1.34-3-3-3l-.17.02z"/>
+
             </svg>
+
           </span>
         </div>
 
-        <div class="terms-row">
-          <input type="checkbox" required>
-          <span>I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></span>
+        <!-- DYNAMIC PASSWORD ERROR MESSAGE -->
+        <div class="input-error-msg" id="pwd-error-msg"></div>
+
+        <div class="input-wrap">
+
+          <span>🔒</span>
+
+          <input
+            type="password"
+            name="confirm_password"
+            id="cpwd"
+            placeholder="Confirm Password"
+            value="<?php echo htmlspecialchars($confirm_p); ?>"
+            required
+          >
+
+          <span class="eye" id="eye-cpwd" onclick="togglePwd('cpwd')">
+
+            <svg class="eye-icon eye-open"
+                 width="20"
+                 height="20"
+                 viewBox="0 0 24 24"
+                 fill="currentColor">
+
+              <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+
+            </svg>
+
+            <svg class="eye-icon eye-closed"
+                 width="20"
+                 height="20"
+                 viewBox="0 0 24 24"
+                 fill="currentColor"
+                 style="display:none;">
+
+              <path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.44-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.17c0-1.66-1.34-3-3-3l-.17.02z"/>
+
+            </svg>
+
+          </span>
+
         </div>
 
-        <button type="submit" name="signup" class="signup-btn">Sign Up</button>
+        <!-- DYNAMIC CONFIRM PASSWORD ERROR MESSAGE -->
+        <div class="input-error-msg" id="cpwd-error-msg"></div>
+
+        <div class="terms-row">
+
+          <input type="checkbox" required>
+
+          <span>
+            I agree to the
+            <a href="#">Terms of Service</a>
+            and
+            <a href="#">Privacy Policy</a>
+          </span>
+
+        </div>
+
+        <button type="submit" name="signup" class="signup-btn">
+          Sign Up
+        </button>
 
       </form>
 
-      <p class="bottom-text">Already have an account? <a href="login.php">Log In</a></p>
+      <p class="bottom-text">
+        Already have an account?
+        <a href="login.php">Log In</a>
+      </p>
 
     </div>
+
   </div>
 
 </div>
 
 <script>
+
 function togglePwd(id) {
+
     const input = document.getElementById(id);
     const eyeBtn = document.getElementById('eye-' + id);
+
     if (!input || !eyeBtn) return;
 
     const openIcon = eyeBtn.querySelector('.eye-open');
     const closedIcon = eyeBtn.querySelector('.eye-closed');
 
     if (input.type === 'password') {
+
         input.type = 'text';
-        if (openIcon) openIcon.style.display = 'none';
-        if (closedIcon) closedIcon.style.display = 'inline-block';
+
+        if (openIcon)
+            openIcon.style.display = 'none';
+
+        if (closedIcon)
+            closedIcon.style.display = 'inline-block';
+
     } else {
+
         input.type = 'password';
-        if (openIcon) openIcon.style.display = 'inline-block';
-        if (closedIcon) closedIcon.style.display = 'none';
+
+        if (openIcon)
+            openIcon.style.display = 'inline-block';
+
+        if (closedIcon)
+            closedIcon.style.display = 'none';
     }
 }
+
+document.querySelector('input[name="name"]')?.addEventListener('input', function() {
+    this.value = this.value.replace(/[^a-zA-Z\s]/g, '');
+});
+
+// REAL-TIME SINGLE ERROR MESSAGE VALIDATION (PERSISTING ENTERED PASSWORD)
+document.addEventListener('DOMContentLoaded', function() {
+    const pwdInput  = document.getElementById('pwd');
+    const cpwdInput = document.getElementById('cpwd');
+    const pwdMsg    = document.getElementById('pwd-error-msg');
+    const cpwdMsg   = document.getElementById('cpwd-error-msg');
+
+    function validatePassword() {
+        const val = pwdInput.value;
+        
+        if (val.length === 0) {
+            pwdMsg.style.display = 'none';
+            pwdMsg.textContent = '';
+            return;
+        }
+
+        pwdMsg.style.display = 'block';
+
+        if (val.length < 8) {
+            pwdMsg.textContent = 'Password must be at least 8 characters long.';
+            pwdMsg.className = 'input-error-msg invalid';
+        } else if (!/[A-Z]/.test(val)) {
+            pwdMsg.textContent = 'Password must contain at least one uppercase letter (A-Z).';
+            pwdMsg.className = 'input-error-msg invalid';
+        } else if (!/[a-z]/.test(val)) {
+            pwdMsg.textContent = 'Password must contain at least one lowercase letter (a-z).';
+            pwdMsg.className = 'input-error-msg invalid';
+        } else if (!/[0-9]/.test(val)) {
+            pwdMsg.textContent = 'Password must contain at least one number (0-9).';
+            pwdMsg.className = 'input-error-msg invalid';
+        } else if (!/[!@#$%^&*(),.?":{}|<>_]/.test(val)) {
+            pwdMsg.textContent = 'Password must contain at least one special character (e.g. @, #, $, %, !).';
+            pwdMsg.className = 'input-error-msg invalid';
+        } else {
+            pwdMsg.textContent = ' Strong password';
+            pwdMsg.className = 'input-error-msg valid';
+        }
+
+        if (cpwdInput.value.length > 0) {
+            validateConfirmPassword();
+        }
+    }
+
+    function validateConfirmPassword() {
+        const cval = cpwdInput.value;
+        const pval = pwdInput.value;
+
+        if (cval.length === 0) {
+            cpwdMsg.style.display = 'none';
+            cpwdMsg.textContent = '';
+            return;
+        }
+
+        cpwdMsg.style.display = 'block';
+
+     
+    }
+
+    pwdInput?.addEventListener('input', validatePassword);
+    cpwdInput?.addEventListener('input', validateConfirmPassword);
+});
+
 </script>
 
 </body>

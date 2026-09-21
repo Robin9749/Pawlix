@@ -44,21 +44,23 @@ if (isset($_GET['msg']) && $_GET['msg'] === 'deleted') {
 
 /* ================= ADD DOG ================= */
 if (isset($_POST['add_dog'])) {
-    $name = mysqli_real_escape_string($conn, trim($_POST['name']));
-    $breed = mysqli_real_escape_string($conn, trim($_POST['breed']));
+    $name = mysqli_real_escape_string($conn, trim($_POST['name'] ?? ''));
+    $breed = mysqli_real_escape_string($conn, trim($_POST['breed'] ?? ''));
     
     if ($breed === 'Other' && !empty($_POST['custom_breed'])) {
         $breed = mysqli_real_escape_string($conn, trim($_POST['custom_breed']));
     }
     
-    $age = intval($_POST['age']);
-    $gender = mysqli_real_escape_string($conn, $_POST['gender']);
-    $color = mysqli_real_escape_string($conn, trim($_POST['color']));
-    $size = mysqli_real_escape_string($conn, $_POST['size']);
-    $weight = floatval($_POST['weight']);
-    $vaccination_status = mysqli_real_escape_string($conn, $_POST['vaccination_status']);
-    $health_status = mysqli_real_escape_string($conn, trim($_POST['health_status']));
-    $description = mysqli_real_escape_string($conn, trim($_POST['description']));
+    $age_raw = trim($_POST['age'] ?? '');
+    $age = intval($age_raw);
+    $gender = mysqli_real_escape_string($conn, $_POST['gender'] ?? '');
+    $color = mysqli_real_escape_string($conn, trim($_POST['color'] ?? ''));
+    $size = mysqli_real_escape_string($conn, $_POST['size'] ?? '');
+    $weight_raw = trim($_POST['weight'] ?? '');
+    $weight = floatval($weight_raw);
+    $vaccination_status = mysqli_real_escape_string($conn, $_POST['vaccination_status'] ?? '');
+    $health_status = mysqli_real_escape_string($conn, trim($_POST['health_status'] ?? ''));
+    $description = mysqli_real_escape_string($conn, trim($_POST['description'] ?? ''));
 
     $upload_folder = "../uploads/";
     $uploaded_images = [];
@@ -70,17 +72,21 @@ if (isset($_POST['add_dog'])) {
     if (
         empty($name) ||
         empty($breed) ||
-        empty($age) ||
+        $age_raw === '' ||
         empty($gender) ||
         empty($color) ||
         empty($size) ||
-        empty($weight) ||
+        $weight_raw === '' ||
         empty($vaccination_status) ||
         empty($health_status) ||
         empty($description) ||
         empty($_FILES['images']['name'][0])
     ) {
         $error = "Please fill all required fields and upload at least one image.";
+    } elseif (!preg_match("/^[1-9][0-9]*$/", $age_raw)) {
+        $error = "Age must be a positive whole number starting with 1-9 (e.g., 1, 2, 5).";
+    } elseif (!preg_match("/^(?:[1-9][0-9]*)(?:\.[0-9]+)?$/", $weight_raw)) {
+        $error = "Weight must be a positive number starting with 1-9 (e.g., 5, 12.5).";
     } else {
         $total_files = count($_FILES['images']['name']);
         
@@ -121,74 +127,95 @@ if (isset($_POST['add_dog'])) {
 /* ================= UPDATE / EDIT DOG ================= */
 if (isset($_POST['update_dog'])) {
     $dog_id = intval($_POST['dog_id']);
-    $name = mysqli_real_escape_string($conn, trim($_POST['name']));
-    $breed = mysqli_real_escape_string($conn, trim($_POST['breed']));
+    $name = mysqli_real_escape_string($conn, trim($_POST['name'] ?? ''));
+    $breed = mysqli_real_escape_string($conn, trim($_POST['breed'] ?? ''));
     
     if ($breed === 'Other' && !empty($_POST['custom_breed'])) {
         $breed = mysqli_real_escape_string($conn, trim($_POST['custom_breed']));
     }
     
-    $age = intval($_POST['age']);
-    $gender = mysqli_real_escape_string($conn, $_POST['gender']);
-    $color = mysqli_real_escape_string($conn, trim($_POST['color']));
-    $size = mysqli_real_escape_string($conn, $_POST['size']);
-    $weight = floatval($_POST['weight']);
-    $vaccination_status = mysqli_real_escape_string($conn, $_POST['vaccination_status']);
-    $health_status = mysqli_real_escape_string($conn, trim($_POST['health_status']));
-    $description = mysqli_real_escape_string($conn, trim($_POST['description']));
+    $age_raw = trim($_POST['age'] ?? '');
+    $age = intval($age_raw);
+    $gender = mysqli_real_escape_string($conn, $_POST['gender'] ?? '');
+    $color = mysqli_real_escape_string($conn, trim($_POST['color'] ?? ''));
+    $size = mysqli_real_escape_string($conn, $_POST['size'] ?? '');
+    $weight_raw = trim($_POST['weight'] ?? '');
+    $weight = floatval($weight_raw);
+    $vaccination_status = mysqli_real_escape_string($conn, $_POST['vaccination_status'] ?? '');
+    $health_status = mysqli_real_escape_string($conn, trim($_POST['health_status'] ?? ''));
+    $description = mysqli_real_escape_string($conn, trim($_POST['description'] ?? ''));
     $adoption_status = mysqli_real_escape_string($conn, $_POST['adoption_status'] ?? 'Available');
 
-    $upload_folder = "../uploads/";
-    $uploaded_images = [];
+    if (
+        empty($name) ||
+        empty($breed) ||
+        $age_raw === '' ||
+        empty($gender) ||
+        empty($color) ||
+        empty($size) ||
+        $weight_raw === '' ||
+        empty($vaccination_status) ||
+        empty($health_status) ||
+        empty($description)
+    ) {
+        $error = "Please fill all required fields.";
+    } elseif (!preg_match("/^[1-9][0-9]*$/", $age_raw)) {
+        $error = "Age must be a positive whole number starting with 1-9 (e.g., 1, 2, 5).";
+    } elseif (!preg_match("/^(?:[1-9][0-9]*)(?:\.[0-9]+)?$/", $weight_raw)) {
+        $error = "Weight must be a positive number starting with 1-9 (e.g., 5, 12.5).";
+    } else {
+        $upload_folder = "../uploads/";
+        $uploaded_images = [];
 
-    if (!is_dir($upload_folder)) {
-        mkdir($upload_folder, 0777, true);
-    }
+        if (!is_dir($upload_folder)) {
+            mkdir($upload_folder, 0777, true);
+        }
 
-    if (!empty($_FILES['images']['name'][0])) {
-        $total_files = count($_FILES['images']['name']);
-        for ($i = 0; $i < $total_files; $i++) {
-            $image_name = $_FILES['images']['name'][$i];
-            $temp_name = $_FILES['images']['tmp_name'][$i];
-            $error_code = $_FILES['images']['error'][$i];
+        if (!empty($_FILES['images']['name'][0])) {
+            $total_files = count($_FILES['images']['name']);
+            for ($i = 0; $i < $total_files; $i++) {
+                $image_name = $_FILES['images']['name'][$i];
+                $temp_name = $_FILES['images']['tmp_name'][$i];
+                $error_code = $_FILES['images']['error'][$i];
 
-            if ($error_code === UPLOAD_ERR_OK && !empty($image_name)) {
-                $clean_filename = preg_replace("/[^a-zA-Z0-9\._-]/", "", basename($image_name));
-                $image_name_save = time() . "_" . $i . "_" . $clean_filename;
+                if ($error_code === UPLOAD_ERR_OK && !empty($image_name)) {
+                    $clean_filename = preg_replace("/[^a-zA-Z0-9\._-]/", "", basename($image_name));
+                    $image_name_save = time() . "_" . $i . "_" . $clean_filename;
 
-                if (move_uploaded_file($temp_name, $upload_folder . $image_name_save)) {
-                    $uploaded_images[] = $image_name_save;
+                    if (move_uploaded_file($temp_name, $upload_folder . $image_name_save)) {
+                        $uploaded_images[] = $image_name_save;
+                    }
                 }
             }
         }
-    }
 
-    if (!empty($uploaded_images)) {
-        $image_string = implode(",", $uploaded_images);
-        $image_update_sql = ", image = '$image_string'";
-    } else {
-        $image_update_sql = "";
-    }
+        if (!empty($uploaded_images)) {
+            $image_string = implode(",", $uploaded_images);
+            $image_update_sql = ", image = '$image_string'";
+        } else {
+            $image_update_sql = "";
+        }
 
-    $update_sql = "UPDATE dog SET 
-        name = '$name', 
-        breed = '$breed', 
-        age = '$age', 
-        gender = '$gender', 
-        color = '$color', 
-        size = '$size', 
-        weight = '$weight', 
-        vaccination_status = '$vaccination_status', 
-        health_status = '$health_status', 
-        description = '$description',
-        adoption_status = '$adoption_status'
-        $image_update_sql
-        WHERE dog_id = $dog_id";
+        $update_sql = "UPDATE dog SET 
+            name = '$name', 
+            breed = '$breed', 
+            age = '$age', 
+            gender = '$gender', 
+            color = '$color', 
+            size = '$size', 
+            weight = '$weight', 
+            vaccination_status = '$vaccination_status', 
+            health_status = '$health_status', 
+            description = '$description',
+            adoption_status = '$adoption_status'
+            $image_update_sql
+            WHERE dog_id = $dog_id";
 
-    if (mysqli_query($conn, $update_sql)) {
-        $success = "Dog details updated successfully!";
-    } else {
-        $error = "Failed to update dog: " . mysqli_error($conn);
+        if (mysqli_query($conn, $update_sql)) {
+            $success = "Dog details updated successfully!";
+        } else {
+            $error = "Failed to update dog: " . mysqli_error($conn);
+        }
     }
 }
 
@@ -628,6 +655,21 @@ tbody td {
   height: 90px;
 }
 
+/* LIVE REGEX INPUT ERROR MESSAGES */
+.input-error-msg {
+    display: none;
+    font-size: 12px;
+    margin-top: 4px;
+    margin-bottom: 6px;
+    text-align: left;
+    font-weight: 500;
+}
+
+.input-error-msg.invalid {
+    display: block;
+    color: #b3261e;
+}
+
 .submit-btn {
   grid-column: 1 / 3;
   background: var(--primary-orange);
@@ -809,7 +851,7 @@ tbody td {
     </div>
 
     <div class="modal-body">
-      <form method="POST" action="dogs.php" enctype="multipart/form-data">
+      <form method="POST" action="dogs.php" enctype="multipart/form-data" id="addDogForm">
         <div>
           <label>Dog Name *</label>
           <input type="text" name="name" required>
@@ -840,7 +882,8 @@ tbody td {
 
         <div>
           <label>Age (years) *</label>
-          <input type="number" name="age" min="0" required>
+          <input type="number" name="age" id="addAge" min="1" required>
+          <div class="input-error-msg" id="add-age-error-msg"></div>
         </div>
 
         <div>
@@ -869,7 +912,8 @@ tbody td {
 
         <div>
           <label>Weight (kg) *</label>
-          <input type="number" step="0.01" name="weight" required>
+          <input type="number" step="0.01" name="weight" id="addWeight" required>
+          <div class="input-error-msg" id="add-weight-error-msg"></div>
         </div>
 
         <div>
@@ -883,7 +927,14 @@ tbody td {
 
         <div class="full">
           <label>Health Status *</label>
-          <input type="text" name="health_status" required>
+          <select name="health_status" id="addHealthStatus" required>
+            <option value="">Select Health Status</option>
+            <option value="Healthy">Healthy</option>
+            <option value="Minor Health Concern">Minor Health Concern</option>
+            <option value="Under Medical Treatment">Under Medical Treatment</option>
+            <option value="Recovering from Illness">Recovering from Illness</option>
+            <option value="Requires Special Care">Requires Special Care</option>
+          </select>
         </div>
 
         <div class="full">
@@ -911,7 +962,7 @@ tbody td {
     </div>
 
     <div class="modal-body">
-      <form method="POST" action="dogs.php" enctype="multipart/form-data">
+      <form method="POST" action="dogs.php" enctype="multipart/form-data" id="editDogForm">
         <input type="hidden" name="update_dog" value="1">
         <input type="hidden" name="dog_id" id="editDogId" value="">
 
@@ -944,7 +995,8 @@ tbody td {
 
         <div>
           <label>Age (years) *</label>
-          <input type="number" name="age" id="editAge" min="0" required>
+          <input type="number" name="age" id="editAge" min="1" required>
+          <div class="input-error-msg" id="edit-age-error-msg"></div>
         </div>
 
         <div>
@@ -972,6 +1024,7 @@ tbody td {
         <div>
           <label>Weight (kg) *</label>
           <input type="number" step="0.01" name="weight" id="editWeight" required>
+          <div class="input-error-msg" id="edit-weight-error-msg"></div>
         </div>
 
         <div>
@@ -993,7 +1046,14 @@ tbody td {
 
         <div class="full">
           <label>Health Status *</label>
-          <input type="text" name="health_status" id="editHealthStatus" required>
+          <select name="health_status" id="editHealthStatus" required>
+            <option value="">Select Health Status</option>
+            <option value="Healthy">Healthy</option>
+            <option value="Minor Health Concern">Minor Health Concern</option>
+            <option value="Under Medical Treatment">Under Medical Treatment</option>
+            <option value="Recovering from Illness">Recovering from Illness</option>
+            <option value="Requires Special Care">Requires Special Care</option>
+          </select>
         </div>
 
         <div class="full">
@@ -1050,7 +1110,12 @@ function openEditModal(id, name, breed, age, gender, color, size, weight, vaccin
   document.getElementById('editSize').value = size;
   document.getElementById('editWeight').value = weight;
   document.getElementById('editVaccinationStatus').value = vaccinationStatus;
-  document.getElementById('editHealthStatus').value = healthStatus;
+  
+  const editHealth = document.getElementById('editHealthStatus');
+  if (editHealth) {
+    editHealth.value = healthStatus;
+  }
+
   document.getElementById('editDescription').value = description;
   document.getElementById('editAdoptionStatus').value = adoptionStatus;
 
@@ -1097,6 +1162,106 @@ function toggleEditCustomBreed(selectElement) {
     customInput.value = '';
   }
 }
+
+// REAL-TIME REGEX VALIDATION JS FOR AGE & WEIGHT
+const ageRegex = /^[1-9][0-9]*$/;
+const weightRegex = /^(?:[1-9][0-9]*)(?:\.[0-9]+)?$/;
+
+function validateAgeField(inputEl, msgEl) {
+  const val = inputEl.value.trim();
+  if (val.length === 0) {
+    msgEl.style.display = 'none';
+    msgEl.textContent = '';
+    return true;
+  }
+  if (!ageRegex.test(val)) {
+    msgEl.style.display = 'block';
+    msgEl.textContent = 'Age must be a positive number starting with 1-9.';
+    msgEl.className = 'input-error-msg invalid';
+    return false;
+  } else {
+    msgEl.style.display = 'none';
+    msgEl.textContent = '';
+    return true;
+  }
+}
+
+function validateWeightField(inputEl, msgEl) {
+  const val = inputEl.value.trim();
+  if (val.length === 0) {
+    msgEl.style.display = 'none';
+    msgEl.textContent = '';
+    return true;
+  }
+  if (!weightRegex.test(val)) {
+    msgEl.style.display = 'block';
+    msgEl.textContent = 'Weight must be a positive number starting with 1-9.';
+    msgEl.className = 'input-error-msg invalid';
+    return false;
+  } else {
+    msgEl.style.display = 'none';
+    msgEl.textContent = '';
+    return true;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  const addAge = document.getElementById('addAge');
+  const addAgeMsg = document.getElementById('add-age-error-msg');
+  const addWeight = document.getElementById('addWeight');
+  const addWeightMsg = document.getElementById('add-weight-error-msg');
+  const addForm = document.getElementById('addDogForm');
+
+  if (addAge && addAgeMsg) {
+    addAge.addEventListener('input', function() {
+      validateAgeField(addAge, addAgeMsg);
+    });
+  }
+
+  if (addWeight && addWeightMsg) {
+    addWeight.addEventListener('input', function() {
+      validateWeightField(addWeight, addWeightMsg);
+    });
+  }
+
+  if (addForm) {
+    addForm.addEventListener('submit', function(e) {
+      const isAgeValid = validateAgeField(addAge, addAgeMsg);
+      const isWeightValid = validateWeightField(addWeight, addWeightMsg);
+      if (!isAgeValid || !isWeightValid) {
+        e.preventDefault();
+      }
+    });
+  }
+
+  const editAge = document.getElementById('editAge');
+  const editAgeMsg = document.getElementById('edit-age-error-msg');
+  const editWeight = document.getElementById('editWeight');
+  const editWeightMsg = document.getElementById('edit-weight-error-msg');
+  const editForm = document.getElementById('editDogForm');
+
+  if (editAge && editAgeMsg) {
+    editAge.addEventListener('input', function() {
+      validateAgeField(editAge, editAgeMsg);
+    });
+  }
+
+  if (editWeight && editWeightMsg) {
+    editWeight.addEventListener('input', function() {
+      validateWeightField(editWeight, editWeightMsg);
+    });
+  }
+
+  if (editForm) {
+    editForm.addEventListener('submit', function(e) {
+      const isAgeValid = validateAgeField(editAge, editAgeMsg);
+      const isWeightValid = validateWeightField(editWeight, editWeightMsg);
+      if (!isAgeValid || !isWeightValid) {
+        e.preventDefault();
+      }
+    });
+  }
+});
 
 <?php if ($error != "" && !isset($_POST['update_dog'])) { ?>
 openAddModal();

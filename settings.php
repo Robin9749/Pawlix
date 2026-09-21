@@ -27,36 +27,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
     $email      = trim($_POST['email'] ?? '');
     $phone      = trim($_POST['phone'] ?? '');
 
+    $email_regex = "/^[a-zA-Z](?=.*[0-9])[a-zA-Z0-9._%+-]*@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/";
+    $name_regex  = "/^[A-Za-z\s]+$/";
+    $phone_regex = "/^\d{10}$/";
+
     if ($first_name === '' || $last_name === '' || $email === '' || $phone === '') {
         $error = "Please fill in all fields.";
-    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $error = "Please enter a valid email address.";
+    } elseif (!preg_match($name_regex, $first_name)) {
+        $error = "First Name must contain only alphabets and spaces!";
+    } elseif (!preg_match($name_regex, $last_name)) {
+        $error = "Last Name must contain only alphabets and spaces!";
+    } elseif (!preg_match($email_regex, $email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = "Please enter a valid email address (must start with a letter and contain numbers, e.g., user123@gmail.com, user123@yahoo.com, user123@achsnp.edu.np).";
+    } elseif (!preg_match($phone_regex, $phone)) {
+        $error = "Phone contact number must be exactly 10 digits!";
     } else {
         $first_name_db = mysqli_real_escape_string($conn, $first_name);
         $last_name_db  = mysqli_real_escape_string($conn, $last_name);
         $email_db      = mysqli_real_escape_string($conn, $email);
         $phone_db      = mysqli_real_escape_string($conn, $phone);
 
-        $sql = "
-            UPDATE user
-            SET
-                first_name = '$first_name_db',
-                last_name  = '$last_name_db',
-                email      = '$email_db',
-                phone      = '$phone_db'
-            WHERE user_id = $user_id
-        ";
-
-        if (mysqli_query($conn, $sql)) {
-            $_SESSION['user_name'] = $first_name . " " . $last_name;
-            $success = "Profile updated successfully!";
-
-            $user['first_name'] = $first_name;
-            $user['last_name']  = $last_name;
-            $user['email']      = $email;
-            $user['phone']      = $phone;
+        $check_email = mysqli_query($conn, "SELECT user_id FROM user WHERE email = '$email_db' AND user_id != $user_id LIMIT 1");
+        if ($check_email && mysqli_num_rows($check_email) > 0) {
+            $error = "This email address is already registered to another account.";
         } else {
-            $error = "Error updating profile.";
+            $sql = "
+                UPDATE user
+                SET
+                    first_name = '$first_name_db',
+                    last_name  = '$last_name_db',
+                    email      = '$email_db',
+                    phone      = '$phone_db'
+                WHERE user_id = $user_id
+            ";
+
+            if (mysqli_query($conn, $sql)) {
+                $_SESSION['user_name'] = $first_name . " " . $last_name;
+                $success = "Profile updated successfully!";
+
+                $user['first_name'] = $first_name;
+                $user['last_name']  = $last_name;
+                $user['email']      = $email;
+                $user['phone']      = $phone;
+            } else {
+                $error = "Error updating profile: " . mysqli_error($conn);
+            }
         }
     }
 }
@@ -130,6 +145,20 @@ body {
     color: #222;
     margin: 0;
     padding: 0;
+}
+
+/* LIVE ERROR MESSAGES STYLING */
+.input-error-msg {
+    display: none;
+    font-size: 12px;
+    margin-top: 5px;
+    margin-bottom: 2px;
+    text-align: left;
+    font-weight: 500;
+}
+.input-error-msg.invalid {
+    display: block;
+    color: #b3261e;
 }
 
 .user-menu-wrapper {
@@ -535,6 +564,7 @@ body {
             method="POST"
             action="settings.php"
             class="form-grid"
+            id="settingsForm"
         >
 
             <div class="form-group">
@@ -548,6 +578,7 @@ body {
                     value="<?php echo htmlspecialchars($user['first_name'] ?? ''); ?>"
                     required
                 >
+                <div id="firstName-error-msg" class="input-error-msg"></div>
             </div>
 
             <div class="form-group">
@@ -561,6 +592,7 @@ body {
                     value="<?php echo htmlspecialchars($user['last_name'] ?? ''); ?>"
                     required
                 >
+                <div id="lastName-error-msg" class="input-error-msg"></div>
             </div>
 
             <div class="form-group full">
@@ -574,6 +606,7 @@ body {
                     value="<?php echo htmlspecialchars($user['email'] ?? ''); ?>"
                     required
                 >
+                <div id="email-error-msg" class="input-error-msg"></div>
             </div>
 
             <div class="form-group full">
@@ -587,6 +620,7 @@ body {
                     value="<?php echo htmlspecialchars($user['phone'] ?? ''); ?>"
                     required
                 >
+                <div id="phone-error-msg" class="input-error-msg"></div>
             </div>
 
             <div
@@ -686,6 +720,7 @@ window.addEventListener('click', function(e) {
 });
 
 document.addEventListener("DOMContentLoaded", function() {
+    // LOGOUT MODAL HANDLERS
     const logoutModal = document.getElementById("logoutModal");
     const cancelLogout = document.getElementById("cancelLogout");
     const logoutTrigger = document.querySelector(".logout-trigger");
@@ -720,6 +755,120 @@ document.addEventListener("DOMContentLoaded", function() {
             logoutModal.classList.remove("show");
         }
     });
+
+    // REAL-TIME JS REGEX VALIDATION
+    const fnInput = document.getElementById('first_name');
+    const lnInput = document.getElementById('last_name');
+    const emInput = document.getElementById('email');
+    const phInput = document.getElementById('phone');
+
+    const fnMsg = document.getElementById('firstName-error-msg');
+    const lnMsg = document.getElementById('lastName-error-msg');
+    const emMsg = document.getElementById('email-error-msg');
+    const phMsg = document.getElementById('phone-error-msg');
+
+    const settingsForm = document.getElementById('settingsForm');
+
+    const nameRegex  = /^[A-Za-z\s]+$/;
+    const emailRegex = /^[a-zA-Z](?=.*[0-9])[a-zA-Z0-9._%+-]*@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    const phoneRegex = /^\d{10}$/;
+
+    function validateFirstName() {
+        if (!fnInput || !fnMsg) return true;
+        const val = fnInput.value.trim();
+        if (val.length === 0) {
+            fnMsg.style.display = 'none';
+            fnMsg.textContent = '';
+            return false;
+        }
+        if (!nameRegex.test(val)) {
+            fnMsg.style.display = 'block';
+            fnMsg.textContent = 'Only alphabets and spaces!';
+            fnMsg.className = 'input-error-msg invalid';
+            return false;
+        } else {
+            fnMsg.style.display = 'none';
+            fnMsg.textContent = '';
+            return true;
+        }
+    }
+
+    function validateLastName() {
+        if (!lnInput || !lnMsg) return true;
+        const val = lnInput.value.trim();
+        if (val.length === 0) {
+            lnMsg.style.display = 'none';
+            lnMsg.textContent = '';
+            return false;
+        }
+        if (!nameRegex.test(val)) {
+            lnMsg.style.display = 'block';
+            lnMsg.textContent = 'Only alphabets and spaces!';
+            lnMsg.className = 'input-error-msg invalid';
+            return false;
+        } else {
+            lnMsg.style.display = 'none';
+            lnMsg.textContent = '';
+            return true;
+        }
+    }
+
+    function validateEmail() {
+        if (!emInput || !emMsg) return true;
+        const val = emInput.value.trim();
+        if (val.length === 0) {
+            emMsg.style.display = 'none';
+            emMsg.textContent = '';
+            return false;
+        }
+        if (!emailRegex.test(val)) {
+            emMsg.style.display = 'block';
+            emMsg.textContent = 'Please enter a valid email address.';
+            emMsg.className = 'input-error-msg invalid';
+            return false;
+        } else {
+            emMsg.style.display = 'none';
+            emMsg.textContent = '';
+            return true;
+        }
+    }
+
+    function validatePhone() {
+        if (!phInput || !phMsg) return true;
+        const val = phInput.value.trim();
+        if (val.length === 0) {
+            phMsg.style.display = 'none';
+            phMsg.textContent = '';
+            return false;
+        }
+        if (!phoneRegex.test(val)) {
+            phMsg.style.display = 'block';
+            phMsg.textContent = 'Phone contact number must be exactly 10 digits!';
+            phMsg.className = 'input-error-msg invalid';
+            return false;
+        } else {
+            phMsg.style.display = 'none';
+            phMsg.textContent = '';
+            return true;
+        }
+    }
+
+    fnInput?.addEventListener('input', validateFirstName);
+    lnInput?.addEventListener('input', validateLastName);
+    emInput?.addEventListener('input', validateEmail);
+    phInput?.addEventListener('input', validatePhone);
+
+    if (settingsForm) {
+        settingsForm.addEventListener('submit', function(e) {
+            const v1 = validateFirstName();
+            const v2 = validateLastName();
+            const v3 = validateEmail();
+            const v4 = validatePhone();
+            if (!v1 || !v2 || !v3 || !v4) {
+                e.preventDefault();
+            }
+        });
+    }
 });
 </script>
 

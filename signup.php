@@ -22,8 +22,8 @@ if (isset($_POST['signup'])) {
     } elseif (!preg_match("/^[a-zA-Z\s]{2,50}$/", $full_name)) {
         $error = "Name must contain only alphabets and spaces!";
 
-    } elseif (!preg_match("/^[A-Za-z0-9][A-Za-z0-9._%+-]*@gmail\.com$/", $email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $error = "Please enter a valid Gmail address ending with @gmail.com.";
+    } elseif (!preg_match("/^[a-zA-Z](?=.*[0-9])[a-zA-Z0-9._%+-]*@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/", $email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = "Please enter a valid email address.";
 
     } elseif (strlen($password) < 8) {
         $error = "Password must be at least 8 characters long!";
@@ -361,11 +361,6 @@ hr{
     color: #b3261e;
 }
 
-.input-error-msg.valid {
-    display: block;
-    color: #1e6e2e;
-}
-
 .terms-row{
   display: flex;
   align-items: flex-start;
@@ -496,27 +491,27 @@ button.signup-btn:hover{
           <input
             type="text"
             name="name"
+            id="name"
             placeholder="Full Name"
             value="<?php echo htmlspecialchars($full_name); ?>"
-            pattern="[A-Za-z\s]+"
-            title="Name must contain only alphabets and spaces"
             required
           >
         </div>
+        <div class="input-error-msg" id="name-error-msg"></div>
 
         <div class="input-wrap">
           <span>✉️</span>
 
           <input
-            type="email"
+            type="text"
             name="email"
+            id="email"
             placeholder="Email Address"
             value="<?php echo htmlspecialchars($email); ?>"
-            pattern="[A-Za-z0-9][A-Za-z0-9._%+-]*@gmail\.com"
-            title="Please enter a valid Gmail address ending with @gmail.com"
             required
           >
         </div>
+        <div class="input-error-msg" id="email-error-msg"></div>
 
         <div class="input-wrap">
           <span>🔒</span>
@@ -608,9 +603,9 @@ button.signup-btn:hover{
 
           <span>
             I agree to the
-            <a href="#">Terms of Service</a>
+            <a >Terms of Service</a>
             and
-            <a href="#">Privacy Policy</a>
+            <a>Privacy Policy</a>
           </span>
 
         </div>
@@ -666,53 +661,110 @@ function togglePwd(id) {
     }
 }
 
-document.querySelector('input[name="name"]')?.addEventListener('input', function() {
-    this.value = this.value.replace(/[^a-zA-Z\s]/g, '');
-});
-
-// REAL-TIME SINGLE ERROR MESSAGE VALIDATION (PERSISTING ENTERED PASSWORD)
+// FULL JAVASCRIPT REGEX VALIDATION FOR ALL FIELDS
 document.addEventListener('DOMContentLoaded', function() {
-    const pwdInput  = document.getElementById('pwd');
-    const cpwdInput = document.getElementById('cpwd');
-    const pwdMsg    = document.getElementById('pwd-error-msg');
-    const cpwdMsg   = document.getElementById('cpwd-error-msg');
+    const nameInput  = document.getElementById('name');
+    const emailInput = document.getElementById('email');
+    const pwdInput   = document.getElementById('pwd');
+    const cpwdInput  = document.getElementById('cpwd');
 
+    const nameMsg  = document.getElementById('name-error-msg');
+    const emailMsg = document.getElementById('email-error-msg');
+    const pwdMsg   = document.getElementById('pwd-error-msg');
+    const cpwdMsg  = document.getElementById('cpwd-error-msg');
+
+    // REGEX PATTERNS
+    // Full Name: Alphabets and spaces only (2-50 characters)
+    const nameRegex  = /^[a-zA-Z\s]{2,50}$/;
+
+    // Email: Must start with a letter, contain numbers, and have a valid domain (e.g. user123@gmail.com, user123@yahoo.com, user123@achsnp.edu.np)
+    const emailRegex = /^[a-zA-Z](?=.*[0-9])[a-zA-Z0-9._%+-]*@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+    // 1. FULL NAME VALIDATION
+    function validateName() {
+        const val = nameInput.value.trim();
+        if (val.length === 0) {
+            nameMsg.style.display = 'none';
+            nameMsg.textContent = '';
+            return true;
+        }
+
+        if (!nameRegex.test(val)) {
+            nameMsg.style.display = 'block';
+            nameMsg.textContent = 'Name must contain only alphabets and spaces.';
+            nameMsg.className = 'input-error-msg invalid';
+            return false;
+        } else {
+            nameMsg.style.display = 'none';
+            nameMsg.textContent = '';
+            return true;
+        }
+    }
+
+    // 2. EMAIL VALIDATION (MUST START WITH ALPHABET & CONTAIN NUMBERS)
+    function validateEmail() {
+        const val = emailInput.value.trim();
+        if (val.length === 0) {
+            emailMsg.style.display = 'none';
+            emailMsg.textContent = '';
+            return true;
+        }
+
+        if (!emailRegex.test(val)) {
+            emailMsg.style.display = 'block';
+            emailMsg.textContent = 'Email address must start with a letter and contain numbers (e.g. user123@gmail.com).';
+            emailMsg.className = 'input-error-msg invalid';
+            return false;
+        } else {
+            emailMsg.style.display = 'none';
+            emailMsg.textContent = '';
+            return true;
+        }
+    }
+
+    // 3. PASSWORD VALIDATION (REGEX CHECKS)
     function validatePassword() {
         const val = pwdInput.value;
         
         if (val.length === 0) {
             pwdMsg.style.display = 'none';
             pwdMsg.textContent = '';
-            return;
+            return true;
         }
-
-        pwdMsg.style.display = 'block';
 
         if (val.length < 8) {
+            pwdMsg.style.display = 'block';
             pwdMsg.textContent = 'Password must be at least 8 characters long.';
             pwdMsg.className = 'input-error-msg invalid';
+            return false;
         } else if (!/[A-Z]/.test(val)) {
+            pwdMsg.style.display = 'block';
             pwdMsg.textContent = 'Password must contain at least one uppercase letter (A-Z).';
             pwdMsg.className = 'input-error-msg invalid';
+            return false;
         } else if (!/[a-z]/.test(val)) {
+            pwdMsg.style.display = 'block';
             pwdMsg.textContent = 'Password must contain at least one lowercase letter (a-z).';
             pwdMsg.className = 'input-error-msg invalid';
+            return false;
         } else if (!/[0-9]/.test(val)) {
+            pwdMsg.style.display = 'block';
             pwdMsg.textContent = 'Password must contain at least one number (0-9).';
             pwdMsg.className = 'input-error-msg invalid';
+            return false;
         } else if (!/[!@#$%^&*(),.?":{}|<>_]/.test(val)) {
+            pwdMsg.style.display = 'block';
             pwdMsg.textContent = 'Password must contain at least one special character (e.g. @, #, $, %, !).';
             pwdMsg.className = 'input-error-msg invalid';
+            return false;
         } else {
-            pwdMsg.textContent = ' Strong password';
-            pwdMsg.className = 'input-error-msg valid';
-        }
-
-        if (cpwdInput.value.length > 0) {
-            validateConfirmPassword();
+            pwdMsg.style.display = 'none';
+            pwdMsg.textContent = '';
+            return true;
         }
     }
 
+    // 4. CONFIRM PASSWORD VALIDATION
     function validateConfirmPassword() {
         const cval = cpwdInput.value;
         const pval = pwdInput.value;
@@ -720,15 +772,30 @@ document.addEventListener('DOMContentLoaded', function() {
         if (cval.length === 0) {
             cpwdMsg.style.display = 'none';
             cpwdMsg.textContent = '';
-            return;
+            return true;
         }
 
-        cpwdMsg.style.display = 'block';
-
-     
+        if (cval !== pval) {
+            cpwdMsg.style.display = 'block';
+            cpwdMsg.textContent = 'Passwords do not match.';
+            cpwdMsg.className = 'input-error-msg invalid';
+            return false;
+        } else {
+            cpwdMsg.style.display = 'none';
+            cpwdMsg.textContent = '';
+            return true;
+        }
     }
 
-    pwdInput?.addEventListener('input', validatePassword);
+    // ATTACH REAL-TIME INPUT LISTENERS
+    nameInput?.addEventListener('input', validateName);
+    emailInput?.addEventListener('input', validateEmail);
+    pwdInput?.addEventListener('input', function() {
+        validatePassword();
+        if (cpwdInput.value.length > 0) {
+            validateConfirmPassword();
+        }
+    });
     cpwdInput?.addEventListener('input', validateConfirmPassword);
 });
 

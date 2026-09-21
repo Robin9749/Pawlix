@@ -50,6 +50,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         empty($_FILES['dogPhoto']['name'])
     ) {
         $error = "Please fill all required fields (*) and upload a photo of the dog.";
+    } elseif (!empty($reporterName) && !preg_match("/^[A-Za-z\s]+$/", $reporterName)) {
+        $error = "Reporter Name must contain only alphabets and spaces.";
+    } elseif (!empty($reporterPhone) && !preg_match("/^\d{10}$/", $reporterPhone)) {
+        $error = "Phone number must be exactly 10 digits.";
+    } elseif (!empty($reporterEmail) && (!preg_match("/^[a-zA-Z](?=.*[0-9])[a-zA-Z0-9._%+-]*@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/", $reporterEmail) || !filter_var($reporterEmail, FILTER_VALIDATE_EMAIL))) {
+        $error = "Please enter a valid Email address (must start with a letter and contain numbers, e.g., user123@gmail.com, user123@yahoo.com).";
+    } elseif (!empty($estimatedAge) && !preg_match("/^[1-9]\d*$/", $estimatedAge)) {
+        $error = "Estimated Age must be a positive whole number starting with 1-9 (e.g. 1, 2, 5).";
     } else {
 
         $upload_folder = "uploads/";
@@ -367,11 +375,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .form-group label{ display:block; font-size:14px; font-weight:600; color:#3b2719; margin-bottom:7px; }
         .form-group input, .form-group select, .form-group textarea{ width:100%; padding:13px 16px; border:1.5px solid #dfcaab; border-radius:10px; font-size:14px; font-family:'Poppins',sans-serif; background:#fff8ed; color:#222; outline:none; }
 
+        /* LIVE INPUT ERROR MESSAGES */
+        .input-error-msg {
+            display: none;
+            font-size: 12px;
+            margin-top: 5px;
+            margin-bottom: 2px;
+            text-align: left;
+            font-weight: 500;
+        }
+
+        .input-error-msg.invalid {
+            display: block;
+            color: #b3261e;
+        }
+
         .photo-upload-zone{ border:2px dashed #d7be98; background:#fff8ed; border-radius:14px; padding:32px 20px; text-align:center; cursor:pointer; position:relative; }
         .photo-upload-zone input[type="file"]{ position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer; }
         #filePreviewName{ margin-top:10px; font-size:13.5px; font-weight:600; color:var(--maroon); }
 
-        .form-checkbox-group{ display:flex; align-items:flex-start; gap:12px; margin:24px 0 20px; background:var(--pale-yellow); padding:14px 18px; border-radius:10px; border:1px solid #e0ceae; }
+        .form-checkbox-group{ display:flex; align-items:center; gap:12px; margin:24px 0 20px; background:var(--pale-yellow); padding:16px 20px; border-radius:12px; border:1px solid #e0ceae; }
+        .form-checkbox-group input[type="checkbox"]{ width:18px; height:18px; margin:0; cursor:pointer; accent-color:var(--orange); flex-shrink:0; }
+        .form-checkbox-group label{ font-size:14px; font-weight:500; color:#3b2719; cursor:pointer; margin:0; line-height:1.4; user-select:none; }
         .form-actions{ display:flex; align-items:center; gap:16px; margin-top:10px; }
         .btn-submit-report{ flex:1; padding:15px; background:var(--orange); color:#fff; font-size:16px; font-weight:700; border-radius:10px; cursor:pointer; border:none; }
         .btn-cancel-report{ padding:15px 28px; background:#ecdcb8; color:var(--dark-brown); font-weight:700; font-size:14.5px; border-radius:10px; border:1px solid #d9c59d; text-decoration:none; }
@@ -473,14 +498,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="form-group">
                             <label for="reporterName">Name</label>
                             <input type="text" id="reporterName" name="reporterName">
+                            <div class="input-error-msg" id="name-error-msg"></div>
                         </div>
                         <div class="form-group">
                             <label for="reporterPhone">Phone Number</label>
                             <input type="tel" id="reporterPhone" name="reporterPhone">
+                            <div class="input-error-msg" id="phone-error-msg"></div>
                         </div>
                         <div class="form-group">
                             <label for="reporterEmail">Email</label>
                             <input type="email" id="reporterEmail" name="reporterEmail">
+                            <div class="input-error-msg" id="email-error-msg"></div>
                         </div>
                     </div>
 
@@ -514,6 +542,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="form-group">
                             <label for="estimatedAge">Estimated Age</label>
                             <input type="text" id="estimatedAge" name="estimatedAge">
+                            <div class="input-error-msg" id="age-error-msg"></div>
                         </div>
                         <div class="form-group">
                             <label for="dogGender">Gender</label>
@@ -538,7 +567,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     <div class="form-group">
                         <label for="description">Description *</label>
-                        <textarea id="description" name="description" rows="3" placeholder="Short description..." required></textarea>
+                        <textarea id="description" name="description" rows="3" placeholder="Short description." required></textarea>
                     </div>
 
                     <div class="form-section-header">
@@ -691,6 +720,100 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       }
     });
 
+    // REGEX PATTERNS FOR LIVE VALIDATION
+    const nameRegex  = /^[A-Za-z\s]+$/;
+    const phoneRegex = /^\d{10}$/;
+    const emailRegex = /^[a-zA-Z](?=.*[0-9])[a-zA-Z0-9._%+-]*@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    const ageRegex   = /^[1-9]\d*$/;
+
+    function validateReporterName() {
+        const el  = document.getElementById('reporterName');
+        const msg = document.getElementById('name-error-msg');
+        if (!el || !msg) return true;
+        const val = el.value.trim();
+        if (val.length === 0) {
+            msg.style.display = 'none';
+            msg.textContent = '';
+            return true;
+        }
+        if (!nameRegex.test(val)) {
+            msg.style.display = 'block';
+            msg.textContent = 'Name must contain only alphabets and spaces.';
+            msg.className = 'input-error-msg invalid';
+            return false;
+        } else {
+            msg.style.display = 'none';
+            msg.textContent = '';
+            return true;
+        }
+    }
+
+    function validateReporterPhone() {
+        const el  = document.getElementById('reporterPhone');
+        const msg = document.getElementById('phone-error-msg');
+        if (!el || !msg) return true;
+        const val = el.value.trim();
+        if (val.length === 0) {
+            msg.style.display = 'none';
+            msg.textContent = '';
+            return true;
+        }
+        if (!phoneRegex.test(val)) {
+            msg.style.display = 'block';
+            msg.textContent = 'Phone number must be exactly 10 digits.';
+            msg.className = 'input-error-msg invalid';
+            return false;
+        } else {
+            msg.style.display = 'none';
+            msg.textContent = '';
+            return true;
+        }
+    }
+
+    function validateReporterEmail() {
+        const el  = document.getElementById('reporterEmail');
+        const msg = document.getElementById('email-error-msg');
+        if (!el || !msg) return true;
+        const val = el.value.trim();
+        if (val.length === 0) {
+            msg.style.display = 'none';
+            msg.textContent = '';
+            return true;
+        }
+        if (!emailRegex.test(val)) {
+            msg.style.display = 'block';
+            msg.textContent = 'Email address must start with a letter and contain numbers.';
+            msg.className = 'input-error-msg invalid';
+            return false;
+        } else {
+            msg.style.display = 'none';
+            msg.textContent = '';
+            return true;
+        }
+    }
+
+    function validateEstimatedAge() {
+        const el  = document.getElementById('estimatedAge');
+        const msg = document.getElementById('age-error-msg');
+        if (!el || !msg) return true;
+        const val = el.value.trim();
+        if (val.length === 0) {
+            msg.style.display = 'none';
+            msg.textContent = '';
+            return true;
+        }
+        if (!ageRegex.test(val)) {
+            msg.style.display = 'block';
+            msg.textContent = 'Estimated age must be a positive.';
+            msg.className = 'input-error-msg invalid';
+            return false;
+        } else {
+            msg.style.display = 'none';
+            msg.textContent = '';
+            return true;
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         const btn = document.getElementById('scrollTopBtn');
         if (btn) {
@@ -734,6 +857,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 logoutModal.classList.remove("show");
             }
         });
+
+        // REAL-TIME INPUT EVENT LISTENERS
+        const nameEl  = document.getElementById('reporterName');
+        const phoneEl = document.getElementById('reporterPhone');
+        const emailEl = document.getElementById('reporterEmail');
+        const ageEl   = document.getElementById('estimatedAge');
+        const form    = document.getElementById('dogReportForm');
+
+        nameEl?.addEventListener('input', validateReporterName);
+        phoneEl?.addEventListener('input', validateReporterPhone);
+        emailEl?.addEventListener('input', validateReporterEmail);
+        ageEl?.addEventListener('input', validateEstimatedAge);
+
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                const v1 = validateReporterName();
+                const v2 = validateReporterPhone();
+                const v3 = validateReporterEmail();
+                const v4 = validateEstimatedAge();
+                if (!v1 || !v2 || !v3 || !v4) {
+                    e.preventDefault();
+                }
+            });
+        }
     });
     </script>
     <script src="assets/js/script.js"></script>

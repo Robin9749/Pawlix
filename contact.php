@@ -69,10 +69,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
     $subject   = trim($_POST['userSubject'] ?? 'PawLix Contact Inquiry');
     $message   = trim($_POST['userMessage'] ?? '');
 
+    $email_regex = "/^[a-zA-Z](?=.*[0-9])[a-zA-Z0-9._%+-]*@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/";
+    $name_regex  = "/^[A-Za-z\s]+$/";
+    $phone_regex = "/^\d{10}$/";
+
     if ($full_name === '' || $email === '' || $subject === '' || $message === '') {
-        $error = "Please fill in your name, email, subject, and message.";
-    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $error = "Please enter a valid email address.";
+        $error = "Please fill in all required fields (Name, Email, Subject, and Message).";
+    } elseif (!preg_match($name_regex, $full_name)) {
+        $error = "Name must contain only alphabets and spaces!";
+    } elseif (!preg_match($email_regex, $email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = "Please enter a valid email address (must start with a letter and contain numbers, e.g., user123@gmail.com, user123@yahoo.com, user123@achsnp.edu.np).";
+    } elseif (!empty($phone) && !preg_match($phone_regex, $phone)) {
+        $error = "Phone number must be exactly 10 digits!";
     } else {
         $fn_clean = mysqli_real_escape_string($conn, $full_name);
         $em_clean = mysqli_real_escape_string($conn, $email);
@@ -131,6 +139,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
         .form-alert{ padding:14px 18px; border-radius:10px; font-size:14px; font-weight:600; margin-bottom:20px; }
         .form-alert-error{ background:#fdeaea; border:1px solid #f3c6c6; color:#b3261e; }
         .form-alert-success{ background:#e5f6e8; border:1px solid #bfe3c4; color:#1e6e2e; }
+
+        /* LIVE ERROR MESSAGES STYLING */
+        .input-error-msg {
+            display: none;
+            font-size: 12px;
+            margin-top: 5px;
+            margin-bottom: 2px;
+            text-align: left;
+            font-weight: 500;
+        }
+        .input-error-msg.invalid {
+            display: block;
+            color: #b3261e;
+        }
 
         .user-menu-wrapper {
           position: relative;
@@ -462,16 +484,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
                     <div class="form-alert form-alert-error"><?php echo htmlspecialchars($error); ?></div>
                 <?php endif; ?>
 
-                <form class="contact-form" action="contact.php#contactForm" method="POST">
+                <form class="contact-form" id="contactMainForm" action="contact.php#contactForm" method="POST">
                     
                     <div class="form-row">
                         <div class="form-group">
                             <label for="userName">Your Name</label>
                             <input type="text" id="userName" name="userName" placeholder="Your Name" value="<?php echo htmlspecialchars($full_name); ?>" required>
+                            <div id="userName-error-msg" class="input-error-msg"></div>
                         </div>
                         <div class="form-group">
                             <label for="userEmail">Email Address</label>
                             <input type="email" id="userEmail" name="userEmail" placeholder="Email Address" value="<?php echo htmlspecialchars($email); ?>" required>
+                            <div id="userEmail-error-msg" class="input-error-msg"></div>
                         </div>
                     </div>
 
@@ -479,6 +503,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
                         <div class="form-group">
                             <label for="userPhone">Phone Number</label>
                             <input type="tel" id="userPhone" name="userPhone" placeholder="Phone Number" value="<?php echo htmlspecialchars($phone); ?>">
+                            <div id="userPhone-error-msg" class="input-error-msg"></div>
                         </div>
                         <div class="form-group">
                             <label for="userSubject">Subject</label>
@@ -588,6 +613,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
             });
         }
 
+        // LOGOUT MODAL HANDLERS
         const logoutModal = document.getElementById("logoutModal");
         const cancelLogout = document.getElementById("cancelLogout");
         const logoutTrigger = document.querySelector(".logout-trigger");
@@ -622,6 +648,94 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
                 logoutModal.classList.remove("show");
             }
         });
+
+        // REAL-TIME JS VALIDATION FOR CONTACT FORM
+        const nameInput  = document.getElementById('userName');
+        const emailInput = document.getElementById('userEmail');
+        const phoneInput = document.getElementById('userPhone');
+        const nameMsg    = document.getElementById('userName-error-msg');
+        const emailMsg   = document.getElementById('userEmail-error-msg');
+        const phoneMsg   = document.getElementById('userPhone-error-msg');
+        const form       = document.getElementById('contactMainForm');
+
+        const nameRegex  = /^[A-Za-z\s]+$/;
+        const emailRegex = /^[a-zA-Z](?=.*[0-9])[a-zA-Z0-9._%+-]*@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        const phoneRegex = /^\d{10}$/;
+
+        function validateName() {
+            if (!nameInput || !nameMsg) return true;
+            const val = nameInput.value.trim();
+            if (val.length === 0) {
+                nameMsg.style.display = 'none';
+                nameMsg.textContent = '';
+                return false;
+            }
+            if (!nameRegex.test(val)) {
+                nameMsg.style.display = 'block';
+                nameMsg.textContent = 'Name must contain only alphabets and spaces!';
+                nameMsg.className = 'input-error-msg invalid';
+                return false;
+            } else {
+                nameMsg.style.display = 'none';
+                nameMsg.textContent = '';
+                return true;
+            }
+        }
+
+        function validateEmail() {
+            if (!emailInput || !emailMsg) return true;
+            const val = emailInput.value.trim();
+            if (val.length === 0) {
+                emailMsg.style.display = 'none';
+                emailMsg.textContent = '';
+                return false;
+            }
+            if (!emailRegex.test(val)) {
+                emailMsg.style.display = 'block';
+                emailMsg.textContent = 'Please enter a valid email address.';
+                emailMsg.className = 'input-error-msg invalid';
+                return false;
+            } else {
+                emailMsg.style.display = 'none';
+                emailMsg.textContent = '';
+                return true;
+            }
+        }
+
+        function validatePhone() {
+            if (!phoneInput || !phoneMsg) return true;
+            const val = phoneInput.value.trim();
+            if (val.length === 0) {
+                phoneMsg.style.display = 'none';
+                phoneMsg.textContent = '';
+                return true;
+            }
+            if (!phoneRegex.test(val)) {
+                phoneMsg.style.display = 'block';
+                phoneMsg.textContent = 'Phone number must be exactly 10 digits!';
+                phoneMsg.className = 'input-error-msg invalid';
+                return false;
+            } else {
+                phoneMsg.style.display = 'none';
+                phoneMsg.textContent = '';
+                return true;
+            }
+        }
+
+        nameInput?.addEventListener('input', validateName);
+        emailInput?.addEventListener('input', validateEmail);
+        phoneInput?.addEventListener('input', validatePhone);
+
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                const v1 = validateName();
+                const v2 = validateEmail();
+                const v3 = validatePhone();
+                if (!v1 || !v2 || !v3) {
+                    e.preventDefault();
+                }
+            });
+        }
     });
     </script>
     <script src="assets/js/script.js"></script>

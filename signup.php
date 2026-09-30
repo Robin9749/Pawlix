@@ -346,7 +346,6 @@ hr{
   color: #9a9a9a;
 }
 
-/* LIVE INPUT ERROR MESSAGES */
 .input-error-msg {
     display: none;
     font-size: 12.5px;
@@ -551,7 +550,6 @@ button.signup-btn:hover{
           </span>
         </div>
 
-        <!-- DYNAMIC PASSWORD ERROR MESSAGE -->
         <div class="input-error-msg" id="pwd-error-msg"></div>
 
         <div class="input-wrap">
@@ -594,7 +592,6 @@ button.signup-btn:hover{
 
         </div>
 
-        <!-- DYNAMIC CONFIRM PASSWORD ERROR MESSAGE -->
         <div class="input-error-msg" id="cpwd-error-msg"></div>
 
         <div class="terms-row">
@@ -661,7 +658,6 @@ function togglePwd(id) {
     }
 }
 
-// FULL JAVASCRIPT REGEX VALIDATION FOR ALL FIELDS
 document.addEventListener('DOMContentLoaded', function() {
     const nameInput  = document.getElementById('name');
     const emailInput = document.getElementById('email');
@@ -673,14 +669,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const pwdMsg   = document.getElementById('pwd-error-msg');
     const cpwdMsg  = document.getElementById('cpwd-error-msg');
 
-    // REGEX PATTERNS
-    // Full Name: Alphabets and spaces only (2-50 characters)
     const nameRegex  = /^[a-zA-Z\s]{2,50}$/;
 
-    // Email: Must start with a letter, contain numbers, and have a valid domain (e.g. user123@gmail.com, user123@yahoo.com, user123@achsnp.edu.np)
     const emailRegex = /^[a-zA-Z](?=.*[0-9])[a-zA-Z0-9._%+-]*@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
-    // 1. FULL NAME VALIDATION
     function validateName() {
         const val = nameInput.value.trim();
         if (val.length === 0) {
@@ -701,7 +693,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // 2. EMAIL VALIDATION (MUST START WITH ALPHABET & CONTAIN NUMBERS)
     function validateEmail() {
         const val = emailInput.value.trim();
         if (val.length === 0) {
@@ -722,7 +713,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // 3. PASSWORD VALIDATION (REGEX CHECKS)
     function validatePassword() {
         const val = pwdInput.value;
         
@@ -764,7 +754,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // 4. CONFIRM PASSWORD VALIDATION
     function validateConfirmPassword() {
         const cval = cpwdInput.value;
         const pval = pwdInput.value;
@@ -787,7 +776,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // ATTACH REAL-TIME INPUT LISTENERS
     nameInput?.addEventListener('input', validateName);
     emailInput?.addEventListener('input', validateEmail);
     pwdInput?.addEventListener('input', function() {

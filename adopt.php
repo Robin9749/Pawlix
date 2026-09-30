@@ -660,7 +660,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </main>
 
-<!-- LOGOUT CONFIRMATION MODAL -->
+
 <div class="logout-modal-overlay" id="logoutModal">
     <div class="logout-modal" role="dialog" aria-modal="true" aria-labelledby="logoutTitle">
         <h2 id="logoutTitle">Log Out?</h2>
@@ -731,7 +731,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             });
         }
 
-        // LOGOUT MODAL HANDLERS
+      
         const logoutModal = document.getElementById("logoutModal");
         const cancelLogout = document.getElementById("cancelLogout");
         const logoutTrigger = document.querySelector(".logout-trigger");
